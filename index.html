@@ -19,6 +19,7 @@
     <!-- ② 地図表示コンテナ (地図モード用) -->
     <div id="map-view" class="hidden"></div>
     <div id="map-data-status" class="map-data-status hidden"></div>
+    <button id="btn-reopen-map-data-status" class="map-panel-reopen map-status-reopen hidden" type="button" aria-label="地図データ案内を表示"><i data-lucide="info"></i> データ案内</button>
     <aside id="map-spots-panel" class="map-spots-panel hidden" aria-label="地図上のスポット一覧"></aside>
 
     <!-- ③ 古写真リアルAR重ね合わせオーバーレイ (インタラクティブ操作対応) -->
@@ -269,8 +270,10 @@
       <footer class="app-footer">
         <div class="quick-status">
           <span id="active-layer-desc"><i data-lucide="touch-point"></i> 浮遊するマーカーをタップすると古写真・公的データ解説を表示</span>
+          <button id="btn-close-map-guide" class="guide-close map-guide-close" type="button" title="操作案内を隠す" aria-label="操作案内を隠す"><i data-lucide="x"></i></button>
         </div>
       </footer>
+      <button id="btn-reopen-map-guide" class="map-panel-reopen map-guide-reopen hidden" type="button" aria-label="操作案内を表示"><i data-lucide="help-circle"></i> 操作案内</button>
     </div>
 
     <aside id="time-travel-panel" class="time-travel-panel hidden" aria-label="この場所の時間旅行">
