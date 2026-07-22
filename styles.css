@@ -2099,4 +2099,47 @@ body, html {
     right: 8px;
     max-height: 48vh;
   }
+
+  /* 初期案内カードは下部UIの上に固定し、2つの操作ボタンを常に押せるようにする */
+  #camera-placeholder.start-card {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 124px;
+    width: auto;
+    max-width: none;
+    max-height: min(44vh, 370px);
+    margin: 0;
+    padding: 14px 14px 12px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  #camera-placeholder.start-card > svg,
+  #camera-placeholder.start-card > i {
+    width: 30px;
+    height: 30px;
+  }
+
+  #camera-placeholder.start-card h2 {
+    margin: 5px 0 4px;
+    font-size: 0.98rem;
+  }
+
+  #camera-placeholder.start-card p {
+    margin: 0 0 9px;
+    font-size: 0.76rem;
+    line-height: 1.4;
+  }
+
+  #camera-placeholder.start-card .placeholder-actions {
+    gap: 6px;
+  }
+
+  #camera-placeholder.start-card .btn-primary,
+  #camera-placeholder.start-card .btn-secondary {
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 0.84rem;
+  }
 }
