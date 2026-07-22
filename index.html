@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AR地域理解・歴史・防災プラットフォーム MVP</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="app-container">
+    <!-- カメラバックグラウンド -->
+    <video id="camera-feed" autoplay playsinline muted></video>
+    <div id="camera-placeholder">
+      <i data-lucide="camera-off"></i>
+      <p>カメラを起動するか、シミュレータモードで体験してください</p>
+      <button id="btn-start-camera" class="btn-primary">カメラを起動する</button>
+    </div>
+
+    <!-- 古写真透明度比較オーバーレイ (ARカメラ上に重なる) -->
+    <div id="historical-overlay" class="hidden">
+      <img id="historical-overlay-img" src="" alt="古写真">
+      <div class="overlay-opacity-bar">
+        <span class="slider-label">現実 (0%)</span>
+        <input type="range" id="opacity-slider" min="0" max="100" value="60">
+        <span class="slider-label">古写真 (100%)</span>
+        <button id="btn-close-overlay" class="btn-icon" title="古写真を閉じる">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- AR描画キャンバス -->
+    <canvas id="ar-canvas"></canvas>
+
+    <!-- ARオーバレイ UI要素 -->
+    <div class="ui-layer">
+      <!-- 上部ステータスバー -->
+      <header class="status-header">
+        <div class="brand">
+          <i data-lucide="compass" class="brand-icon"></i>
+          <div>
+            <h1 class="brand-title">AR City Viewer</h1>
+            <div id="location-text" class="status-subtitle">位置情報: 取得中...</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="btn-toggle-sim" class="btn-glass" title="シミュレータ表示/非表示">
+            <i data-lucide="sliders"></i>
+            <span>Sim</span>
+          </button>
+          <button id="btn-info" class="btn-glass" title="アプリについて">
+            <i data-lucide="info"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- レイヤー切替タブ -->
+      <nav class="layer-tabs">
+        <button class="tab-btn active" data-layer="history">
+          <i data-lucide="landmark"></i>
+          <span>① 歴史・観光</span>
+        </button>
+        <button class="tab-btn" data-layer="community">
+          <i data-lucide="map-pin"></i>
+          <span>② 地域理解</span>
+        </button>
+        <button class="tab-btn" data-layer="disaster">
+          <i data-lucide="shield-alert"></i>
+          <span>③ 防災ハザード</span>
+        </button>
+      </nav>
+
+      <!-- 防災警告・避難案内バー (防災レイヤー時表示) -->
+      <div id="disaster-alert-banner" class="disaster-banner hidden">
+        <div class="hazard-badge">
+          <i data-lucide="alert-triangle"></i>
+          <span id="hazard-depth-text">想定浸水深: 3.5m (2階床上)</span>
+        </div>
+        <div id="shelter-guide-text" class="shelter-guide">
+          <i data-lucide="navigation"></i>
+          <span>最寄り避難所: 大阪城公園 (東へ約350m)</span>
+        </div>
+      </div>
+
+      <!-- シミュレーター操作パネル (PC/室内テスト用) -->
+      <section id="simulator-panel" class="sim-panel hidden">
+        <div class="sim-header">
+          <span><i data-lucide="cpu"></i> 位置・方角シミュレーター</span>
+          <button id="btn-close-sim" class="btn-icon-small"><i data-lucide="x"></i></button>
+        </div>
+        <div class="sim-controls">
+          <div class="control-group">
+            <label>カメラ向き (方角): <span id="sim-heading-val">0° (北)</span></label>
+            <input type="range" id="sim-heading" min="0" max="360" value="0">
+          </div>
+          <div class="control-group">
+            <label>位置プリセット:</label>
+            <div class="sim-btn-grid">
+              <button class="btn-chip active" data-lat="34.6873" data-lng="135.5260">大阪城本丸</button>
+              <button class="btn-chip" data-lat="34.6890" data-lng="135.5220">野田橋・京街道口</button>
+              <button class="btn-chip" data-lat="34.6860" data-lng="135.5200">大手前・浸水想定区</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 下部フッターコントロール -->
+      <footer class="app-footer">
+        <div class="quick-status">
+          <span id="active-layer-desc"><i data-lucide="eye"></i> 視界内のスポットをタップで古写真・詳細を表示</span>
+        </div>
+      </footer>
+    </div>
+
+    <!-- スポット詳細ダイアログ -->
+    <div id="spot-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <button id="btn-close-modal" class="modal-close"><i data-lucide="x"></i></button>
+        <div class="modal-header-img-container">
+          <img id="modal-img" src="" alt="スポット画像" class="modal-img">
+          <span id="modal-era-badge" class="era-badge">昭和</span>
+        </div>
+        <div class="modal-body">
+          <h2 id="modal-title">スポット名称</h2>
+          <p id="modal-summary" class="modal-summary">概要</p>
+          <div id="modal-hazard-box" class="modal-hazard-box hidden">
+            <h4><i data-lucide="alert-circle"></i> 防災・リスク情報</h4>
+            <p id="modal-hazard-detail"></p>
+          </div>
+          <p id="modal-desc" class="modal-desc">詳細解説テキスト</p>
+          <div class="modal-meta">
+            <small id="modal-source">出典: --</small>
+            <small id="modal-license">ライセンス: --</small>
+          </div>
+          <div class="modal-actions">
+            <button id="btn-compare-ar" class="btn-primary">
+              <i data-lucide="layers"></i>
+              <span>古写真と現実の景観を比較 (AR重ね合わせ)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- アプリ概要ダイアログ -->
+    <div id="info-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <button id="btn-close-info" class="modal-close"><i data-lucide="x"></i></button>
+        <div class="modal-body">
+          <h2>AR地域理解・歴史・防災プラットフォーム</h2>
+          <p class="subtitle">「場所にスマホをかざすと、その土地の時間とリスクが見える」</p>
+          <hr>
+          <h3>コンセプト</h3>
+          <p>歴史・観光理解と、地域の変遷、そして防災・ハザード情報を1つのAR体験に統合した次世代地域プラットフォームプロトタイプです。</p>
+          <h3>体験のポイント</h3>
+          <ul>
+            <li><strong>① 歴史・観光レイヤー</strong>：現在地周辺の古写真を表示し、スライダーで現在の景観と重ね合わせて比較できます。</li>
+            <li><strong>② 地域理解レイヤー</strong>：かつての街道や跡地、土地の記憶を空間上で辿れます。</li>
+            <li><strong>③ 防災・ハザードレイヤー</strong>：目の前の建築物に対して「想定浸水深 3.5m」等をAR高さ標識として表示し、最寄り避難所をコンパス案内します。</li>
+          </ul>
+          <p class="meta-note">※ 屋内やPC検証時は「Sim」ボタンからカメラ向きや位置を自由に模擬操作できます。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+  <script>
+    // アイコン初期化
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
