@@ -1342,6 +1342,38 @@ body, html {
   }
 }
 
+/* 防災表示は地図を隠さず、選択状態は高コントラストで示す */
+.hazard-sheet .hazard-badge,
+.hazard-sheet #hazard-depth-text {
+  color: #ffffff;
+}
+
+.hazard-sheet .hazard-type-btn {
+  color: #ffffff;
+  background: #7f1d1d;
+  border-color: rgba(255, 255, 255, 0.62);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.hazard-sheet .hazard-type-btn.active {
+  color: #111827;
+  background: #ffffff;
+  border-color: #ffffff;
+  text-shadow: none;
+}
+
+.hazard-sheet .shelter-guide,
+.hazard-sheet .shelter-guide a,
+.hazard-sheet .hazard-source-link {
+  color: #ffffff;
+}
+
+.hazard-sheet .shelter-guide a,
+.hazard-sheet .hazard-source-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* 出典・資料情報はユーザーがコピーできるようにする。 */
 .modal-body,
 .modal-body p,
