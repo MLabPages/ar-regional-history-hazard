@@ -6,7 +6,7 @@ import {
   EVACUATION_SHELTERS,
   MATERIAL_TYPE_LABELS,
   PLACEHOLDER_IMAGE_URL
-} from './data.js';
+} from './data.js?v=c4e2c66';
 
 class ARRegionalApp {
   constructor() {
