@@ -3,7 +3,9 @@ import {
   HISTORICAL_MAP_TILES,
   OFFICIAL_HAZARD_LAYERS,
   SPOT_DATA,
-  EVACUATION_SHELTERS
+  EVACUATION_SHELTERS,
+  MATERIAL_TYPE_LABELS,
+  PLACEHOLDER_IMAGE_URL
 } from './data.js';
 
 class ARRegionalApp {
@@ -11,7 +13,7 @@ class ARRegionalApp {
     // モードステート: 'ar' | 'map'
     this.viewMode = 'ar';
     this.currentLayer = 'history'; // history | community | disaster
-    this.currentEra = 'present';   // present | photo_latest | showa50 | showa30 | showa20 | showa_early | meiji | edo
+    this.currentEra = 'present';   // 確認済みの現代・昭和期タイルのみ
     this.currentHazardType = 'flood'; // flood | tsunami | sediment
 
     this.userPos = { ...SAMPLE_CENTER };
@@ -54,6 +56,8 @@ class ARRegionalApp {
     // UI追加パネル
     this.eraTimelineBar = document.getElementById('era-timeline-bar');
     this.hazardLegendBox = document.getElementById('hazard-legend-box');
+    this.mapDataStatus = document.getElementById('map-data-status');
+    this.hazardSourceLink = document.getElementById('hazard-source-link');
 
     // モード切替ボタン
     this.btnModeAr = document.getElementById('btn-mode-ar');
@@ -154,16 +158,33 @@ class ARRegionalApp {
   // 国土地理院・時代別タイル切替
   updateMapBaseTile(eraKey) {
     if (!this.map) return;
-    const tileDef = HISTORICAL_MAP_TILES[eraKey] || HISTORICAL_MAP_TILES.present;
+    const tileDef = HISTORICAL_MAP_TILES[eraKey];
+    if (!tileDef) {
+      this.showMapDataStatus('この年代の位置精度を持つ地図データは現在未収録です。', 'warning');
+      return;
+    }
 
     if (this.baseTileLayer) {
       this.map.removeLayer(this.baseTileLayer);
     }
 
+    this.mapDataTileErrors = 0;
+    this.showMapDataStatus(`${tileDef.name}を読み込み中…`, 'info', tileDef.sourceUrl);
     this.baseTileLayer = L.tileLayer(tileDef.url, {
+      minZoom: tileDef.minZoom,
       maxZoom: 18,
-      attribution: tileDef.attribution
-    }).addTo(this.map);
+      maxNativeZoom: tileDef.maxNativeZoom,
+      attribution: tileDef.attribution,
+      crossOrigin: true
+    });
+    this.baseTileLayer.on('tileload', () => {
+      if (this.mapDataTileErrors === 0) this.showMapDataStatus(`${tileDef.name}｜出典: ${tileDef.sourceName}`, 'success', tileDef.sourceUrl);
+    });
+    this.baseTileLayer.on('tileerror', () => {
+      this.mapDataTileErrors += 1;
+      this.showMapDataStatus(`この地域・ズームの「${tileDef.name}」データはありません。現代地図には自動切替していません。`, 'warning', tileDef.sourceUrl);
+    });
+    this.baseTileLayer.addTo(this.map);
   }
 
   // 国土交通省・国土地理院 公式ハザードマップタイルの重畳表示
@@ -174,19 +195,42 @@ class ARRegionalApp {
       this.map.removeLayer(this.officialHazardTileLayer);
       this.officialHazardTileLayer = null;
     }
+    this.officialHazardLayerKey = null;
 
     if (this.currentLayer === 'disaster') {
       const hazardDef = OFFICIAL_HAZARD_LAYERS[hazardKey];
       if (hazardDef) {
+        this.hazardTileErrors = 0;
+        this.officialHazardLayerKey = hazardKey;
         this.officialHazardTileLayer = L.tileLayer(hazardDef.tileUrl, {
+          minZoom: hazardDef.minZoom,
           maxZoom: 17,
+          maxNativeZoom: hazardDef.maxNativeZoom,
           opacity: 0.75,
           attribution: hazardDef.attribution
-        }).addTo(this.map);
+        });
+        this.officialHazardTileLayer.on('tileload', () => {
+          if (this.hazardTileErrors === 0) this.showMapDataStatus(`${hazardDef.name}｜公式タイルを表示中`, 'success', hazardDef.sourceUrl);
+        });
+        this.officialHazardTileLayer.on('tileerror', () => {
+          this.hazardTileErrors += 1;
+          this.showMapDataStatus(`この地域・ズームの「${hazardDef.name}」データはありません。`, 'warning', hazardDef.sourceUrl);
+        });
+        this.officialHazardTileLayer.addTo(this.map);
 
         this.renderHazardLegend(hazardDef);
+        if (this.hazardSourceLink) {
+          this.hazardSourceLink.href = hazardDef.sourceUrl;
+          this.hazardSourceLink.textContent = `公式出典: ${hazardDef.sourceName}`;
+        }
       }
     }
+  }
+
+  showMapDataStatus(message, tone = 'info', sourceUrl = null) {
+    if (!this.mapDataStatus) return;
+    this.mapDataStatus.className = `map-data-status ${tone}`;
+    this.mapDataStatus.innerHTML = `<span>${message}</span>${sourceUrl ? ` <a href="${sourceUrl}" target="_blank" rel="noreferrer">出典</a>` : ''}`;
   }
 
   renderHazardLegend(hazardDef) {
@@ -247,17 +291,20 @@ class ARRegionalApp {
 
         const marker = L.marker([shelter.coordinate.latitude, shelter.coordinate.longitude], { icon })
           .addTo(this.map)
-          .bindPopup(`<strong>${shelter.name}</strong><br>${shelter.address}<br>標高: ${shelter.elevationMeter}m / 定員: ${shelter.capacity}名<br><small>${shelter.source}</small>`);
+          .bindPopup(`<strong>${shelter.name}</strong><br>${shelter.address}<br>標高: ${shelter.elevationMeter}m<br><small>定員: ${shelter.capacity ?? '未確認'} / ${shelter.source}</small>`);
 
         this.mapMarkers.push(marker);
       });
 
-      this.updateOfficialHazardTile(this.currentHazardType);
+      if (!this.officialHazardTileLayer || this.officialHazardLayerKey !== this.currentHazardType) {
+        this.updateOfficialHazardTile(this.currentHazardType);
+      }
     } else {
       if (this.officialHazardTileLayer) {
         this.map.removeLayer(this.officialHazardTileLayer);
         this.officialHazardTileLayer = null;
       }
+      this.officialHazardLayerKey = null;
     }
   }
 
@@ -378,9 +425,10 @@ class ARRegionalApp {
 
     // 古写真リアルAR比較開始
     document.getElementById('btn-compare-ar').addEventListener('click', () => {
-      if (this.selectedSpot && this.selectedSpot.historicalImage) {
+      const media = this.getPrimaryMedia(this.selectedSpot);
+      if (this.selectedSpot && media?.isHistorical) {
         document.getElementById('spot-modal').classList.add('hidden');
-        this.overlayImg.src = this.selectedSpot.historicalImage;
+        this.overlayImg.src = media.imageUrl;
         this.historicalOverlay.classList.remove('hidden');
         this.resetOverlayTransform();
       }
@@ -405,6 +453,7 @@ class ARRegionalApp {
       this.mapViewEl.classList.remove('hidden');
       this.canvas.classList.add('hidden');
       this.eraTimelineBar.classList.remove('hidden');
+      if (this.mapDataStatus) this.mapDataStatus.classList.remove('hidden');
 
       if (this.guideHintText) {
         this.guideHintText.textContent = '地図上のピンをタップすると古写真・公的データ解説を閲覧できます';
@@ -428,6 +477,7 @@ class ARRegionalApp {
       this.btnModeAr.classList.add('active');
       this.btnModeMap.classList.remove('active');
       this.mapViewEl.classList.add('hidden');
+      if (this.mapDataStatus) this.mapDataStatus.classList.add('hidden');
       this.canvas.classList.remove('hidden');
       this.eraTimelineBar.classList.add('hidden');
 
@@ -693,7 +743,7 @@ class ARRegionalApp {
           nearestShelter.coordinate.latitude, nearestShelter.coordinate.longitude
         );
         const dirName = this.getHeadingDirectionName(bearing);
-        this.shelterGuideText.innerHTML = `<i data-lucide="navigation"></i> 避難所: <strong>${nearestShelter.name}</strong> (${dirName}へ約${Math.round(minDistance)}m / 標高${nearestShelter.elevationMeter}m)`;
+        this.shelterGuideText.innerHTML = `<i data-lucide="navigation"></i> 避難先候補: <strong>${nearestShelter.name}</strong> (${dirName}へ約${Math.round(minDistance)}m) <small>※開設状況・対象災害は自治体の最新情報で確認</small>`;
       }
     } else {
       banner.classList.add('hidden');
@@ -753,7 +803,7 @@ class ARRegionalApp {
     ctx.textAlign = 'left';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 8;
-    ctx.fillText('▲ 国交省想定 浸水深 3.5m (ビル2階床上水準)', 20, waterY - 10);
+    ctx.fillText('▲ 浸水イメージ（地点別の深さは公式ハザードタイルで確認）', 20, waterY - 10);
     ctx.shadowBlur = 0;
   }
 
@@ -903,11 +953,13 @@ class ARRegionalApp {
   openSpotModal(spot) {
     this.selectedSpot = spot;
     const modal = document.getElementById('spot-modal');
+    const media = this.getPrimaryMedia(spot);
 
     document.getElementById('modal-title').textContent = spot.name;
     document.getElementById('modal-summary').textContent = spot.summary || '';
-    document.getElementById('modal-desc').textContent = spot.description || '';
-    document.getElementById('modal-img').src = spot.historicalImage || 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80';
+    document.getElementById('modal-desc').textContent = `${spot.description || ''}${spot.verificationNote ? `\n\n注意: ${spot.verificationNote}` : ''}`;
+    document.getElementById('modal-img').src = media?.imageUrl || PLACEHOLDER_IMAGE_URL;
+    document.getElementById('modal-img').alt = media?.title || `${spot.name}の画像`;
 
     const eraBadge = document.getElementById('modal-era-badge');
     eraBadge.textContent = spot.eraLabel || '歴史';
@@ -923,10 +975,56 @@ class ARRegionalApp {
       hazardBox.classList.add('hidden');
     }
 
-    document.getElementById('modal-source').textContent = `公的データ出典: ${spot.source || '未指定'}`;
-    document.getElementById('modal-license').textContent = `ライセンス: ${spot.license || 'オープンデータ / パブリックドメイン'}`;
+    document.getElementById('modal-source').textContent = `出典: ${media?.sourceName || spot.source || '未指定'}`;
+    document.getElementById('modal-license').textContent = `ライセンス: ${media?.license || spot.license || '未確認'}`;
+
+    const mediaStatus = document.getElementById('modal-media-status');
+    if (mediaStatus) {
+      mediaStatus.textContent = media?.isHistorical
+        ? `表示画像: ${MATERIAL_TYPE_LABELS[media.materialType] || media.materialType}（確認済み資料）`
+        : '表示画像: イメージ画像（開発用プレースホルダー。史料ではありません）';
+      mediaStatus.className = `media-status ${media?.isHistorical ? 'verified' : 'unverified'}`;
+    }
+    const materialType = document.getElementById('modal-material-type');
+    if (materialType) materialType.textContent = `資料種別: ${media ? (media.displayType || MATERIAL_TYPE_LABELS[media.materialType] || media.materialType) : '資料画像なし'}`;
+    const positionAccuracy = document.getElementById('modal-position-accuracy');
+    if (positionAccuracy) positionAccuracy.textContent = `位置精度: ${media?.positionAccuracy === 'reference_only' ? '参考資料（現代地図との一致は保証されません）' : (media?.positionAccuracy || '不明')}`;
+
+    const compareButton = document.getElementById('btn-compare-ar');
+    compareButton.classList.toggle('hidden', !media?.isHistorical);
+    this.renderHistoricalMaterials(spot);
 
     modal.classList.remove('hidden');
+  }
+
+  getPrimaryMedia(spot) {
+    return spot?.mediaAssets?.[0] || null;
+  }
+
+  renderHistoricalMaterials(spot) {
+    const gallery = document.getElementById('material-gallery');
+    if (!gallery) return;
+    const materials = spot?.historicalMaterials || [];
+    if (materials.length === 0) {
+      gallery.innerHTML = '<p class="material-empty">この地点に紐づく確認済み歴史資料は未収録です。</p>';
+      return;
+    }
+    gallery.innerHTML = `
+      <h3>関連する歴史資料</h3>
+      ${materials.map(material => `
+        <article class="material-card">
+          <img src="${material.imageUrl}" alt="${material.title}" loading="lazy">
+          <div>
+            <strong>${material.title}</strong>
+            <small>${material.date}｜${material.displayType || MATERIAL_TYPE_LABELS[material.materialType] || material.materialType}</small>
+            <small>${material.license}｜位置精度: 参考資料</small>
+            <p>${material.note}</p>
+            <a href="${material.sourceUrl}" target="_blank" rel="noreferrer">NDL資料ページを開く</a>
+            <a href="${material.manifestUrl}" target="_blank" rel="noreferrer">IIIFマニフェスト</a>
+          </div>
+        </article>
+      `).join('')}
+    `;
   }
 
   calculateDistance(lat1, lon1, lat2, lon2) {

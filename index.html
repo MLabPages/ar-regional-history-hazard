@@ -18,6 +18,7 @@
 
     <!-- ② 地図表示コンテナ (地図モード用) -->
     <div id="map-view" class="hidden"></div>
+    <div id="map-data-status" class="map-data-status hidden"></div>
 
     <!-- ③ 古写真リアルAR重ね合わせオーバーレイ (インタラクティブ操作対応) -->
     <div id="historical-overlay" class="hidden">
@@ -128,16 +129,18 @@
       <div id="era-timeline-bar" class="era-timeline-container hidden">
         <div class="timeline-title">
           <i data-lucide="clock"></i>
-          <span>国土地理院 時代別空中写真・地図切り替え:</span>
+          <span>確認済みの年代別航空写真・地図:</span>
         </div>
         <div class="timeline-chips">
-          <button class="era-chip active" data-era="present">現代 (標準)</button>
-          <button class="era-chip" data-era="photo_latest">2020年代 航空写真</button>
-          <button class="era-chip" data-era="showa50">昭和50年代 (1975年頃)</button>
-          <button class="era-chip" data-era="showa30">昭和30年代 (1965年頃)</button>
-          <button class="era-chip" data-era="showa20">昭和20年代 (1948年頃)</button>
-          <button class="era-chip" data-era="showa_early">昭和初期 (1938年頃)</button>
+          <button class="era-chip active" data-era="present">現代地図</button>
+          <button class="era-chip" data-era="photo_latest">2020年代</button>
+          <button class="era-chip" data-era="showa50">昭和50年代<br><small>1974〜78年頃</small></button>
+          <button class="era-chip" data-era="showa30">昭和30〜40年代<br><small>1961〜69年頃</small></button>
+          <button class="era-chip" data-era="showa20">昭和20年代<br><small>1945〜50年頃</small></button>
+          <button class="era-chip" data-era="showa_early">昭和初期<br><small>1936〜42年頃</small></button>
+          <button class="era-chip" data-era="prewar_1928">1928年頃</button>
         </div>
+        <p class="timeline-note">明治・江戸・平安の大阪向け位置精度付きXYZタイルは未収録です。該当資料は地図上のスポットから「歴史資料」として閲覧できます。</p>
       </div>
 
       <!-- 防災レイヤー表示時専用: 公的ハザードマップ切替 ＆ 凡例 -->
@@ -150,7 +153,7 @@
           <div class="hazard-sub-toggle">
             <button class="hazard-type-btn active" data-hazard="flood">洪水浸水想定</button>
             <button class="hazard-type-btn" data-hazard="tsunami">津波浸水想定</button>
-            <button class="hazard-type-btn" data-hazard="sediment">土砂災害警戒</button>
+            <button class="hazard-type-btn" data-hazard="sediment">土砂災害（急傾斜）</button>
           </div>
         </div>
         <div id="shelter-guide-text" class="shelter-guide">
@@ -159,6 +162,7 @@
         </div>
         <!-- 公式ハザード凡例バー -->
         <div id="hazard-legend-box" class="hazard-legend"></div>
+        <a id="hazard-source-link" class="hazard-source-link" href="https://disaportal.gsi.go.jp/hazardmapportal/hazardmap/copyright/opendata.html" target="_blank" rel="noreferrer">公式出典: 国土交通省・国土地理院</a>
       </div>
 
       <!-- カメラ未起動時のプロンプト案内 -->
@@ -261,7 +265,11 @@
           <div class="modal-meta">
             <small id="modal-source">出典: --</small>
             <small id="modal-license">ライセンス: --</small>
+            <small id="modal-media-status" class="media-status">表示画像: --</small>
+            <small id="modal-material-type">資料種別: --</small>
+            <small id="modal-position-accuracy">位置精度: --</small>
           </div>
+          <div id="material-gallery" class="material-gallery"></div>
           <div class="modal-actions">
             <button id="btn-compare-ar" class="btn-primary">
               <i data-lucide="layers"></i>
@@ -282,9 +290,9 @@
           <hr>
           <h3>公的データ出典・信頼性について</h3>
           <ul>
-            <li><strong>ハザードデータ</strong>：国土交通省「重ねるハザードマップ」公的配信サービスおよび大阪市防災オープンデータの公式数値を使用しています。</li>
-            <li><strong>時代別写真・古地図データ</strong>：国土地理院が整備する年代別（昭和初期〜現代）空中写真タイルデータを使用しています。</li>
-            <li><strong>歴史的根拠</strong>：国立国会図書館デジタルコレクションおよび公的地域史誌の確認済み公有写真データを使用しています。</li>
+            <li><strong>ハザードデータ</strong>：国土交通省・国土地理院の公式タイルを表示します。地域・ズームによってデータがない場合は自動で別年代へ切り替えません。</li>
+            <li><strong>時代別写真</strong>：国土地理院の公式一覧で確認した昭和期〜現代の航空写真タイルを使用しています。明治・江戸・平安の大阪向けXYZタイルは未収録です。</li>
+            <li><strong>歴史資料</strong>：NDLの資料ページとIIIFマニフェストを紐づけ、名所絵・歴史地図を測量図と区別して表示します。未確認の記述や画像は明示します。</li>
           </ul>
         </div>
       </div>
