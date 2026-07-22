@@ -4,77 +4,60 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AR地域理解・歴史・防災統合プラットフォーム</title>
-  <link rel="stylesheet" href="styles.css?v=p2-mobile-fix">
-  <!-- Lucide Icons -->
+  <link rel="stylesheet" href="styles.css?v=ui-simple-1">
   <script src="https://unpkg.com/lucide@0.468.0"></script>
-  <!-- Leaflet Map CSS & JS (地図モード用) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
   <div id="app-container">
-    <!-- ① カメラバックグラウンド (ARモード用) -->
     <video id="camera-feed" autoplay playsinline muted></video>
-
-    <!-- ② 地図表示コンテナ (地図モード用) -->
     <div id="map-view" class="hidden"></div>
-    <div id="map-data-status" class="map-data-status hidden"></div>
-    <button id="btn-reopen-map-data-status" class="map-panel-reopen map-status-reopen hidden" type="button" aria-label="地図データ案内を表示"><i data-lucide="info"></i> データ案内</button>
-    <aside id="map-spots-panel" class="map-spots-panel hidden" aria-label="地図上のスポット一覧"></aside>
+    <aside id="map-spots-panel" class="map-spots-panel hidden" aria-label="スポット一覧"></aside>
 
-    <!-- ③ 古写真リアルAR重ね合わせオーバーレイ (インタラクティブ操作対応) -->
     <div id="historical-overlay" class="hidden">
       <div id="overlay-image-wrapper">
         <img id="historical-overlay-img" src="" alt="古写真">
         <div id="overlay-transform-handles" class="transform-guide">
-          <span class="guide-text"><i data-lucide="move"></i> ドラッグで位置移動 / 下で拡大・回転</span>
+          <span class="guide-text"><i data-lucide="move"></i> ドラッグで位置調整</span>
         </div>
       </div>
-
-      <!-- 古写真高度操作コントローラー -->
       <div class="overlay-control-panel">
         <div class="panel-header">
-          <span><i data-lucide="layers"></i> 古写真位置合わせ・透視コントローラー</span>
-          <button id="btn-reset-overlay" class="btn-chip-small"><i data-lucide="rotate-ccw"></i> リセット</button>
-          <button id="btn-close-overlay" class="btn-icon-small"><i data-lucide="x"></i></button>
+          <span><i data-lucide="layers"></i> 古写真の重ね合わせ</span>
+          <button id="btn-reset-overlay" class="btn-chip-small" type="button"><i data-lucide="rotate-ccw"></i> リセット</button>
+          <button id="btn-close-overlay" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
         </div>
-
         <div class="panel-sliders">
           <div class="slider-row">
-            <label><i data-lucide="eye"></i> 透過度:</label>
+            <label>透過</label>
             <input type="range" id="opacity-slider" min="0" max="100" value="65">
             <span id="opacity-val">65%</span>
           </div>
-
           <div class="slider-row">
-            <label><i data-lucide="maximize-2"></i> 拡大率:</label>
+            <label>拡大</label>
             <input type="range" id="scale-slider" min="50" max="250" value="100">
             <span id="scale-val">100%</span>
           </div>
-
           <div class="slider-row">
-            <label><i data-lucide="rotate-cw"></i> 角度:</label>
+            <label>角度</label>
             <input type="range" id="rotate-slider" min="-180" max="180" value="0">
             <span id="rotate-val">0°</span>
           </div>
-
           <div class="toggle-row">
             <label class="checkbox-label">
               <input type="checkbox" id="chk-sync-heading" checked>
-              <span><i data-lucide="compass"></i> 視点回転に追従（方角連動）</span>
+              <span>視点回転に追従（方角連動）</span>
             </label>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ④ AR描画キャンバス -->
     <canvas id="ar-canvas"></canvas>
 
-    <!-- ⑤ UIオーバレイ層 -->
     <div class="ui-layer">
-      <!-- 上部コンパクトステータスバー (画面視界を遮らないスリム設計) -->
-      <header class="status-header">
+      <header class="top-bar">
         <div class="brand">
           <i data-lucide="compass" class="brand-icon"></i>
           <div>
@@ -83,197 +66,178 @@
           </div>
         </div>
 
-        <!-- 視点・モードトグル (AR ↔ 地図) -->
-        <div class="view-mode-toggle">
-          <button id="btn-mode-ar" class="mode-btn active">
-            <i data-lucide="camera"></i>
-            <span>AR表示</span>
+        <div class="view-mode-toggle" role="tablist" aria-label="表示切替">
+          <button id="btn-mode-ar" class="mode-btn active" type="button">
+            <i data-lucide="camera"></i><span>現地AR</span>
           </button>
-          <button id="btn-mode-map" class="mode-btn">
-            <i data-lucide="map"></i>
-            <span>地図表示</span>
+          <button id="btn-mode-map" class="mode-btn" type="button">
+            <i data-lucide="map"></i><span>地図</span>
           </button>
         </div>
 
         <div class="header-actions">
-          <button id="btn-toggle-camera" class="btn-glass" title="カメラON/OFF">
+          <button id="btn-toggle-camera" class="btn-icon-action" type="button" title="カメラON/OFF" aria-label="カメラON/OFF">
             <i data-lucide="video" id="camera-icon-on"></i>
             <i data-lucide="video-off" id="camera-icon-off" class="hidden"></i>
-            <span id="camera-btn-text">カメラON</span>
+            <span id="camera-btn-text" class="sr-only">カメラON</span>
           </button>
-          <button id="btn-toggle-sim" class="btn-glass active-highlight" title="シミュレータ操作">
-            <i data-lucide="sliders"></i>
-            <span>Sim操作</span>
+          <button id="btn-toggle-sim" class="btn-icon-action active-highlight" type="button" title="操作パネル" aria-label="操作パネル">
+            <i data-lucide="sliders-horizontal"></i>
           </button>
-          <button id="btn-info" class="btn-glass" title="アプリについて">
+          <button id="btn-info" class="btn-icon-action" type="button" title="出典と使い方" aria-label="出典と使い方">
             <i data-lucide="info"></i>
           </button>
         </div>
       </header>
 
-      <!-- ヘッダー直下にコンパクト配置したレイヤー切替バー (中央の圧迫を解消) -->
-      <nav class="layer-tabs-compact">
-        <button class="tab-btn active" data-layer="history">
-          <i data-lucide="landmark"></i>
-          <span>① 歴史・観光</span>
-        </button>
-        <button class="tab-btn" data-layer="community">
-          <i data-lucide="map-pin"></i>
-          <span>② 地域理解</span>
-        </button>
-        <button class="tab-btn" data-layer="disaster">
-          <i data-lucide="shield-alert"></i>
-          <span>③ 防災ハザード</span>
-        </button>
-      </nav>
-
-      <!-- 地図表示時専用: 時代選択タイムラインバー (複数年・空中写真切替) -->
-      <div id="era-timeline-bar" class="era-timeline-container hidden">
-        <div class="timeline-head">
-          <div class="timeline-title">
-            <i data-lucide="clock"></i>
-            <span>確認済みの年代別航空写真・地図</span>
-          </div>
-          <button id="btn-close-era-panel" class="btn-icon-small" type="button" title="年代パネルを隠す" aria-label="年代パネルを隠す"><i data-lucide="x"></i></button>
-        </div>
-        <div class="timeline-chips">
-          <button class="era-chip active" data-era="present">現代地図</button>
-          <button class="era-chip" data-era="photo_latest">2020年代</button>
-          <button class="era-chip" data-era="showa50">昭和50年代<br><small>1974〜78年頃</small></button>
-          <button class="era-chip" data-era="showa30">昭和30〜40年代<br><small>1961〜69年頃</small></button>
-          <button class="era-chip" data-era="showa20">昭和20年代<br><small>1945〜50年頃</small></button>
-          <button class="era-chip" data-era="showa_early">昭和初期<br><small>1936〜42年頃</small></button>
-          <button class="era-chip" data-era="prewar_1928">1928年頃</button>
-        </div>
-        <div class="map-compare-controls">
-          <label for="map-opacity-slider"><i data-lucide="layers"></i> 今昔比較：<span id="map-opacity-val">65%</span></label>
-          <input type="range" id="map-opacity-slider" min="0" max="100" value="65" aria-label="過去航空写真の透明度">
-          <button id="btn-time-travel" class="btn-chip-small" type="button"><i data-lucide="clock-3"></i> この場所の時間旅行</button>
-        </div>
-        <p class="timeline-note">明治・江戸・平安の大阪向け位置精度付きXYZタイルは未収録です。該当資料は地図上のスポットから「歴史資料」として閲覧できます。</p>
-      </div>
-      <button id="btn-reopen-era-panel" class="map-panel-reopen hidden" type="button"><i data-lucide="clock-3"></i> 年代・今昔比較</button>
-
-      <!-- 防災レイヤー表示時専用: 公的ハザードマップ切替 ＆ 凡例 -->
-      <div id="disaster-alert-banner" class="disaster-banner hidden">
-        <div class="hazard-header-row">
-          <div class="hazard-badge">
-            <i data-lucide="alert-triangle"></i>
-            <span id="hazard-depth-text">国土地理院・国土交通省 公式ハザードデータ重ね合わせ中</span>
-          </div>
-          <div class="hazard-sub-toggle">
-            <button class="hazard-type-btn active" data-hazard="flood">洪水浸水想定</button>
-            <button class="hazard-type-btn" data-hazard="tsunami">津波浸水想定</button>
-            <button class="hazard-type-btn" data-hazard="sediment">土砂災害（急傾斜）</button>
-          </div>
-        </div>
-        <label class="flood-concept-toggle hidden" id="flood-concept-toggle-wrap">
-          <input type="checkbox" id="chk-flood-concept">
-          <span>AR概念イメージ（洪水の水面）を表示　※実際の想定浸水深ではありません</span>
-        </label>
-        <div id="shelter-guide-text" class="shelter-guide">
-          <i data-lucide="navigation"></i>
-          <span>避難所情報を確認中…</span>
-        </div>
-        <!-- 公式ハザード凡例バー -->
-        <div id="hazard-legend-box" class="hazard-legend"></div>
-        <a id="hazard-source-link" class="hazard-source-link" href="https://disaportal.gsi.go.jp/hazardmapportal/hazardmap/copyright/opendata.html" target="_blank" rel="noreferrer">公式出典: 国土交通省・国土地理院</a>
-      </div>
-
-      <!-- カメラ未起動時のプロンプト案内 -->
-      <div id="camera-placeholder">
-        <i data-lucide="camera"></i>
-        <p>実際の街にスマホをかざして体験します。<br>部屋の中や現地以外では<strong>「地図表示」</strong>で時代別空中写真や公式ハザードマップを閲覧いただけます！</p>
+      <div id="camera-placeholder" class="start-card">
+        <i data-lucide="map-pin"></i>
+        <h2>土地の過去・現在・リスクを見る</h2>
+        <p>初めての方は、まず<strong>地図</strong>から始めるのがおすすめです。<br>現地では<strong>現地AR</strong>でその場所の情報を重ねて表示できます。</p>
         <div class="placeholder-actions">
-          <button id="btn-start-camera" class="btn-primary">
-            <i data-lucide="video"></i>
-            <span>カメラを起動する</span>
+          <button id="btn-switch-to-map-prompt" class="btn-primary" type="button">
+            <i data-lucide="map"></i><span>地図から始める</span>
           </button>
-          <button id="btn-switch-to-map-prompt" class="btn-secondary">
-            <i data-lucide="map"></i>
-            <span>部屋の中で地図から体験する</span>
+          <button id="btn-start-camera" class="btn-secondary" type="button">
+            <i data-lucide="video"></i><span>カメラを起動</span>
           </button>
         </div>
       </div>
 
-      <!-- 操作ガイドヒント -->
-      <div id="drag-guide-hint" class="drag-hint-badge">
-        <i data-lucide="move-horizontal" class="pulse-icon"></i>
-        <span id="guide-hint-text">画面を左右にドラッグして全方位 (360°) 見回せます</span>
-        <button id="btn-close-guide" class="guide-close" type="button" title="案内を隠す" aria-label="案内を隠す"><i data-lucide="x"></i></button>
+      <div id="drag-guide-hint" class="drag-hint-badge hidden">
+        <i data-lucide="hand" class="pulse-icon"></i>
+        <span id="guide-hint-text">画面を左右にドラッグして見回します</span>
+        <button id="btn-close-guide" class="guide-close" type="button" aria-label="案内を閉じる"><i data-lucide="x"></i></button>
       </div>
 
-      <!-- シミュレーター操作パネル -->
-      <section id="simulator-panel" class="sim-panel">
+      <section id="simulator-panel" class="sim-panel hidden">
         <div class="sim-header">
-          <span><i data-lucide="cpu"></i> シミュレーター操作パネル</span>
-          <button id="btn-close-sim" class="btn-icon-small"><i data-lucide="x"></i></button>
+          <span><i data-lucide="sliders-horizontal"></i> かんたん操作</span>
+          <button id="btn-close-sim" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
         </div>
-        
         <div class="sim-guide-box">
-          <div class="sim-guide-step">
-            <span class="step-num">1</span>
-            <span>「地図表示」に切り替えると昭和初期〜現代の空中写真・公式ハザードを閲覧できます</span>
-          </div>
-          <div class="sim-guide-step">
-            <span class="step-num">2</span>
-            <span>「カメラ向き」または画面ドラッグで全方位360度見回す</span>
-          </div>
-          <div class="sim-guide-step">
-            <span class="step-num">3</span>
-            <span>マーカータップで古写真表示後、ドラッグや拡大で現在の景観と比較</span>
-          </div>
+          <div class="sim-guide-step"><span class="step-num">1</span><span>上で「地図」か「現地AR」を選ぶ</span></div>
+          <div class="sim-guide-step"><span class="step-num">2</span><span>下のタブで歴史 / 地域 / 防災を切り替える</span></div>
+          <div class="sim-guide-step"><span class="step-num">3</span><span>地図上のピンや一覧から詳細・出典を見る</span></div>
         </div>
-
         <div class="sim-controls">
           <div class="control-group">
-            <label><i data-lucide="navigation"></i> 体験モード:</label>
+            <label>体験モード</label>
             <div class="location-mode-toggle">
-              <button id="btn-mode-explore" class="loc-mode-btn active" type="button">
-                <i data-lucide="map"></i> 地図から探索
-              </button>
-              <button id="btn-mode-onsite" class="loc-mode-btn" type="button">
-                <i data-lucide="crosshair"></i> 現地で体験（GPS/方位）
-              </button>
+              <button id="btn-mode-explore" class="loc-mode-btn active" type="button"><i data-lucide="map"></i> 地図から探索</button>
+              <button id="btn-mode-onsite" class="loc-mode-btn" type="button"><i data-lucide="crosshair"></i> 現地GPS</button>
             </div>
-            <p class="loc-mode-note">「現地で体験」を押すと、端末のGPSと方位センサー（iPhoneは許可確認）を使います。地図から探索では位置・方角を手動で操作します。</p>
+            <p class="loc-mode-note">地図から探索は自宅・教室向け。現地GPSは屋外で現在地と方角を使います。</p>
           </div>
           <div class="control-group">
             <div class="label-row">
-              <label><i data-lucide="compass"></i> カメラの向き (方角):</label>
+              <label>カメラの向き</label>
               <span id="sim-heading-val" class="heading-badge">0° (北)</span>
             </div>
             <div class="slider-with-direction">
               <span class="dir-hint">西</span>
-              <input type="range" id="sim-heading" min="0" max="360" value="0">
+              <input type="range" id="sim-heading" min="0" max="360" value="0" aria-label="カメラの向き">
               <span class="dir-hint">東</span>
             </div>
           </div>
           <div class="control-group">
-            <label><i data-lucide="map-pin"></i> 位置切り替え (ワープ):</label>
+            <label>位置を移動</label>
             <div class="sim-btn-grid">
-              <button class="btn-chip active" data-lat="34.6873" data-lng="135.5260">
-                <i data-lucide="navigation-2"></i> 大阪城本丸
-              </button>
-              <button class="btn-chip" data-lat="34.6890" data-lng="135.5220">
-                <i data-lucide="navigation-2"></i> 野田橋・旧京街道
-              </button>
-              <button class="btn-chip" data-lat="34.6860" data-lng="135.5200">
-                <i data-lucide="navigation-2"></i> 大手前・想定浸水区
-              </button>
+              <button class="btn-chip active" type="button" data-lat="34.6873" data-lng="135.5260">大阪城本丸</button>
+              <button class="btn-chip" type="button" data-lat="34.6890" data-lng="135.5220">野田橋・旧京街道</button>
+              <button class="btn-chip" type="button" data-lat="34.6860" data-lng="135.5200">大手前</button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 下部フッターコントロール -->
-      <footer class="app-footer">
-        <div class="quick-status">
-          <span id="active-layer-desc"><i data-lucide="touch-point"></i> 浮遊するマーカーをタップすると古写真・公的データ解説を表示</span>
-          <button id="btn-close-map-guide" class="guide-close map-guide-close" type="button" title="操作案内を隠す" aria-label="操作案内を隠す"><i data-lucide="x"></i></button>
+      <!-- 地図ツール: 折りたたみ式ボトムシート -->
+      <section id="era-timeline-bar" class="bottom-sheet map-tools-sheet hidden" aria-label="年代と今昔比較">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="timeline-head">
+          <div class="timeline-title"><i data-lucide="clock-3"></i><span>年代・今昔比較</span></div>
+          <button id="btn-close-era-panel" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
         </div>
-      </footer>
-      <button id="btn-reopen-map-guide" class="map-panel-reopen map-guide-reopen hidden" type="button" aria-label="操作案内を表示"><i data-lucide="help-circle"></i> 操作案内</button>
+        <div class="timeline-chips">
+          <button class="era-chip active" type="button" data-era="present">現代地図</button>
+          <button class="era-chip" type="button" data-era="photo_latest">2020年代</button>
+          <button class="era-chip" type="button" data-era="showa50">昭和50年代<small>1974-78</small></button>
+          <button class="era-chip" type="button" data-era="showa30">昭和30-40年代<small>1961-69</small></button>
+          <button class="era-chip" type="button" data-era="showa20">昭和20年代<small>1945-50</small></button>
+          <button class="era-chip" type="button" data-era="showa_early">昭和初期<small>1936-42</small></button>
+          <button class="era-chip" type="button" data-era="prewar_1928">1928年頃</button>
+        </div>
+        <div class="map-compare-controls">
+          <label for="map-opacity-slider">重ねる濃さ <span id="map-opacity-val">65%</span></label>
+          <input type="range" id="map-opacity-slider" min="0" max="100" value="65" aria-label="過去航空写真の透明度">
+          <button id="btn-time-travel" class="btn-chip-small" type="button"><i data-lucide="history"></i> 時間旅行</button>
+        </div>
+        <p class="timeline-note">明治・江戸・平安の大阪向け位置精度付き地図タイルは未収録です。江戸期資料はスポット詳細から確認できます。</p>
+      </section>
+      <button id="btn-reopen-era-panel" class="fab-tool hidden" type="button"><i data-lucide="clock-3"></i><span>年代</span></button>
+
+      <!-- 防災ツール: 折りたたみ式 -->
+      <section id="disaster-alert-banner" class="bottom-sheet hazard-sheet hidden" aria-label="防災ハザード">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="hazard-header-row">
+          <div class="hazard-badge">
+            <i data-lucide="shield-alert"></i>
+            <span id="hazard-depth-text">公式ハザードを表示中</span>
+          </div>
+          <button id="btn-close-hazard-sheet" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+        </div>
+        <div class="hazard-sub-toggle">
+          <button class="hazard-type-btn active" type="button" data-hazard="flood">洪水</button>
+          <button class="hazard-type-btn" type="button" data-hazard="tsunami">津波</button>
+          <button class="hazard-type-btn" type="button" data-hazard="sediment">土砂</button>
+        </div>
+        <label class="flood-concept-toggle hidden" id="flood-concept-toggle-wrap">
+          <input type="checkbox" id="chk-flood-concept">
+          <span>AR概念イメージを表示（実測の浸水深ではありません）</span>
+        </label>
+        <div id="shelter-guide-text" class="shelter-guide">
+          <i data-lucide="info"></i>
+          <span>避難所情報を確認中…</span>
+        </div>
+        <div id="hazard-legend-box" class="hazard-legend"></div>
+        <a id="hazard-source-link" class="hazard-source-link" href="https://disaportal.gsi.go.jp/hazardmapportal/hazardmap/copyright/opendata.html" target="_blank" rel="noreferrer">出典: 国交省・国土地理院</a>
+      </section>
+      <button id="btn-reopen-hazard-sheet" class="fab-tool hazard-fab hidden" type="button"><i data-lucide="shield-alert"></i><span>防災</span></button>
+
+      <!-- 出典・状態: 邪魔にならない左下固定 -->
+      <div class="bottom-left-stack">
+        <div id="map-data-status" class="map-data-status hidden" role="status" aria-live="polite"></div>
+        <button id="btn-reopen-map-data-status" class="status-pill hidden" type="button"><i data-lucide="info"></i> 状態</button>
+        <div id="attribution-bar" class="attribution-bar">
+          <span id="attribution-text">出典は地図・資料ごとに表示します</span>
+        </div>
+      </div>
+
+      <!-- 下部ナビ: 誰でも分かる3分類 -->
+      <nav class="bottom-nav layer-tabs-compact" aria-label="情報レイヤー">
+        <button class="tab-btn active" type="button" data-layer="history">
+          <i data-lucide="landmark"></i>
+          <span>歴史</span>
+        </button>
+        <button class="tab-btn" type="button" data-layer="community">
+          <i data-lucide="map-pin"></i>
+          <span>地域</span>
+        </button>
+        <button class="tab-btn" type="button" data-layer="disaster">
+          <i data-lucide="shield-alert"></i>
+          <span>防災</span>
+        </button>
+        <button id="btn-open-spots" class="tab-btn utility" type="button">
+          <i data-lucide="list"></i>
+          <span>一覧</span>
+        </button>
+      </nav>
+
+      <div class="quick-status hidden" aria-hidden="true">
+        <span id="active-layer-desc"></span>
+        <button id="btn-close-map-guide" class="guide-close map-guide-close" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+      </div>
+      <button id="btn-reopen-map-guide" class="hidden" type="button" aria-hidden="true"></button>
     </div>
 
     <aside id="time-travel-panel" class="time-travel-panel hidden" aria-label="この場所の時間旅行">
@@ -283,13 +247,12 @@
       </div>
       <p id="time-travel-location" class="time-travel-location">地図上の場所を選択してください。</p>
       <div id="time-travel-list" class="time-travel-list"></div>
-      <p class="time-travel-note">航空写真は位置合わせされた地理院タイルです。江戸期資料は非測量の歴史資料で、現代地図との一致は保証されません。</p>
+      <p class="time-travel-note">航空写真は地理院タイルです。江戸期資料は非測量の歴史資料で、現代地図との位置一致は保証されません。</p>
     </aside>
 
-    <!-- スポット詳細ダイアログ -->
     <div id="spot-modal" class="modal-backdrop hidden">
       <div class="modal-card">
-        <button id="btn-close-modal" class="modal-close"><i data-lucide="x"></i></button>
+        <button id="btn-close-modal" class="modal-close" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
         <div class="modal-header-img-container">
           <img id="modal-img" src="" alt="スポット画像" class="modal-img">
           <span id="modal-era-badge" class="era-badge">昭和</span>
@@ -299,10 +262,10 @@
           <span id="modal-trust-badge" class="trust-badge"></span>
           <p id="modal-summary" class="modal-summary">概要</p>
           <div id="modal-hazard-box" class="modal-hazard-box hidden">
-            <h4><i data-lucide="alert-circle"></i> 防災・リスク情報 (公式オープンデータ)</h4>
+            <h4><i data-lucide="alert-circle"></i> 防災・リスク情報</h4>
             <p id="modal-hazard-detail"></p>
           </div>
-          <p id="modal-desc" class="modal-desc">詳細解説テキスト</p>
+          <p id="modal-desc" class="modal-desc">詳細解説</p>
           <div class="modal-meta">
             <small id="modal-source">出典: --</small>
             <small id="modal-license">ライセンス: --</small>
@@ -312,35 +275,41 @@
           </div>
           <div id="material-gallery" class="material-gallery"></div>
           <div class="modal-actions">
-            <button id="btn-compare-ar" class="btn-primary">
+            <button id="btn-compare-ar" class="btn-primary" type="button">
               <i data-lucide="layers"></i>
-              <span>古写真と現実の景観を比較 (リアルAR重ね合わせ)</span>
+              <span>古写真を重ねて比較</span>
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- アプリ概要ダイアログ -->
     <div id="info-modal" class="modal-backdrop hidden">
       <div class="modal-card">
-        <button id="btn-close-info" class="modal-close"><i data-lucide="x"></i></button>
+        <button id="btn-close-info" class="modal-close" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
         <div class="modal-body">
-          <h2>AR地域理解・歴史・防災統合プラットフォーム</h2>
-          <p class="subtitle">「場所にスマホをかざすと、その土地の時間とリスクが見える」</p>
+          <h2>使い方と出典</h2>
+          <p class="subtitle">場所の過去・現在・リスクを、地図とARで確かめます。</p>
           <hr>
-          <h3>公的データ出典・信頼性について</h3>
+          <h3>かんたん使い方</h3>
           <ul>
-            <li><strong>ハザードデータ</strong>：国土交通省・国土地理院の公式タイルを表示します。地域・ズームによってデータがない場合は自動で別年代へ切り替えません。</li>
-            <li><strong>時代別写真</strong>：国土地理院の公式一覧で確認した昭和期〜現代の航空写真タイルを使用しています。明治・江戸・平安の大阪向けXYZタイルは未収録です。</li>
-            <li><strong>歴史資料</strong>：NDLの資料ページとIIIFマニフェストの確認状態を分けて管理し、名所絵・歴史地図を測量図と区別して表示します。個別画像URLが未検証の場合は埋め込まず、NDLへのリンクを表示します。</li>
+            <li><strong>地図</strong>: 自宅や教室から年代比較・スポット確認</li>
+            <li><strong>現地AR</strong>: その場所でカメラ映像に情報を重ねる</li>
+            <li><strong>下のタブ</strong>: 歴史 / 地域 / 防災 を切替</li>
+            <li><strong>左下の出典</strong>: 今見ている地図・資料の出典を常時表示</li>
+          </ul>
+          <h3>公的データ出典</h3>
+          <ul>
+            <li><strong>ハザード</strong>: 国土交通省・国土地理院公式タイル</li>
+            <li><strong>航空写真</strong>: 国土地理院の確認済み年代タイル</li>
+            <li><strong>歴史資料</strong>: 国立国会図書館など、確認済み出典のみ表示</li>
           </ul>
         </div>
       </div>
     </div>
   </div>
 
-  <script type="module" src="app.js?v=p2-map-compare"></script>
+  <script type="module" src="app.js?v=ui-simple-1"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();

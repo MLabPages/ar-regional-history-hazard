@@ -67,6 +67,10 @@ class ARRegionalApp {
     this.reopenMapDataStatusButton = document.getElementById('btn-reopen-map-data-status');
     this.reopenMapGuideButton = document.getElementById('btn-reopen-map-guide');
     this.mapGuide = document.querySelector('.quick-status');
+    this.attributionBar = document.getElementById('attribution-bar');
+    this.attributionText = document.getElementById('attribution-text');
+    this.reopenHazardSheetButton = document.getElementById('btn-reopen-hazard-sheet');
+    this.openSpotsButton = document.getElementById('btn-open-spots');
     this.hazardLegendBox = document.getElementById('hazard-legend-box');
     this.mapDataStatus = document.getElementById('map-data-status');
     this.hazardSourceLink = document.getElementById('hazard-source-link');
@@ -326,14 +330,27 @@ class ARRegionalApp {
   showMapDataStatus(message, tone = 'info', sourceUrl = null) {
     if (!this.mapDataStatus) return;
     this.mapDataStatus.className = `map-data-status ${tone}`;
-    this.mapDataStatus.innerHTML = `<div class="map-status-content"><span>${message}</span>${sourceUrl ? ` <a href="${sourceUrl}" target="_blank" rel="noreferrer">出典</a>` : ''}</div><button id="btn-close-map-data-status" class="guide-close map-status-close" type="button" title="案内を隠す" aria-label="地図データ案内を隠す"><i data-lucide="x"></i></button>`;
+    this.mapDataStatus.innerHTML = `<div class="map-status-content"><span>${message}</span>${sourceUrl ? ` <a href="${sourceUrl}" target="_blank" rel="noreferrer">出典</a>` : ''}</div><button id="btn-close-map-data-status" class="guide-close map-status-close" type="button" title="案内を隠す" aria-label="状態を隠す"><i data-lucide="x"></i></button>`;
     this.reopenMapDataStatusButton?.classList.add('hidden');
+    this.mapDataStatus.classList.remove('hidden');
+    this.updateAttribution(message, sourceUrl);
     if (window.lucide) lucide.createIcons();
   }
 
   hideMapDataStatus() {
     this.mapDataStatus?.classList.add('hidden');
     this.reopenMapDataStatusButton?.classList.remove('hidden');
+  }
+
+  updateAttribution(message, sourceUrl = null) {
+    if (!this.attributionText) return;
+    const shortMsg = String(message || '').replace(/\s+/g, ' ').trim();
+    const compact = shortMsg.length > 72 ? `${shortMsg.slice(0, 70)}…` : shortMsg;
+    if (sourceUrl) {
+      this.attributionText.innerHTML = `${compact} <a href="${sourceUrl}" target="_blank" rel="noreferrer">出典</a>`;
+    } else {
+      this.attributionText.textContent = compact || '出典は地図・資料ごとに表示します';
+    }
   }
 
   renderHazardLegend(hazardDef) {
@@ -543,6 +560,25 @@ class ARRegionalApp {
       this.reopenEraPanelButton.classList.add('hidden');
       try { window.localStorage?.removeItem('ar-era-panel-dismissed'); } catch (_) {}
     });
+    document.getElementById('btn-close-hazard-sheet')?.addEventListener('click', () => {
+      this.disasterBanner?.classList.add('hidden');
+      this.reopenHazardSheetButton?.classList.remove('hidden');
+    });
+    this.reopenHazardSheetButton?.addEventListener('click', () => {
+      if (this.currentLayer === 'disaster') {
+        this.disasterBanner?.classList.remove('hidden');
+        this.reopenHazardSheetButton.classList.add('hidden');
+      }
+    });
+    this.openSpotsButton?.addEventListener('click', () => {
+      const panel = this.getMapSpotsPanel();
+      if (!panel) return;
+      const willShow = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !willShow);
+      this.openSpotsButton.classList.toggle('active', willShow);
+      this.openSpotsButton.setAttribute('aria-pressed', willShow ? 'true' : 'false');
+      if (willShow) this.renderMapMarkers();
+    });
     this.reopenMapDataStatusButton?.addEventListener('click', () => {
       this.mapDataStatus?.classList.remove('hidden');
       this.reopenMapDataStatusButton.classList.add('hidden');
@@ -634,10 +670,12 @@ class ARRegionalApp {
       this.eraTimelineBar.classList.toggle('hidden', eraDismissed);
       this.reopenEraPanelButton?.classList.toggle('hidden', !eraDismissed);
       if (this.mapDataStatus) this.mapDataStatus.classList.remove('hidden');
-      if (spotsPanel) spotsPanel.classList.remove('hidden');
-
+      if (spotsPanel) spotsPanel.classList.add('hidden');
+      this.openSpotsButton?.classList.remove('active');
+      this.openSpotsButton?.setAttribute('aria-pressed', 'false');
+      this.guideHint?.classList.add('hidden');
       if (this.guideHintText) {
-        this.guideHintText.textContent = '地図上のピンをタップすると古写真・公的データ解説を閲覧できます';
+        this.guideHintText.textContent = '地図上のピンや「一覧」から詳細・出典を確認できます';
       }
 
       const simPanel = document.getElementById('simulator-panel');
@@ -665,10 +703,11 @@ class ARRegionalApp {
       this.reopenEraPanelButton?.classList.add('hidden');
       this.reopenMapDataStatusButton?.classList.add('hidden');
       this.reopenMapGuideButton?.classList.add('hidden');
-      this.mapGuide?.classList.remove('hidden');
-
+      this.reopenHazardSheetButton?.classList.add('hidden');
+      this.mapGuide?.classList.add('hidden');
+      this.guideHint?.classList.remove('hidden');
       if (this.guideHintText) {
-        this.guideHintText.textContent = '画面を左右にドラッグして全方位 (360°) 見回せます';
+        this.guideHintText.textContent = '画面を左右にドラッグして見回します';
       }
     }
   }
@@ -973,14 +1012,30 @@ class ARRegionalApp {
   updateLayerUI() {
     const banner = this.disasterBanner;
     if (this.currentLayer === 'disaster') {
-      banner.classList.remove('hidden');
+      banner?.classList.remove('hidden');
+      this.reopenHazardSheetButton?.classList.add('hidden');
       this.updateFloodConceptToggleVisibility();
 
       // 避難所データは公式一次資料で未検証のため、具体的な方向・距離の案内を一時停止。
       // 公式データで施設名・座標・対象災害・種別を確認後に再有効化する。
-      this.shelterGuideText.innerHTML = `<i data-lucide="info"></i> 避難所情報は現在確認中です。災害時は<a href="https://www.city.osaka.lg.jp/kikikanrishitsu/page/0000349214.html" target="_blank" rel="noreferrer" style="color:#93c5fd;">大阪市の最新避難所情報</a>を確認してください。`;
+      if (this.shelterGuideText) {
+        this.shelterGuideText.innerHTML = `<i data-lucide="info"></i> 避難所情報は現在確認中です。災害時は<a href="https://www.city.osaka.lg.jp/kikikanrishitsu/page/0000349214.html" target="_blank" rel="noreferrer" style="color:#93c5fd;">大阪市の最新避難所情報</a>を確認してください。`;
+      }
+      this.updateAttribution('防災ハザード（公式出典: 国交省・国土地理院）', 'https://disaportal.gsi.go.jp/hazardmapportal/hazardmap/copyright/opendata.html');
     } else {
-      banner.classList.add('hidden');
+      banner?.classList.add('hidden');
+      this.reopenHazardSheetButton?.classList.add('hidden');
+    }
+
+    // 地図ツールは地図モードかつ歴史/地域で表示
+    if (this.viewMode === 'map' && this.currentLayer !== 'disaster') {
+      let eraDismissed = false;
+      try { eraDismissed = window.localStorage?.getItem('ar-era-panel-dismissed') === '1'; } catch (_) {}
+      this.eraTimelineBar?.classList.toggle('hidden', eraDismissed);
+      this.reopenEraPanelButton?.classList.toggle('hidden', !eraDismissed);
+    } else if (this.currentLayer === 'disaster') {
+      this.eraTimelineBar?.classList.add('hidden');
+      this.reopenEraPanelButton?.classList.add('hidden');
     }
 
     this.renderMapMarkers();
