@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR地域理解・歴史・防災統合プラットフォーム</title>
-  <link rel="stylesheet" href="styles.css?v=p0-modes">
+  <link rel="stylesheet" href="styles.css?v=p1-verify">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Leaflet Map CSS & JS (地図モード用) -->
@@ -273,6 +273,7 @@
         </div>
         <div class="modal-body">
           <h2 id="modal-title">スポット名称</h2>
+          <span id="modal-trust-badge" class="trust-badge"></span>
           <p id="modal-summary" class="modal-summary">概要</p>
           <div id="modal-hazard-box" class="modal-hazard-box hidden">
             <h4><i data-lucide="alert-circle"></i> 防災・リスク情報 (公式オープンデータ)</h4>
@@ -316,7 +317,7 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=p0-modes"></script>
+  <script type="module" src="app.js?v=p1-verify"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();

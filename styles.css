@@ -1164,3 +1164,42 @@ body, html {
 .flood-concept-toggle input {
   accent-color: #fff;
 }
+
+/* 信頼度バッジ（直感的表示） */
+.trust-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-glass);
+}
+
+.trust-badge:empty {
+  display: none;
+}
+
+.trust-verified {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #86efac;
+}
+
+.trust-partial {
+  background: rgba(234, 179, 8, 0.16);
+  border-color: rgba(234, 179, 8, 0.5);
+  color: #fde68a;
+}
+
+.trust-reference {
+  background: rgba(148, 163, 184, 0.16);
+  border-color: rgba(148, 163, 184, 0.5);
+  color: #cbd5e1;
+}
+
+.trust-unverified {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}

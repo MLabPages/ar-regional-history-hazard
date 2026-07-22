@@ -5,8 +5,9 @@ import {
   SPOT_DATA,
   EVACUATION_SHELTERS,
   MATERIAL_TYPE_LABELS,
-  PLACEHOLDER_IMAGE_URL
-} from './data.js?v=p0-modes';
+  PLACEHOLDER_IMAGE_URL,
+  TRUST_LABELS
+} from './data.js?v=p1-verify';
 
 class ARRegionalApp {
   constructor() {
@@ -176,6 +177,7 @@ class ARRegionalApp {
     }
 
     this.mapDataTileErrors = 0;
+    this.mapDataTileLoaded = 0;
     this.showMapDataStatus(`${tileDef.name}を読み込み中…`, 'info', tileDef.sourceUrl);
     this.baseTileLayer = L.tileLayer(tileDef.url, {
       minZoom: tileDef.minZoom,
@@ -185,13 +187,27 @@ class ARRegionalApp {
       crossOrigin: true
     });
     this.baseTileLayer.on('tileload', () => {
-      if (this.mapDataTileErrors === 0) this.showMapDataStatus(`${tileDef.name}｜出典: ${tileDef.sourceName}`, 'success', tileDef.sourceUrl);
+      this.mapDataTileLoaded += 1;
+      this.showBaseTileStatus(tileDef);
     });
     this.baseTileLayer.on('tileerror', () => {
       this.mapDataTileErrors += 1;
-      this.showMapDataStatus(`この地域・ズームの「${tileDef.name}」データはありません。現代地図には自動切替していません。`, 'warning', tileDef.sourceUrl);
+      this.showBaseTileStatus(tileDef);
     });
     this.baseTileLayer.addTo(this.map);
+  }
+
+  // 「全部ない」「一部ない」「正常」をタイルの成功/失敗数から区別する。
+  showBaseTileStatus(tileDef) {
+    const loaded = this.mapDataTileLoaded || 0;
+    const errored = this.mapDataTileErrors || 0;
+    if (loaded > 0 && errored === 0) {
+      this.showMapDataStatus(`${tileDef.name}｜出典: ${tileDef.sourceName}`, 'success', tileDef.sourceUrl);
+    } else if (loaded > 0 && errored > 0) {
+      this.showMapDataStatus(`${tileDef.name}：この範囲の一部にデータがありません（表示できる部分のみ表示）。`, 'info', tileDef.sourceUrl);
+    } else if (loaded === 0 && errored > 0) {
+      this.showMapDataStatus(`この地域・ズームの「${tileDef.name}」データはありません。現代地図には自動切替していません。`, 'warning', tileDef.sourceUrl);
+    }
   }
 
   // 国土交通省・国土地理院 公式ハザードマップタイルの重畳表示
@@ -208,6 +224,7 @@ class ARRegionalApp {
       const hazardDef = OFFICIAL_HAZARD_LAYERS[hazardKey];
       if (hazardDef) {
         this.hazardTileErrors = 0;
+        this.hazardTileLoaded = 0;
         this.officialHazardLayerKey = hazardKey;
         this.officialHazardTileLayer = L.tileLayer(hazardDef.tileUrl, {
           minZoom: hazardDef.minZoom,
@@ -217,11 +234,12 @@ class ARRegionalApp {
           attribution: hazardDef.attribution
         });
         this.officialHazardTileLayer.on('tileload', () => {
-          if (this.hazardTileErrors === 0) this.showMapDataStatus(`${hazardDef.name}｜公式タイルを表示中`, 'success', hazardDef.sourceUrl);
+          this.hazardTileLoaded += 1;
+          this.showHazardTileStatus(hazardDef);
         });
         this.officialHazardTileLayer.on('tileerror', () => {
           this.hazardTileErrors += 1;
-          this.showMapDataStatus(`この地域・ズームの「${hazardDef.name}」データはありません。`, 'warning', hazardDef.sourceUrl);
+          this.showHazardTileStatus(hazardDef);
         });
         this.officialHazardTileLayer.addTo(this.map);
 
@@ -238,6 +256,18 @@ class ARRegionalApp {
         );
         this.renderHazardLegend(null);
       }
+    }
+  }
+
+  showHazardTileStatus(hazardDef) {
+    const loaded = this.hazardTileLoaded || 0;
+    const errored = this.hazardTileErrors || 0;
+    if (loaded > 0 && errored === 0) {
+      this.showMapDataStatus(`${hazardDef.name}｜公式タイルを表示中`, 'success', hazardDef.sourceUrl);
+    } else if (loaded > 0 && errored > 0) {
+      this.showMapDataStatus(`${hazardDef.name}：この範囲の一部にデータがありません（着色区域のみ表示）。`, 'info', hazardDef.sourceUrl);
+    } else if (loaded === 0 && errored > 0) {
+      this.showMapDataStatus(`この地域・ズームの「${hazardDef.name}」データはありません。`, 'warning', hazardDef.sourceUrl);
     }
   }
 
@@ -1048,12 +1078,9 @@ class ARRegionalApp {
     const media = this.getPrimaryMedia(spot);
 
     document.getElementById('modal-title').textContent = spot.name;
-    // verificationStatus に応じた信頼度表示
-    const vStatus = spot.verificationStatus || 'unknown';
-    const vLabel = vStatus === 'verified' ? '' :
-      vStatus === 'partially_verified' ? '【一部未確認】 ' :
-      '【未確認情報を含む】 ';
-    document.getElementById('modal-summary').textContent = vLabel + (spot.summary || '');
+    // 直感的な信頼度バッジ（✓公式資料確認済み / ◐一部確認済み / △未確認情報を含む など）
+    this.renderTrustBadge(spot, media);
+    document.getElementById('modal-summary').textContent = spot.summary || '';
     document.getElementById('modal-desc').textContent = `${spot.description || ''}${spot.verificationNote ? `\n\n注意: ${spot.verificationNote}` : ''}`;
     const modalImg = document.getElementById('modal-img');
     const hasVerifiedImage = Boolean(media?.imageUrl && media.imageUrlVerified !== false);
@@ -1121,6 +1148,21 @@ class ARRegionalApp {
     return '<p class="material-empty">検証済みまたは一部確認済みのスポットは現在未収録です。</p>';
   }
 
+  // スポットの信頼度を1つの直感的バッジで示す。資料種別も併記して
+  // 「正確な地図」と「歴史的な名所絵」を混同させない。
+  renderTrustBadge(spot, media) {
+    const el = document.getElementById('modal-trust-badge');
+    if (!el) return;
+    let key = spot.verificationStatus || 'unverified';
+    // 名所絵・絵図など非測量資料は参考扱いを優先表示
+    if (media && media.isHistorical && media.positionAccuracy === 'reference_only') {
+      key = media.materialType === 'historical_map' || media.materialType === 'pictorial_map' ? 'non_survey' : 'reference_only';
+    }
+    const label = TRUST_LABELS[key] || TRUST_LABELS.unverified;
+    el.className = `trust-badge ${label.className}`;
+    el.textContent = `${label.icon} ${label.text}`;
+  }
+
   getPrimaryMedia(spot) {
     return spot?.mediaAssets?.[0] || null;
   }
@@ -1147,6 +1189,7 @@ class ARRegionalApp {
             <p>${material.note}</p>
             <a href="${material.sourceUrl}" target="_blank" rel="noreferrer">NDL資料ページを開く</a>
             <a href="${material.manifestUrl}" target="_blank" rel="noreferrer">IIIFマニフェスト</a>
+            ${material.licenseSourceUrl ? `<a href="${material.licenseSourceUrl}" target="_blank" rel="noreferrer">ライセンス確認元</a>` : ''}
           </div>
         </article>
       `).join('')}
@@ -1200,5 +1243,6 @@ class ARRegionalApp {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  new ARRegionalApp();
+  // グローバル公開はE2Eテスト・デバッグ用途（本番動作には影響しない）
+  window.arApp = new ARRegionalApp();
 });

@@ -132,7 +132,9 @@ export const HISTORICAL_MAP_TILES = {
   }
 };
 
-const NDL_PDM_LICENSE = 'PDM（NDL IIIFマニフェスト記載）';
+// ライセンス（PDM）は NDL 資料レコード（PIDページ）で確認したもの。
+// 個別 IIIF 画像リソースIDは未検証のため、画像は本番表示せずリンクのみ提供する。
+const NDL_PDM_LICENSE = 'PDM（NDL資料レコードで確認）';
 
 export const HISTORICAL_REFERENCE_MATERIALS = [
   {
@@ -146,16 +148,30 @@ export const HISTORICAL_REFERENCE_MATERIALS = [
     imageUrl: null,
     license: NDL_PDM_LICENSE,
     licenseUrl: DATA_SOURCES.ndlIiifHelp,
+    licenseSourceUrl: 'https://dl.ndl.go.jp/pid/1303484',
     usageStatus: 'verified_reusable',
     metadataVerified: true,
     manifestVerified: false,
     imageUrlVerified: false,
     verificationStatus: 'partially_verified',
+    verification: {
+      content: 'verified',
+      coordinate: 'reference_only',
+      media: 'unverified',
+      license: 'verified',
+      source: 'verified'
+    },
+    verifiedAt: {
+      content: VERIFIED_AT,
+      coordinate: null,
+      media: null,
+      license: VERIFIED_AT,
+      source: VERIFIED_AT
+    },
     verificationNote: 'PID・年代・PDMは確認済み。マニフェストと個別画像リソースは本番環境からのHTTP検証後に表示します。現在はNDL資料ページとIIIFマニフェストへのリンクを提供します。',
     materialType: 'pictorial_map',
     displayType: '名所絵・錦絵',
     positionAccuracy: 'reference_only',
-    verifiedAt: VERIFIED_AT,
     isHistorical: true,
     note: '八軒家浜を描いた名所絵です。測量図ではなく、現代地図との位置一致は保証されません。'
   },
@@ -170,16 +186,30 @@ export const HISTORICAL_REFERENCE_MATERIALS = [
     imageUrl: null,
     license: NDL_PDM_LICENSE,
     licenseUrl: DATA_SOURCES.ndlIiifHelp,
+    licenseSourceUrl: 'https://dl.ndl.go.jp/pid/1303487',
     usageStatus: 'verified_reusable',
     metadataVerified: true,
     manifestVerified: false,
     imageUrlVerified: false,
     verificationStatus: 'partially_verified',
+    verification: {
+      content: 'verified',
+      coordinate: 'reference_only',
+      media: 'unverified',
+      license: 'verified',
+      source: 'verified'
+    },
+    verifiedAt: {
+      content: VERIFIED_AT,
+      coordinate: null,
+      media: null,
+      license: VERIFIED_AT,
+      source: VERIFIED_AT
+    },
     verificationNote: 'PID・年代・PDMは確認済み。マニフェストと個別画像リソースは本番環境からのHTTP検証後に表示します。現在はNDL資料ページとIIIFマニフェストへのリンクを提供します。',
     materialType: 'pictorial_map',
     displayType: '名所絵・錦絵',
     positionAccuracy: 'reference_only',
-    verifiedAt: VERIFIED_AT,
     isHistorical: true,
     note: '道頓堀を描いた名所絵です。測量図ではなく、現代地図との位置一致は保証されません。'
   },
@@ -194,16 +224,30 @@ export const HISTORICAL_REFERENCE_MATERIALS = [
     imageUrl: null,
     license: NDL_PDM_LICENSE,
     licenseUrl: DATA_SOURCES.ndlIiifHelp,
+    licenseSourceUrl: 'https://dl.ndl.go.jp/pid/2542266',
     usageStatus: 'verified_reusable',
     metadataVerified: true,
     manifestVerified: false,
     imageUrlVerified: false,
     verificationStatus: 'partially_verified',
+    verification: {
+      content: 'verified',
+      coordinate: 'reference_only',
+      media: 'unverified',
+      license: 'verified',
+      source: 'verified'
+    },
+    verifiedAt: {
+      content: VERIFIED_AT,
+      coordinate: null,
+      media: null,
+      license: VERIFIED_AT,
+      source: VERIFIED_AT
+    },
     verificationNote: 'PID・年代・PDMは確認済み。マニフェストと個別画像リソースは本番環境からのHTTP検証後に表示します。現在はNDL資料ページとIIIFマニフェストへのリンクを提供します。',
     materialType: 'historical_map',
     displayType: '歴史地図・絵図',
     positionAccuracy: 'reference_only',
-    verifiedAt: VERIFIED_AT,
     isHistorical: true,
     note: '江戸期の絵図です。概略位置の参考資料であり、現代地図との位置一致は保証されません。'
   }
@@ -309,6 +353,7 @@ export const SPOT_DATA = [
     id: 'hist-1', name: '大阪城 天守閣（昭和6年復元）', category: 'history',
     coordinate: { latitude: 34.6873, longitude: 135.5260, elevationMeter: 24 }, era: 'showa', eraLabel: '昭和6年（1931年）',
     verificationStatus: 'unverified',
+    verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
     summary: '現在の天守閣は1931年に再建されたものです。',
     description: '昭和6年（1931年）に再建された大阪城天守閣についての説明です。建築の経緯・復元の詳細は、下記の公式資料を確認してから確定表示します。',
     mediaAssets: [placeholderMedia], historicalMaterials: [ndl大坂図],
@@ -320,6 +365,7 @@ export const SPOT_DATA = [
     id: 'hist-2', name: '旧陸軍第四師団司令部庁舎（ミライザ大阪城）', category: 'history',
     coordinate: { latitude: 34.6865, longitude: 135.5252, elevationMeter: 22 }, era: 'showa', eraLabel: '昭和初期',
     verificationStatus: 'unverified',
+    verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
     summary: '大阪城公園内に残る近代建築です。',
     description: '旧陸軍第四師団司令部庁舎に関する歴史記述は、一次資料の確認後に確定します。現在の表示画像はイメージ画像です。',
     mediaAssets: [placeholderMedia], historicalMaterials: [],
@@ -331,6 +377,7 @@ export const SPOT_DATA = [
     id: 'hist-3', name: '極楽橋・隠し曲輪跡', category: 'history',
     coordinate: { latitude: 34.6888, longitude: 135.5255, elevationMeter: 18 }, era: 'edo', eraLabel: '江戸期〜現在',
     verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'verified' },
     summary: '大阪城北側の橋と周辺の変遷を学ぶスポットです。',
     description: '現在の極楽橋は平成12年（2000年）に架け替えられました。過去の建設・焼失については、公式資料の記載範囲を確認しながら表示します。',
     mediaAssets: [placeholderMedia], historicalMaterials: [ndl大坂図],
@@ -342,6 +389,7 @@ export const SPOT_DATA = [
     id: 'comm-1', name: '旧京街道起点・八軒家浜', category: 'community',
     coordinate: { latitude: 34.6895, longitude: 135.5212, elevationMeter: 5.5 }, era: 'edo', eraLabel: '江戸後期',
     verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'reference_only', license: 'verified', source: 'verified' },
     summary: '八軒家浜を描いたNDL公開の名所絵と大坂の歴史地図を閲覧できます。',
     description: '八軒家浜に関連する江戸期の名所絵を、現在地の説明と分けて表示します。名所絵・絵図は測量図ではないため、現代地図との位置一致は保証されません。',
     mediaAssets: [ndl八軒家], historicalMaterials: [ndl八軒家, ndl大坂図],
@@ -356,6 +404,7 @@ export const SPOT_DATA = [
     id: 'comm-2', name: '旧大阪砲兵工廠跡地', category: 'community',
     coordinate: { latitude: 34.6880, longitude: 135.5310, elevationMeter: 11.5 }, era: 'meiji', eraLabel: '明治〜昭和期',
     verificationStatus: 'unverified',
+    verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
     summary: '大阪城東部の土地利用の変化を調べる地域理解スポットです。',
     description: '旧大阪砲兵工廠に関する記述は、一次資料を確認してから確定します。明治期の位置精度を持つ大阪向けXYZタイルは未収録です。',
     mediaAssets: [placeholderMedia], historicalMaterials: [],
@@ -367,6 +416,7 @@ export const SPOT_DATA = [
     id: 'comm-3', name: '難波宮跡（飛鳥・奈良時代）', category: 'community',
     coordinate: { latitude: 34.6800, longitude: 135.5250, elevationMeter: 10 }, era: 'asuka', eraLabel: '飛鳥〜奈良時代',
     verificationStatus: 'unverified',
+    verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
     summary: '古代の難波宮跡を地域理解の入口として紹介します。',
     description: '難波宮跡に関する詳しい年代・建物復元は、公式文化財資料を確認してから確定します。表示画像はイメージ画像です。',
     mediaAssets: [placeholderMedia], historicalMaterials: [],
@@ -379,6 +429,7 @@ export const SPOT_DATA = [
     coordinate: { latitude: 34.6890, longitude: 135.5220, elevationMeter: 3.2 },
     verificationStatus: 'verified',
     isAreaHazard: true,
+    verification: { content: 'verified', coordinate: 'not_applicable', media: 'not_applicable', license: 'verified', source: 'verified' },
     hazardInfo: { type: 'flood', typeName: '洪水浸水想定', description: '地図上に国土交通省・国土地理院の公式洪水タイルを重ねます。地点の深さは地図の凡例と原典で確認してください。' },
     summary: '公式洪水浸水想定タイルを表示します。',
     description: 'このアプリの表示は防災情報の入口です。現在の警報・避難指示は自治体の最新情報を確認してください。',
@@ -390,6 +441,7 @@ export const SPOT_DATA = [
     coordinate: { latitude: 34.6860, longitude: 135.5200, elevationMeter: 4.1 },
     verificationStatus: 'verified',
     isAreaHazard: true,
+    verification: { content: 'verified', coordinate: 'not_applicable', media: 'not_applicable', license: 'verified', source: 'verified' },
     hazardInfo: { type: 'tsunami', typeName: '津波浸水想定', description: '地図上に国土交通省・国土地理院の公式津波タイルを重ねます。地域・ズームによってデータがない場合があります。' },
     summary: '公式津波浸水想定タイルを表示します。',
     description: '地震・津波時は自治体の最新の避難情報に従ってください。表示タイルは想定情報であり、現在の警報ではありません。',
@@ -405,3 +457,27 @@ export const EVACUATION_SHELTERS = [
   { id: 'shelter-2', name: '大阪城公園', address: '大阪市中央区大阪城1', coordinate: { latitude: 34.6870, longitude: 135.5280 }, elevationMeter: 22.5, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown', verificationStatus: 'unverified', coordinateSource: '住所から概算（公式データではない）' },
   { id: 'shelter-3', name: '開平小学校', address: '大阪市中央区北浜東2-4', coordinate: { latitude: 34.6892, longitude: 135.5140 }, elevationMeter: 6.8, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown', verificationStatus: 'unverified', coordinateSource: '住所から概算（公式データではない）' }
 ];
+
+// 機能ごとに要求する検証条件。各機能で必要な軸だけを見て可否を判定する。
+//   ar_pin        : ARピン表示     → 座標が確認済み（少なくとも概略以上）
+//   history_card  : 歴史解説カード → 内容・出典が確認済み
+//   media_display : 画像表示       → 画像URL・権利が確認済み
+//   ar_compare    : AR画像比較     → 画像＋位置関係が確認済み
+//   evac_guide    : 避難誘導       → 公式座標＋対象災害が確認済み
+export const FEATURE_VERIFICATION_RULES = {
+  ar_pin:        { requires: ['coordinate'], accept: { coordinate: ['verified', 'georeferenced', 'survey_accurate', 'approximate'] } },
+  history_card:  { requires: ['content', 'source'], accept: { content: ['verified', 'partially_verified'], source: ['verified'] } },
+  media_display: { requires: ['media', 'license'], accept: { media: ['verified'], license: ['verified'] } },
+  ar_compare:    { requires: ['media', 'coordinate'], accept: { media: ['verified'], coordinate: ['georeferenced', 'survey_accurate', 'verified'] } },
+  evac_guide:    { requires: ['coordinate', 'source'], accept: { coordinate: ['verified', 'survey_accurate'], source: ['verified'] } }
+};
+
+// 直感的な信頼度ラベル（ユーザー向け）
+export const TRUST_LABELS = {
+  verified:            { icon: '✓', text: '公式資料確認済み', className: 'trust-verified' },
+  partially_verified:  { icon: '◐', text: '一部確認済み', className: 'trust-partial' },
+  reference_only:      { icon: '◇', text: '参考資料', className: 'trust-reference' },
+  non_survey:          { icon: '◇', text: '非測量絵図（参考）', className: 'trust-reference' },
+  reconstruction:      { icon: '◇', text: '復元イメージ', className: 'trust-reference' },
+  unverified:          { icon: '△', text: '未確認情報を含む', className: 'trust-unverified' }
+};
