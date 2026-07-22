@@ -16,7 +16,7 @@
     <section id="map-navigation-tools" class="map-navigation-tools hidden" aria-label="地図の場所検索">
       <form id="map-search-form" class="map-search-form" role="search">
         <label class="sr-only" for="map-search-input">地名・住所を検索</label>
-        <input id="map-search-input" type="search" placeholder="地名・住所を検索" autocomplete="off">
+    <input id="map-search-input" type="search" placeholder="地名・住所・登録スポットを検索" autocomplete="off">
         <button type="submit" class="map-search-submit" aria-label="検索"><i data-lucide="search"></i></button>
         <button id="btn-map-current-location" type="button" class="map-current-location" aria-label="現在地へ移動" title="現在地へ移動"><i data-lucide="crosshair"></i></button>
       </form>
@@ -319,7 +319,7 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=ui-simple-1"></script>
+  <script type="module" src="app.js?v=ui-simple-2"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();
