@@ -1146,6 +1146,14 @@ body, html {
   max-height: 24vh;
 }
 
+.map-mode #camera-placeholder {
+  display: none !important;
+}
+
+.map-mode #map-data-status {
+  bottom: 52px;
+}
+
 /* スマホでは地図上の操作を薄く・短くし、地図の可視領域を確保する。 */
 @media (max-width: 600px) {
   .ui-layer {
@@ -1213,6 +1221,10 @@ body, html {
     bottom: 132px;
     width: auto;
     max-height: 20vh;
+  }
+
+  .map-mode #map-data-status {
+    bottom: 48px;
   }
 
   .map-compare-controls {
