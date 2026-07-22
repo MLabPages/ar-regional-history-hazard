@@ -128,9 +128,12 @@
 
       <!-- 地図表示時専用: 時代選択タイムラインバー (複数年・空中写真切替) -->
       <div id="era-timeline-bar" class="era-timeline-container hidden">
-        <div class="timeline-title">
-          <i data-lucide="clock"></i>
-          <span>確認済みの年代別航空写真・地図:</span>
+        <div class="timeline-head">
+          <div class="timeline-title">
+            <i data-lucide="clock"></i>
+            <span>確認済みの年代別航空写真・地図</span>
+          </div>
+          <button id="btn-close-era-panel" class="btn-icon-small" type="button" title="年代パネルを隠す" aria-label="年代パネルを隠す"><i data-lucide="x"></i></button>
         </div>
         <div class="timeline-chips">
           <button class="era-chip active" data-era="present">現代地図</button>
@@ -148,6 +151,7 @@
         </div>
         <p class="timeline-note">明治・江戸・平安の大阪向け位置精度付きXYZタイルは未収録です。該当資料は地図上のスポットから「歴史資料」として閲覧できます。</p>
       </div>
+      <button id="btn-reopen-era-panel" class="map-panel-reopen hidden" type="button"><i data-lucide="clock-3"></i> 年代・今昔比較</button>
 
       <!-- 防災レイヤー表示時専用: 公的ハザードマップ切替 ＆ 凡例 -->
       <div id="disaster-alert-banner" class="disaster-banner hidden">
@@ -195,6 +199,7 @@
       <div id="drag-guide-hint" class="drag-hint-badge">
         <i data-lucide="move-horizontal" class="pulse-icon"></i>
         <span id="guide-hint-text">画面を左右にドラッグして全方位 (360°) 見回せます</span>
+        <button id="btn-close-guide" class="guide-close" type="button" title="案内を隠す" aria-label="案内を隠す"><i data-lucide="x"></i></button>
       </div>
 
       <!-- シミュレーター操作パネル -->
