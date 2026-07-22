@@ -1001,11 +1001,44 @@ class ARRegionalApp {
             ? payload.data
             : [];
       const normalized = results
-        .map((item) => ({
-          name: String(item.title || item.name || item.address || item.address1 || query),
-          latitude: Number(item.lat ?? item.latitude ?? item.y),
-          longitude: Number(item.lon ?? item.longitude ?? item.lng ?? item.x)
-        }))
+        .map((item) => {
+          const properties = item?.properties || item?.property || {};
+          const coordinates = item?.geometry?.coordinates;
+          const coordinateLongitude = Array.isArray(coordinates) ? coordinates[0] : undefined;
+          const coordinateLatitude = Array.isArray(coordinates) ? coordinates[1] : undefined;
+          return {
+            name: String(
+              item.title
+              || item.name
+              || item.address
+              || item.address1
+              || properties.title
+              || properties.name
+              || properties.address
+              || query
+            ),
+            latitude: Number(
+              item.lat
+              ?? item.latitude
+              ?? item.y
+              ?? properties.lat
+              ?? properties.latitude
+              ?? properties.y
+              ?? coordinateLatitude
+            ),
+            longitude: Number(
+              item.lon
+              ?? item.longitude
+              ?? item.lng
+              ?? item.x
+              ?? properties.lon
+              ?? properties.longitude
+              ?? properties.lng
+              ?? properties.x
+              ?? coordinateLongitude
+            )
+          };
+        })
         .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
         .slice(0, 5);
 
