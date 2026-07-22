@@ -1970,3 +1970,133 @@ body, html {
     bottom: 322px;
   }
 }
+
+/* ===== スマホ専用レイアウト再編 ===== */
+/* 取得状況は出典バーへ統合し、同じ内容を上部に重ねて表示しない */
+#map-data-status {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .top-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .top-bar .brand {
+    min-width: 0;
+  }
+
+  .top-bar .brand-title {
+    font-size: 0.98rem;
+  }
+
+  .top-bar .status-subtitle {
+    max-width: 180px;
+    font-size: 0.68rem;
+    line-height: 1.3;
+  }
+
+  .top-bar .view-mode-toggle {
+    grid-column: 1 / -1;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .top-bar .header-actions {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 4px;
+  }
+
+  .top-bar .btn-icon-action {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .bottom-left-stack {
+    left: 8px;
+    right: 8px;
+    bottom: 84px;
+    max-width: none;
+    align-items: flex-start;
+  }
+
+  .attribution-bar {
+    max-width: min(100%, 300px);
+    font-size: 0.66rem;
+  }
+
+  .bottom-nav.layer-tabs-compact,
+  .map-mode .layer-tabs-compact {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .bottom-nav .tab-btn {
+    min-height: 56px;
+    padding: 7px 2px;
+    font-size: 0.68rem;
+  }
+
+  .map-tools-sheet:not(.hidden) ~ .bottom-left-stack {
+    bottom: 224px;
+  }
+
+  .hazard-sheet:not(.hidden) ~ .bottom-left-stack {
+    bottom: 332px;
+  }
+
+  .bottom-sheet {
+    left: 8px;
+    right: 8px;
+    bottom: 88px;
+    max-height: min(48vh, 340px);
+    padding: 9px 10px 10px;
+    border-radius: 16px;
+  }
+
+  .map-mode .era-timeline-container,
+  .map-mode .bottom-sheet {
+    left: 8px;
+    right: 8px;
+    bottom: 88px;
+  }
+
+  .map-mode .map-spots-panel {
+    left: 8px;
+    right: 8px;
+    bottom: 92px;
+    max-height: 38vh;
+  }
+
+  .fab-tool {
+    right: 8px;
+    bottom: 88px;
+  }
+
+  .fab-tool.hazard-fab {
+    right: 8px;
+    bottom: 136px;
+  }
+
+  .drag-hint-badge {
+    top: 132px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .sim-panel {
+    top: 132px;
+    left: 8px;
+    right: 8px;
+    max-height: 48vh;
+  }
+}
