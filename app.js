@@ -11,7 +11,7 @@ class ARRegionalApp {
     // モードステート: 'ar' | 'map'
     this.viewMode = 'ar';
     this.currentLayer = 'history'; // history | community | disaster
-    this.currentEra = 'present';   // present | photo_latest | showa50 | showa30 | showa20 | showa_early
+    this.currentEra = 'present';   // present | photo_latest | showa50 | showa30 | showa20 | showa_early | meiji | edo
     this.currentHazardType = 'flood'; // flood | tsunami | sediment
 
     this.userPos = { ...SAMPLE_CENTER };
