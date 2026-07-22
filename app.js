@@ -6,7 +6,7 @@ import {
   EVACUATION_SHELTERS,
   MATERIAL_TYPE_LABELS,
   PLACEHOLDER_IMAGE_URL
-} from './data.js?v=audit-v3';
+} from './data.js?v=p0-modes';
 
 class ARRegionalApp {
   constructor() {
@@ -18,9 +18,15 @@ class ARRegionalApp {
 
     this.userPos = { ...SAMPLE_CENTER };
     this.heading = 0; // 北 = 0度
-    this.isSimulating = true;
+    // 位置モード: 'explore'（地図から探索/自宅・PC） | 'onsite'（現地・GPS/センサー）
+    this.locationMode = 'explore';
+    this.headingSource = 'simulation'; // 'sensor' | 'simulation' | 'manual'
+    this.orientationPermission = 'unknown'; // 'unknown' | 'granted' | 'denied' | 'not-required'
+    this.orientationListenerAttached = false;
     this.cameraActive = false;
     this.mediaStream = null;
+    // 防災AR: 洪水の概念イメージ（水面）は明示的にONにした場合のみ描画
+    this.showFloodConceptImage = false;
 
     // ARドラッグ操作ステート
     this.isDraggingCanvas = false;
@@ -266,14 +272,14 @@ class ARRegionalApp {
     this.mapMarkers = [];
 
     // フィルタリングしたスポットの表示
-    const filteredSpots = this.getDisplayableSpots().filter(s => s.category === this.currentLayer);
+    const filteredSpots = this.getPointSpots().filter(s => s.category === this.currentLayer);
 
     const spotsPanel = this.getMapSpotsPanel();
     if (spotsPanel) {
       const layerLabel = this.currentLayer === 'history' ? '歴史・観光' : this.currentLayer === 'community' ? '地域理解' : '防災';
       spotsPanel.innerHTML = `
         <div class="map-spots-title">${layerLabel}スポット</div>
-        ${filteredSpots.length === 0 ? '<p class="material-empty">検証済みまたは一部確認済みのスポットは現在未収録です。</p>' : filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
+        ${filteredSpots.length === 0 ? this.getSpotsEmptyMessage() : filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
           <strong>${spot.name}</strong><small>${spot.eraLabel || spot.hazardInfo?.typeName || '情報'}</small>
         </button>`).join('')}
       `;
@@ -389,8 +395,23 @@ class ARRegionalApp {
         e.currentTarget.classList.add('active');
         this.currentHazardType = e.currentTarget.dataset.hazard;
         this.updateOfficialHazardTile(this.currentHazardType);
+        this.updateFloodConceptToggleVisibility();
       });
     });
+
+    // 洪水の概念イメージ（水面）表示トグル
+    const floodConceptChk = document.getElementById('chk-flood-concept');
+    if (floodConceptChk) {
+      floodConceptChk.addEventListener('change', (e) => {
+        this.showFloodConceptImage = e.target.checked;
+      });
+    }
+
+    // 体験モード切替（探索 / 現地）
+    const exploreBtn = document.getElementById('btn-mode-explore');
+    const onsiteBtn = document.getElementById('btn-mode-onsite');
+    if (exploreBtn) exploreBtn.addEventListener('click', () => this.enableExploreMode());
+    if (onsiteBtn) onsiteBtn.addEventListener('click', () => this.enableOnsiteMode());
 
     // シミュレータパネル切り替え
     const simPanel = document.getElementById('simulator-panel');
@@ -407,7 +428,7 @@ class ARRegionalApp {
     // シミュレータコントロール
     const headingInput = document.getElementById('sim-heading');
     headingInput.addEventListener('input', (e) => {
-      this.setHeading(parseFloat(e.target.value));
+      this.setHeading(parseFloat(e.target.value), 'manual');
     });
 
     document.querySelectorAll('.sim-btn-grid .btn-chip').forEach(btn => {
@@ -416,7 +437,8 @@ class ARRegionalApp {
         e.currentTarget.classList.add('active');
         this.userPos.latitude = parseFloat(e.currentTarget.dataset.lat);
         this.userPos.longitude = parseFloat(e.currentTarget.dataset.lng);
-        this.isSimulating = true;
+        // 位置プリセットは探索モードの操作
+        this.locationMode = 'explore';
         this.updateLocationStatus();
       });
     });
@@ -627,7 +649,7 @@ class ARRegionalApp {
       const degreesPerPixel = 120 / window.innerWidth;
       let newHeading = (this.startHeading - deltaX * degreesPerPixel) % 360;
       if (newHeading < 0) newHeading += 360;
-      this.setHeading(newHeading);
+      this.setHeading(newHeading, 'manual');
     };
 
     const onPointerUp = () => {
@@ -639,9 +661,10 @@ class ARRegionalApp {
     window.addEventListener('pointerup', onPointerUp);
   }
 
-  setHeading(deg) {
+  // source: 'sensor' | 'simulation' | 'manual'
+  setHeading(deg, source = 'manual') {
     this.heading = deg;
-    this.isSimulating = true;
+    this.headingSource = source;
     const headingInput = document.getElementById('sim-heading');
     const headingValText = document.getElementById('sim-heading-val');
 
@@ -666,6 +689,8 @@ class ARRegionalApp {
       this.cameraIconOff.classList.remove('hidden');
       this.cameraBtnText.textContent = 'カメラOFF';
       this.toggleCameraBtn.classList.add('active-highlight');
+      // カメラ起動は「現地で体験」意図とみなし、GPS/センサーを許可要求して現地モードへ
+      await this.enableOnsiteMode();
     } catch (err) {
       console.warn('カメラアクセスエラー:', err);
       alert('カメラアクセスの許可が必要です。\n※スマートフォン実機やHTTPS環境でお使いいただくか、このまま「地図表示」でお試しください。');
@@ -687,13 +712,15 @@ class ARRegionalApp {
     this.cameraIconOff.classList.add('hidden');
     this.cameraBtnText.textContent = 'カメラON';
     this.toggleCameraBtn.classList.remove('active-highlight');
+    // カメラを切ったら探索モードへ戻す
+    this.enableExploreMode();
   }
 
   setupGeolocationAndSensors() {
     if ('geolocation' in navigator) {
       navigator.geolocation.watchPosition(
         (pos) => {
-          if (!this.isSimulating) {
+          if (this.locationMode === 'onsite') {
             this.userPos.latitude = pos.coords.latitude;
             this.userPos.longitude = pos.coords.longitude;
             this.updateLocationStatus();
@@ -704,29 +731,90 @@ class ARRegionalApp {
       );
     }
 
-    const handleOrientation = (e) => {
-      if (!this.isSimulating) {
-        let heading = e.alpha;
-        if (e.webkitCompassHeading) {
-          heading = e.webkitCompassHeading;
-        }
-        if (heading !== null && heading !== undefined) {
-          this.setHeading((360 - heading) % 360);
-        }
+    this.handleOrientation = (e) => {
+      if (this.locationMode !== 'onsite') return;
+      // iOS Safari: webkitCompassHeading は「真北からの時計回り角度（0=北, 90=東）」。
+      //   画面上の方位に合わせるため 360 - heading で反時計回りへ変換して扱う。
+      // Android Chrome: absolute な deviceorientation の alpha は「反時計回り（0=北, 90=西）」。
+      //   端末・ブラウザ差が大きく、要実機確認。ここでは iOS と同様の式で暫定処理する。
+      let heading = null;
+      if (typeof e.webkitCompassHeading === 'number') {
+        heading = e.webkitCompassHeading; // iOS
+      } else if (e.absolute === true && typeof e.alpha === 'number') {
+        heading = e.alpha; // Android(absolute)
+      } else if (typeof e.alpha === 'number') {
+        heading = e.alpha; // フォールバック（要実機確認）
+      }
+      if (heading !== null && heading !== undefined && !Number.isNaN(heading)) {
+        this.setHeading((360 - heading) % 360, 'sensor');
       }
     };
 
-    if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', handleOrientation, true);
+    // iOS 13+ 以外は許可不要とみなす
+    const needsPermission = typeof DeviceOrientationEvent !== 'undefined'
+      && typeof DeviceOrientationEvent.requestPermission === 'function';
+    this.orientationPermission = needsPermission ? 'unknown' : 'not-required';
+    if (!needsPermission && window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', (e) => this.handleOrientation(e), true);
+      this.orientationListenerAttached = true;
     }
 
     this.updateLocationStatus();
   }
 
+  // iOS などユーザー操作起点のセンサー許可を要求し、現地モードを開始する
+  async enableOnsiteMode() {
+    const needsPermission = typeof DeviceOrientationEvent !== 'undefined'
+      && typeof DeviceOrientationEvent.requestPermission === 'function';
+    if (needsPermission) {
+      try {
+        const res = await DeviceOrientationEvent.requestPermission();
+        this.orientationPermission = res === 'granted' ? 'granted' : 'denied';
+        if (res === 'granted' && !this.orientationListenerAttached) {
+          window.addEventListener('deviceorientation', (e) => this.handleOrientation(e), true);
+          this.orientationListenerAttached = true;
+        }
+      } catch (err) {
+        console.warn('方位センサー許可エラー:', err);
+        this.orientationPermission = 'denied';
+      }
+    }
+    this.locationMode = 'onsite';
+    this.updateLocationStatus();
+    this.updateLocationModeUI();
+  }
+
+  enableExploreMode() {
+    this.locationMode = 'explore';
+    this.updateLocationStatus();
+    this.updateLocationModeUI();
+  }
+
+  updateLocationModeUI() {
+    const onsiteBtn = document.getElementById('btn-mode-onsite');
+    const exploreBtn = document.getElementById('btn-mode-explore');
+    if (onsiteBtn) onsiteBtn.classList.toggle('active', this.locationMode === 'onsite');
+    if (exploreBtn) exploreBtn.classList.toggle('active', this.locationMode === 'explore');
+  }
+
+  // 洪水選択時のみ「概念イメージ表示」トグルを見せる
+  updateFloodConceptToggleVisibility() {
+    const wrap = document.getElementById('flood-concept-toggle-wrap');
+    if (!wrap) return;
+    const show = this.currentLayer === 'disaster' && this.currentHazardType === 'flood';
+    wrap.classList.toggle('hidden', !show);
+    if (!show) {
+      this.showFloodConceptImage = false;
+      const chk = document.getElementById('chk-flood-concept');
+      if (chk) chk.checked = false;
+    }
+  }
+
   updateLocationStatus() {
     const latStr = this.userPos.latitude.toFixed(4);
     const lngStr = this.userPos.longitude.toFixed(4);
-    this.locationText.textContent = `現在地: 北緯 ${latStr}, 東経 ${lngStr} ${this.isSimulating ? '(Sim)' : ''}`;
+    const modeTag = this.locationMode === 'onsite' ? '(現地GPS)' : '(探索/シミュレーション)';
+    this.locationText.textContent = `現在地: 北緯 ${latStr}, 東経 ${lngStr} ${modeTag}`;
 
     if (this.userMapMarker) {
       this.userMapMarker.setLatLng([this.userPos.latitude, this.userPos.longitude]);
@@ -742,6 +830,7 @@ class ARRegionalApp {
     const banner = this.disasterBanner;
     if (this.currentLayer === 'disaster') {
       banner.classList.remove('hidden');
+      this.updateFloodConceptToggleVisibility();
 
       // 避難所データは公式一次資料で未検証のため、具体的な方向・距離の案内を一時停止。
       // 公式データで施設名・座標・対象災害・種別を確認後に再有効化する。
@@ -759,19 +848,18 @@ class ARRegionalApp {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.renderedPins = [];
 
-      if (this.currentLayer === 'disaster') {
+      // 防災AR: 洪水を選択中かつユーザーが概念イメージ表示をONにした場合のみ水面を描画。
+      // 津波は洪水用イメージを流用しない。土砂災害は水面表現を一切描かない。
+      if (this.currentLayer === 'disaster'
+        && this.currentHazardType === 'flood'
+        && this.showFloodConceptImage) {
         this.drawARFloodWaterline();
       }
 
-      const filteredSpots = this.getDisplayableSpots().filter(s => s.category === this.currentLayer);
+      const filteredSpots = this.getPointSpots().filter(s => s.category === this.currentLayer);
       filteredSpots.forEach(spot => {
         this.drawARSpotMarker(spot);
       });
-
-      if (this.currentLayer === 'disaster') {
-        // 避難所AR表示は公式データ検証後に再有効化
-        // this.drawARShelterMarkers();
-      }
     }
 
     requestAnimationFrame(() => this.renderLoop());
@@ -1018,6 +1106,19 @@ class ARRegionalApp {
   getDisplayableSpots() {
     // unverified は本番表示しない。partially_verified はモーダルで明示する。
     return this.spots.filter(spot => spot.verificationStatus !== 'unverified');
+  }
+
+  // ARピン・地図マーカーとして「点」で表示してよいスポット。
+  // 洪水・津波などの面ハザード（isAreaHazard）は点表示せず、ハザードタイルで表現する。
+  getPointSpots() {
+    return this.getDisplayableSpots().filter(spot => !spot.isAreaHazard);
+  }
+
+  getSpotsEmptyMessage() {
+    if (this.currentLayer === 'disaster') {
+      return '<p class="material-empty">防災は面的なハザードタイルで表示します。公式確認済みの避難所・防災施設などの点データは現在未収録です。</p>';
+    }
+    return '<p class="material-empty">検証済みまたは一部確認済みのスポットは現在未収録です。</p>';
   }
 
   getPrimaryMedia(spot) {

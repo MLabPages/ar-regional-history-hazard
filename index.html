@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR地域理解・歴史・防災統合プラットフォーム</title>
-  <link rel="stylesheet" href="styles.css?v=audit-v3">
+  <link rel="stylesheet" href="styles.css?v=p0-modes">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Leaflet Map CSS & JS (地図モード用) -->
@@ -157,6 +157,10 @@
             <button class="hazard-type-btn" data-hazard="sediment">土砂災害（急傾斜）</button>
           </div>
         </div>
+        <label class="flood-concept-toggle hidden" id="flood-concept-toggle-wrap">
+          <input type="checkbox" id="chk-flood-concept">
+          <span>AR概念イメージ（洪水の水面）を表示　※実際の想定浸水深ではありません</span>
+        </label>
         <div id="shelter-guide-text" class="shelter-guide">
           <i data-lucide="navigation"></i>
           <span>避難所情報を確認中…</span>
@@ -211,6 +215,18 @@
         </div>
 
         <div class="sim-controls">
+          <div class="control-group">
+            <label><i data-lucide="navigation"></i> 体験モード:</label>
+            <div class="location-mode-toggle">
+              <button id="btn-mode-explore" class="loc-mode-btn active" type="button">
+                <i data-lucide="map"></i> 地図から探索
+              </button>
+              <button id="btn-mode-onsite" class="loc-mode-btn" type="button">
+                <i data-lucide="crosshair"></i> 現地で体験（GPS/方位）
+              </button>
+            </div>
+            <p class="loc-mode-note">「現地で体験」を押すと、端末のGPSと方位センサー（iPhoneは許可確認）を使います。地図から探索では位置・方角を手動で操作します。</p>
+          </div>
           <div class="control-group">
             <div class="label-row">
               <label><i data-lucide="compass"></i> カメラの向き (方角):</label>
@@ -300,7 +316,7 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=audit-v3"></script>
+  <script type="module" src="app.js?v=p0-modes"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();
