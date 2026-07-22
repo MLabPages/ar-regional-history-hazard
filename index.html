@@ -12,11 +12,6 @@
   <div id="app-container">
     <!-- カメラバックグラウンド -->
     <video id="camera-feed" autoplay playsinline muted></video>
-    <div id="camera-placeholder">
-      <i data-lucide="camera-off"></i>
-      <p>カメラを起動するか、シミュレータモードで体験してください</p>
-      <button id="btn-start-camera" class="btn-primary">カメラを起動する</button>
-    </div>
 
     <!-- 古写真透明度比較オーバーレイ (ARカメラ上に重なる) -->
     <div id="historical-overlay" class="hidden">
@@ -55,6 +50,16 @@
           </button>
         </div>
       </header>
+
+      <!-- カメラ未起動時のプロンプト案内 (最前面) -->
+      <div id="camera-placeholder">
+        <i data-lucide="camera"></i>
+        <p>実機のカメラ映像にARを重ね合わせます。<br>PC環境や屋内ではシミュレーターモード（Sim）でもお試しいただけます。</p>
+        <button id="btn-start-camera" class="btn-primary">
+          <i data-lucide="video"></i>
+          <span>カメラを起動する</span>
+        </button>
+      </div>
 
       <!-- レイヤー切替タブ -->
       <nav class="layer-tabs">
@@ -168,7 +173,6 @@
 
   <script type="module" src="app.js"></script>
   <script>
-    // アイコン初期化
     window.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();
     });
