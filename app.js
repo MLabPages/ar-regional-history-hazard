@@ -56,6 +56,12 @@ class ARRegionalApp {
     this.ctx = this.canvas.getContext('2d');
     this.video = document.getElementById('camera-feed');
     this.mapViewEl = document.getElementById('map-view');
+    this.mapNavigationTools = document.getElementById('map-navigation-tools');
+    this.mapSearchForm = document.getElementById('map-search-form');
+    this.mapSearchInput = document.getElementById('map-search-input');
+    this.mapSearchResults = document.getElementById('map-search-results');
+    this.mapNavigationStatus = document.getElementById('map-navigation-status');
+    this.mapCurrentLocationButton = document.getElementById('btn-map-current-location');
     this.cameraPlaceholder = document.getElementById('camera-placeholder');
     this.locationText = document.getElementById('location-text');
     this.guideHintText = document.getElementById('guide-hint-text');
@@ -453,6 +459,13 @@ class ARRegionalApp {
       });
     }
 
+    // 地図上の場所検索・現在地移動
+    this.mapSearchForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      this.searchMapLocation();
+    });
+    this.mapCurrentLocationButton?.addEventListener('click', () => this.moveMapToCurrentLocation());
+
     // ヘッダー カメラON/OFFボタン
     if (this.toggleCameraBtn) {
       this.toggleCameraBtn.addEventListener('click', () => {
@@ -662,6 +675,7 @@ class ARRegionalApp {
     const spotsPanel = this.getMapSpotsPanel();
 
     if (mode === 'map') {
+      this.mapNavigationTools?.classList.remove('hidden');
       this.btnModeAr.classList.remove('active');
       this.btnModeMap.classList.add('active');
       this.mapViewEl.classList.remove('hidden');
@@ -694,6 +708,7 @@ class ARRegionalApp {
         }, 50);
       }
     } else {
+      this.mapNavigationTools?.classList.add('hidden');
       this.btnModeAr.classList.add('active');
       this.btnModeMap.classList.remove('active');
       this.mapViewEl.classList.add('hidden');
@@ -898,6 +913,125 @@ class ARRegionalApp {
     this.toggleCameraBtn.classList.remove('active-highlight');
     // カメラを切ったら探索モードへ戻す
     this.enableExploreMode();
+  }
+
+  setMapNavigationStatus(message, kind = 'info') {
+    if (!this.mapNavigationStatus) return;
+    this.mapNavigationStatus.textContent = message || '';
+    this.mapNavigationStatus.dataset.kind = kind;
+    this.mapNavigationStatus.classList.toggle('hidden', !message);
+  }
+
+  moveMapToCurrentLocation() {
+    if (!navigator.geolocation) {
+      this.setMapNavigationStatus('この端末では現在地を取得できません。', 'warning');
+      return;
+    }
+
+    this.mapCurrentLocationButton?.setAttribute('aria-busy', 'true');
+    this.setMapNavigationStatus('現在地を取得しています…', 'info');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.userPos.latitude = position.coords.latitude;
+        this.userPos.longitude = position.coords.longitude;
+        this.locationMode = 'onsite';
+        this.updateLocationModeUI();
+        this.updateLocationStatus();
+        if (this.map) {
+          this.map.setView([this.userPos.latitude, this.userPos.longitude], Math.max(this.map.getZoom(), 16));
+          this.userMapMarker?.openPopup();
+        }
+        this.setMapNavigationStatus('現在地へ移動しました（現地GPS）', 'success');
+        this.mapCurrentLocationButton?.removeAttribute('aria-busy');
+      },
+      (error) => {
+        const message = error?.code === 1
+          ? '位置情報の許可が必要です。ブラウザの設定を確認してください。'
+          : '現在地を取得できませんでした。屋外や電波の届く場所で再試行してください。';
+        this.setMapNavigationStatus(message, 'warning');
+        this.mapCurrentLocationButton?.removeAttribute('aria-busy');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  }
+
+  async searchMapLocation() {
+    const query = this.mapSearchInput?.value.trim();
+    if (!query) {
+      this.setMapNavigationStatus('地名や住所を入力してください。', 'warning');
+      this.mapSearchInput?.focus();
+      return;
+    }
+
+    const endpoint = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`;
+    this.setMapNavigationStatus('地名を検索しています…', 'info');
+    this.mapSearchResults?.classList.add('hidden');
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+      const response = await fetch(endpoint, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal
+      });
+      window.clearTimeout(timeoutId);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      // 国土地理院の応答は通常配列だが、プロキシ等で results/data に
+      // 包まれる場合もあるため、検索結果の入れ物だけを安全に許容する。
+      const results = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.results)
+          ? payload.results
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+      const normalized = results
+        .map((item) => ({
+          name: String(item.title || item.name || item.address || item.address1 || query),
+          latitude: Number(item.lat ?? item.latitude ?? item.y),
+          longitude: Number(item.lon ?? item.longitude ?? item.lng ?? item.x)
+        }))
+        .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
+        .slice(0, 5);
+
+      if (!normalized.length) {
+        this.setMapNavigationStatus(`「${query}」に一致する場所が見つかりませんでした。`, 'warning');
+        return;
+      }
+      this.renderMapSearchResults(normalized);
+      this.setMapNavigationStatus(`${normalized.length}件の候補が見つかりました。`, 'success');
+    } catch (error) {
+      console.warn('地名検索エラー:', error);
+      const message = error?.name === 'AbortError'
+        ? '検索に時間がかかっています。地名を短くするか、しばらくして再試行してください。'
+        : '検索できませんでした。通信状態を確認して再試行してください。';
+      this.setMapNavigationStatus(message, 'warning');
+    }
+  }
+
+  renderMapSearchResults(results) {
+    if (!this.mapSearchResults) return;
+    this.mapSearchResults.replaceChildren();
+    results.forEach((result) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'map-search-result';
+      button.setAttribute('role', 'option');
+      button.textContent = result.name;
+      button.addEventListener('click', () => {
+        this.locationMode = 'explore';
+        this.userPos.latitude = result.latitude;
+        this.userPos.longitude = result.longitude;
+        this.updateLocationModeUI();
+        this.updateLocationStatus();
+        if (this.map) this.map.setView([result.latitude, result.longitude], 16);
+        this.mapSearchResults.classList.add('hidden');
+        this.setMapNavigationStatus(`${result.name}へ移動しました（地図探索）`, 'success');
+      });
+      this.mapSearchResults.appendChild(button);
+    });
+    this.mapSearchResults.classList.remove('hidden');
   }
 
   setupGeolocationAndSensors() {
