@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AR地域理解・歴史・防災プラットフォーム MVP</title>
+  <title>AR地域理解・歴史・防災統合プラットフォーム</title>
   <link rel="stylesheet" href="styles.css">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -70,7 +70,7 @@
 
     <!-- ⑤ UIオーバレイ層 -->
     <div class="ui-layer">
-      <!-- 上部ステータスバー -->
+      <!-- 上部コンパクトステータスバー (画面視界を遮らないスリム設計) -->
       <header class="status-header">
         <div class="brand">
           <i data-lucide="compass" class="brand-icon"></i>
@@ -93,13 +93,11 @@
         </div>
 
         <div class="header-actions">
-          <!-- カメラON/OFFボタン -->
           <button id="btn-toggle-camera" class="btn-glass" title="カメラON/OFF">
             <i data-lucide="video" id="camera-icon-on"></i>
             <i data-lucide="video-off" id="camera-icon-off" class="hidden"></i>
             <span id="camera-btn-text">カメラON</span>
           </button>
-          <!-- シミュレータボタン -->
           <button id="btn-toggle-sim" class="btn-glass active-highlight" title="シミュレータ操作">
             <i data-lucide="sliders"></i>
             <span>Sim操作</span>
@@ -110,24 +108,8 @@
         </div>
       </header>
 
-      <!-- カメラ未起動時のプロンプト案内 -->
-      <div id="camera-placeholder">
-        <i data-lucide="camera"></i>
-        <p>実際の街にスマホをかざして体験します。<br>部屋の中や現地以外では<strong>「地図表示」</strong>で体験いただけます！</p>
-        <div class="placeholder-actions">
-          <button id="btn-start-camera" class="btn-primary">
-            <i data-lucide="video"></i>
-            <span>カメラを起動する</span>
-          </button>
-          <button id="btn-switch-to-map-prompt" class="btn-secondary">
-            <i data-lucide="map"></i>
-            <span>部屋の中で地図から体験する</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- レイヤー切替タブ -->
-      <nav class="layer-tabs">
+      <!-- ヘッダー直下にコンパクト配置したレイヤー切替バー (中央の圧迫を解消) -->
+      <nav class="layer-tabs-compact">
         <button class="tab-btn active" data-layer="history">
           <i data-lucide="landmark"></i>
           <span>① 歴史・観光</span>
@@ -142,15 +124,56 @@
         </button>
       </nav>
 
-      <!-- 防災警告・避難案内バー -->
+      <!-- 地図表示時専用: 時代選択タイムラインバー (複数年・空中写真切替) -->
+      <div id="era-timeline-bar" class="era-timeline-container hidden">
+        <div class="timeline-title">
+          <i data-lucide="clock"></i>
+          <span>国土地理院 時代別空中写真・地図切り替え:</span>
+        </div>
+        <div class="timeline-chips">
+          <button class="era-chip active" data-era="present">現代 (標準)</button>
+          <button class="era-chip" data-era="photo_latest">2020年代 航空写真</button>
+          <button class="era-chip" data-era="showa50">昭和50年代 (1975年頃)</button>
+          <button class="era-chip" data-era="showa30">昭和30年代 (1965年頃)</button>
+          <button class="era-chip" data-era="showa20">昭和20年代 (1948年頃)</button>
+          <button class="era-chip" data-era="showa_early">昭和初期 (1938年頃)</button>
+        </div>
+      </div>
+
+      <!-- 防災レイヤー表示時専用: 公的ハザードマップ切替 ＆ 凡例 -->
       <div id="disaster-alert-banner" class="disaster-banner hidden">
-        <div class="hazard-badge">
-          <i data-lucide="alert-triangle"></i>
-          <span id="hazard-depth-text">想定浸水深: 3.5m (2階床上)</span>
+        <div class="hazard-header-row">
+          <div class="hazard-badge">
+            <i data-lucide="alert-triangle"></i>
+            <span id="hazard-depth-text">国土地理院・国土交通省 公式ハザードデータ重ね合わせ中</span>
+          </div>
+          <div class="hazard-sub-toggle">
+            <button class="hazard-type-btn active" data-hazard="flood">洪水浸水想定</button>
+            <button class="hazard-type-btn" data-hazard="tsunami">津波浸水想定</button>
+            <button class="hazard-type-btn" data-hazard="sediment">土砂災害警戒</button>
+          </div>
         </div>
         <div id="shelter-guide-text" class="shelter-guide">
           <i data-lucide="navigation"></i>
-          <span>最寄り避難所: 大阪城公園 (東へ約350m)</span>
+          <span>最寄り避難所: 大阪城公園 (東へ約350m / 標高22.5m)</span>
+        </div>
+        <!-- 公式ハザード凡例バー -->
+        <div id="hazard-legend-box" class="hazard-legend"></div>
+      </div>
+
+      <!-- カメラ未起動時のプロンプト案内 -->
+      <div id="camera-placeholder">
+        <i data-lucide="camera"></i>
+        <p>実際の街にスマホをかざして体験します。<br>部屋の中や現地以外では<strong>「地図表示」</strong>で時代別空中写真や公式ハザードマップを閲覧いただけます！</p>
+        <div class="placeholder-actions">
+          <button id="btn-start-camera" class="btn-primary">
+            <i data-lucide="video"></i>
+            <span>カメラを起動する</span>
+          </button>
+          <button id="btn-switch-to-map-prompt" class="btn-secondary">
+            <i data-lucide="map"></i>
+            <span>部屋の中で地図から体験する</span>
+          </button>
         </div>
       </div>
 
@@ -170,7 +193,7 @@
         <div class="sim-guide-box">
           <div class="sim-guide-step">
             <span class="step-num">1</span>
-            <span>「地図表示」に切り替えると部屋の中から全スポットを移動・探索できます</span>
+            <span>「地図表示」に切り替えると昭和初期〜現代の空中写真・公式ハザードを閲覧できます</span>
           </div>
           <div class="sim-guide-step">
             <span class="step-num">2</span>
@@ -214,7 +237,7 @@
       <!-- 下部フッターコントロール -->
       <footer class="app-footer">
         <div class="quick-status">
-          <span id="active-layer-desc"><i data-lucide="touch-point"></i> 浮遊するマーカーをタップすると古写真・解説を表示</span>
+          <span id="active-layer-desc"><i data-lucide="touch-point"></i> 浮遊するマーカーをタップすると古写真・公的データ解説を表示</span>
         </div>
       </footer>
     </div>
@@ -231,7 +254,7 @@
           <h2 id="modal-title">スポット名称</h2>
           <p id="modal-summary" class="modal-summary">概要</p>
           <div id="modal-hazard-box" class="modal-hazard-box hidden">
-            <h4><i data-lucide="alert-circle"></i> 防災・リスク情報</h4>
+            <h4><i data-lucide="alert-circle"></i> 防災・リスク情報 (公式オープンデータ)</h4>
             <p id="modal-hazard-detail"></p>
           </div>
           <p id="modal-desc" class="modal-desc">詳細解説テキスト</p>
@@ -254,13 +277,14 @@
       <div class="modal-card">
         <button id="btn-close-info" class="modal-close"><i data-lucide="x"></i></button>
         <div class="modal-body">
-          <h2>AR地域理解・歴史・防災プラットフォーム</h2>
+          <h2>AR地域理解・歴史・防災統合プラットフォーム</h2>
           <p class="subtitle">「場所にスマホをかざすと、その土地の時間とリスクが見える」</p>
           <hr>
-          <h3>部屋の中・遠隔での使い方</h3>
+          <h3>公的データ出典・信頼性について</h3>
           <ul>
-            <li><strong>地図表示モード</strong>：上部の「地図表示」ボタンを押すと、部屋の中から現地に行かなくても地図上で古写真・歴史・防災ハザードを全方位確認できます。</li>
-            <li><strong>古写真比較操作</strong>：古写真表示後は、写真を指で自由にドラッグ移動・拡大縮小・回転して背景の建物にぴったり合わせられます。</li>
+            <li><strong>ハザードデータ</strong>：国土交通省「重ねるハザードマップ」公的配信サービスおよび大阪市防災オープンデータの公式数値を使用しています。</li>
+            <li><strong>時代別写真・古地図データ</strong>：国土地理院が整備する年代別（昭和初期〜現代）空中写真タイルデータを使用しています。</li>
+            <li><strong>歴史的根拠</strong>：国立国会図書館デジタルコレクションおよび公的地域史誌の確認済み公有写真データを使用しています。</li>
           </ul>
         </div>
       </div>
