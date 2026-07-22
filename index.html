@@ -7,29 +7,68 @@
   <link rel="stylesheet" href="styles.css">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Leaflet Map CSS & JS (地図モード用) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
   <div id="app-container">
-    <!-- カメラバックグラウンド -->
+    <!-- ① カメラバックグラウンド (ARモード用) -->
     <video id="camera-feed" autoplay playsinline muted></video>
 
-    <!-- 古写真透明度比較オーバーレイ (ARカメラ上に重なる) -->
+    <!-- ② 地図表示コンテナ (地図モード用) -->
+    <div id="map-view" class="hidden"></div>
+
+    <!-- ③ 古写真リアルAR重ね合わせオーバーレイ (インタラクティブ操作対応) -->
     <div id="historical-overlay" class="hidden">
-      <img id="historical-overlay-img" src="" alt="古写真">
-      <div class="overlay-opacity-bar">
-        <span class="slider-label">現実 (0%)</span>
-        <input type="range" id="opacity-slider" min="0" max="100" value="60">
-        <span class="slider-label">古写真 (100%)</span>
-        <button id="btn-close-overlay" class="btn-icon" title="古写真を閉じる">
-          <i data-lucide="x"></i>
-        </button>
+      <div id="overlay-image-wrapper">
+        <img id="historical-overlay-img" src="" alt="古写真">
+        <div id="overlay-transform-handles" class="transform-guide">
+          <span class="guide-text"><i data-lucide="move"></i> ドラッグで位置移動 / つまんで拡大・回転</span>
+        </div>
+      </div>
+
+      <!-- 古写真高度操作コントローラー -->
+      <div class="overlay-control-panel">
+        <div class="panel-header">
+          <span><i data-lucide="layers"></i> 古写真位置合わせ・透視コントローラー</span>
+          <button id="btn-reset-overlay" class="btn-chip-small"><i data-lucide="rotate-ccw"></i> リセット</button>
+          <button id="btn-close-overlay" class="btn-icon-small"><i data-lucide="x"></i></button>
+        </div>
+
+        <div class="panel-sliders">
+          <div class="slider-row">
+            <label><i data-lucide="eye"></i> 透過度:</label>
+            <input type="range" id="opacity-slider" min="0" max="100" value="65">
+            <span id="opacity-val">65%</span>
+          </div>
+
+          <div class="slider-row">
+            <label><i data-lucide="maximize-2"></i> 拡大率:</label>
+            <input type="range" id="scale-slider" min="50" max="250" value="100">
+            <span id="scale-val">100%</span>
+          </div>
+
+          <div class="slider-row">
+            <label><i data-lucide="rotate-cw"></i> 角度:</label>
+            <input type="range" id="rotate-slider" min="-180" max="180" value="0">
+            <span id="rotate-val">0°</span>
+          </div>
+
+          <div class="toggle-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="chk-sync-heading" checked>
+              <span><i data-lucide="compass"></i> 視点回転に追従 (3D空間連動)</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- AR描画キャンバス -->
+    <!-- ④ AR描画キャンバス -->
     <canvas id="ar-canvas"></canvas>
 
-    <!-- ARオーバレイ UI要素 -->
+    <!-- ⑤ UIオーバレイ層 -->
     <div class="ui-layer">
       <!-- 上部ステータスバー -->
       <header class="status-header">
@@ -40,6 +79,19 @@
             <div id="location-text" class="status-subtitle">位置情報: 取得中...</div>
           </div>
         </div>
+
+        <!-- 視点・モードトグル (AR ↔ 地図) -->
+        <div class="view-mode-toggle">
+          <button id="btn-mode-ar" class="mode-btn active">
+            <i data-lucide="camera"></i>
+            <span>AR表示</span>
+          </button>
+          <button id="btn-mode-map" class="mode-btn">
+            <i data-lucide="map"></i>
+            <span>地図表示</span>
+          </button>
+        </div>
+
         <div class="header-actions">
           <!-- カメラON/OFFボタン -->
           <button id="btn-toggle-camera" class="btn-glass" title="カメラON/OFF">
@@ -48,7 +100,7 @@
             <span id="camera-btn-text">カメラON</span>
           </button>
           <!-- シミュレータボタン -->
-          <button id="btn-toggle-sim" class="btn-glass active-highlight" title="シミュレータ操作パネル">
+          <button id="btn-toggle-sim" class="btn-glass active-highlight" title="シミュレータ操作">
             <i data-lucide="sliders"></i>
             <span>Sim操作</span>
           </button>
@@ -58,17 +110,18 @@
         </div>
       </header>
 
-      <!-- カメラ未起動時のプロンプト案内 (最前面) -->
+      <!-- カメラ未起動時のプロンプト案内 -->
       <div id="camera-placeholder">
         <i data-lucide="camera"></i>
-        <p>実際の街にスマホをかざして体験します。<br>PCや室内では画面ドラッグや下記Sim機能で自由に体験できます。</p>
+        <p>実機のカメラ映像にARを重ね合わせます。<br>部屋の中や現地以外では<strong>「地図表示」</strong>や下記Sim機能で体験できます！</p>
         <div class="placeholder-actions">
           <button id="btn-start-camera" class="btn-primary">
             <i data-lucide="video"></i>
             <span>カメラを起動する</span>
           </button>
-          <button id="btn-dismiss-placeholder" class="btn-secondary">
-            <span>シミュレーターで体験する</span>
+          <button id="btn-switch-to-map-prompt" class="btn-secondary">
+            <i data-lucide="map"></i>
+            <span>部屋の中で地図から体験する</span>
           </button>
         </div>
       </div>
@@ -89,7 +142,7 @@
         </button>
       </nav>
 
-      <!-- 防災警告・避難案内バー (防災レイヤー時表示) -->
+      <!-- 防災警告・避難案内バー -->
       <div id="disaster-alert-banner" class="disaster-banner hidden">
         <div class="hazard-badge">
           <i data-lucide="alert-triangle"></i>
@@ -107,26 +160,25 @@
         <span>画面を左右にドラッグして全方位 (360°) 見回せます</span>
       </div>
 
-      <!-- シミュレーター操作パネル (PC/室内テスト用) -->
+      <!-- シミュレーター操作パネル -->
       <section id="simulator-panel" class="sim-panel">
         <div class="sim-header">
           <span><i data-lucide="cpu"></i> シミュレーター操作パネル</span>
           <button id="btn-close-sim" class="btn-icon-small"><i data-lucide="x"></i></button>
         </div>
         
-        <!-- 初心者向け操作方法ガイドステップ -->
         <div class="sim-guide-box">
           <div class="sim-guide-step">
             <span class="step-num">1</span>
-            <span>下記の「向きスライダー」または<strong>画面ドラッグ</strong>でカメラの向きを変える</span>
+            <span>「地図表示」に切り替えると部屋の中から全スポットを探索できます</span>
           </div>
           <div class="sim-guide-step">
             <span class="step-num">2</span>
-            <span>「位置切り替え」で大阪城・京街道など好きな場所に移動する</span>
+            <span>「カメラ向き」または画面ドラッグで全方位360度見回す</span>
           </div>
           <div class="sim-guide-step">
             <span class="step-num">3</span>
-            <span>画面に浮かぶマーカーをタップして古写真やハザード情報を比較する</span>
+            <span>マーカータップで古写真表示後、ドラッグや拡大で現像比較</span>
           </div>
         </div>
 
@@ -190,7 +242,7 @@
           <div class="modal-actions">
             <button id="btn-compare-ar" class="btn-primary">
               <i data-lucide="layers"></i>
-              <span>古写真と現実の景観を比較 (AR重ね合わせ)</span>
+              <span>古写真と現実の景観を比較 (リアルAR重ね合わせ)</span>
             </button>
           </div>
         </div>
@@ -205,14 +257,10 @@
           <h2>AR地域理解・歴史・防災プラットフォーム</h2>
           <p class="subtitle">「場所にスマホをかざすと、その土地の時間とリスクが見える」</p>
           <hr>
-          <h3>コンセプト</h3>
-          <p>歴史・観光理解と、地域の変変、そして防災・ハザード情報を1つのAR体験に統合した次世代地域プラットフォームプロトタイプです。</p>
-          <h3>操作のヒント</h3>
+          <h3>部屋の中・遠隔での使い方</h3>
           <ul>
-            <li><strong>画面ドラッグ</strong>：画面を左右にドラッグすると全方位360度見回せます。</li>
-            <li><strong>① 歴史・観光レイヤー</strong>：現在地周辺の古写真を表示し、スライダーで現在の景観と重ね合わせて比較できます。</li>
-            <li><strong>② 地域理解レイヤー</strong>：かつての街道や跡地、土地の記憶を空間上で辿れます。</li>
-            <li><strong>③ 防災・ハザードレイヤー</strong>：目の前の建築物に対して「想定浸水深 3.5m」等をAR高さ標識として表示し、最寄り避難所をコンパス案内します。</li>
+            <li><strong>地図表示モード</strong>：上部の「地図表示」ボタンを押すと、部屋の中から現地に行かなくても地図上で古写真・歴史・防災ハザードを全方位確認できます。</li>
+            <li><strong>古写真比較操作</strong>：古写真表示後は、写真を指で自由にドラッグ移動・拡大縮小・回転して背景の建物にぴったり合わせられます。</li>
           </ul>
         </div>
       </div>

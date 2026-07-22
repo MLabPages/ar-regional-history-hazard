@@ -2,7 +2,8 @@ import { SAMPLE_CENTER, SPOT_DATA, EVACUATION_SHELTERS } from './data.js';
 
 class ARRegionalApp {
   constructor() {
-    // ステート
+    // モードステート: 'ar' | 'map'
+    this.viewMode = 'ar';
     this.currentLayer = 'history'; // history | community | disaster
     this.userPos = { ...SAMPLE_CENTER };
     this.heading = 0; // 北 = 0度
@@ -10,10 +11,23 @@ class ARRegionalApp {
     this.cameraActive = false;
     this.mediaStream = null;
 
-    // ドラッグ操作ステート
-    this.isDragging = false;
+    // ARドラッグ操作ステート
+    this.isDraggingCanvas = false;
     this.dragStartX = 0;
     this.startHeading = 0;
+
+    // 古写真インタラクティブ操作ステート
+    this.overlayState = {
+      posX: 0,
+      posY: 0,
+      scale: 1.0,
+      rotate: 0,
+      opacity: 0.65,
+      syncHeading: true,
+      initialHeading: 0
+    };
+    this.isDraggingOverlay = false;
+    this.overlayDragStart = { x: 0, y: 0 };
 
     this.spots = [...SPOT_DATA];
     this.shelters = [...EVACUATION_SHELTERS];
@@ -23,10 +37,15 @@ class ARRegionalApp {
     this.canvas = document.getElementById('ar-canvas');
     this.ctx = this.canvas.getContext('2d');
     this.video = document.getElementById('camera-feed');
+    this.mapViewEl = document.getElementById('map-view');
     this.cameraPlaceholder = document.getElementById('camera-placeholder');
     this.locationText = document.getElementById('location-text');
 
-    // カメラON/OFFボタン要素
+    // モード切替ボタン
+    this.btnModeAr = document.getElementById('btn-mode-ar');
+    this.btnModeMap = document.getElementById('btn-mode-map');
+
+    // カメラON/OFFボタン
     this.toggleCameraBtn = document.getElementById('btn-toggle-camera');
     this.cameraIconOn = document.getElementById('camera-icon-on');
     this.cameraIconOff = document.getElementById('camera-icon-off');
@@ -36,9 +55,20 @@ class ARRegionalApp {
     this.disasterBanner = document.getElementById('disaster-alert-banner');
     this.hazardDepthText = document.getElementById('hazard-depth-text');
     this.shelterGuideText = document.getElementById('shelter-guide-text');
+
+    // 古写真オーバーレイDOM
     this.historicalOverlay = document.getElementById('historical-overlay');
+    this.overlayImgWrapper = document.getElementById('overlay-image-wrapper');
     this.overlayImg = document.getElementById('historical-overlay-img');
     this.opacitySlider = document.getElementById('opacity-slider');
+    this.scaleSlider = document.getElementById('scale-slider');
+    this.rotateSlider = document.getElementById('rotate-slider');
+    this.chkSyncHeading = document.getElementById('chk-sync-heading');
+
+    // Leafletマップインスタンス
+    this.map = null;
+    this.mapMarkers = [];
+    this.userMapMarker = null;
 
     // ARスクリーンスポット情報
     this.renderedPins = [];
@@ -52,7 +82,11 @@ class ARRegionalApp {
 
     this.setupEventListeners();
     this.setupDragControls();
+    this.setupOverlayControls();
     this.setupGeolocationAndSensors();
+
+    // Leafletマップ初期化
+    this.initLeafletMap();
 
     requestAnimationFrame(() => this.renderLoop());
   }
@@ -60,22 +94,109 @@ class ARRegionalApp {
   resizeCanvas() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
+    if (this.map) this.map.invalidateSize();
   }
 
+  // --- Leaflet 地図モードの初期化 ---
+  initLeafletMap() {
+    if (typeof L === 'undefined') return;
+
+    this.map = L.map('map-view', {
+      center: [this.userPos.latitude, this.userPos.longitude],
+      zoom: 16,
+      zoomControl: false
+    });
+
+    // 国土地理院・標準地図タイル
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors | 国土地理院オープンデータ'
+    }).addTo(this.map);
+
+    // ユーザー現在地ピン
+    const userIcon = L.divIcon({
+      className: 'custom-user-pin',
+      html: `<div style="background:#3b82f6; width:16px; height:16px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 10px rgba(59,130,246,0.8);"></div>`,
+      iconSize: [16, 16]
+    });
+    this.userMapMarker = L.marker([this.userPos.latitude, this.userPos.longitude], { icon: userIcon })
+      .addTo(this.map)
+      .bindPopup('現在地 (シミュレート位置)');
+
+    // 浸水想定ゾーン (円)
+    L.circle([34.6890, 135.5220], {
+      color: '#ef4444',
+      fillColor: '#f87171',
+      fillOpacity: 0.35,
+      radius: 250
+    }).addTo(this.map).bindPopup('想定洪水浸水エリア (最大 3.5m)');
+
+    this.renderMapMarkers();
+  }
+
+  renderMapMarkers() {
+    if (!this.map) return;
+
+    // 既存マーカークリア
+    this.mapMarkers.forEach(m => this.map.removeLayer(m));
+    this.mapMarkers = [];
+
+    // フィルタリングしたスポットの表示
+    const filteredSpots = this.spots.filter(s => s.category === this.currentLayer);
+
+    filteredSpots.forEach(spot => {
+      let color = '#f59e0b';
+      if (spot.category === 'community') color = '#10b981';
+      if (spot.category === 'disaster') color = '#ef4444';
+
+      const icon = L.divIcon({
+        className: 'custom-spot-pin',
+        html: `<div style="background:${color}; padding:4px 8px; border-radius:12px; color:#fff; font-weight:bold; font-size:11px; border:1.5px solid #fff; box-shadow:0 4px 12px rgba(0,0,0,0.4); white-space:nowrap;">${spot.name.substring(0, 10)}</div>`,
+        iconSize: [100, 24]
+      });
+
+      const marker = L.marker([spot.coordinate.latitude, spot.coordinate.longitude], { icon })
+        .addTo(this.map)
+        .on('click', () => {
+          this.openSpotModal(spot);
+        });
+
+      this.mapMarkers.push(marker);
+    });
+
+    // 防災レイヤー時は避難所もプロット
+    if (this.currentLayer === 'disaster') {
+      this.shelters.forEach(shelter => {
+        const icon = L.divIcon({
+          className: 'custom-shelter-pin',
+          html: `<div style="background:#10b981; padding:4px 8px; border-radius:12px; color:#fff; font-size:11px; font-weight:bold; border:2px solid #fff;">避難所: ${shelter.name.substring(0, 6)}</div>`,
+          iconSize: [110, 24]
+        });
+
+        const marker = L.marker([shelter.coordinate.latitude, shelter.coordinate.longitude], { icon })
+          .addTo(this.map)
+          .bindPopup(`<strong>${shelter.name}</strong><br>${shelter.address}<br>定員: ${shelter.capacity}名`);
+
+        this.mapMarkers.push(marker);
+      });
+    }
+  }
+
+  // --- イベントリスナー設定 ---
   setupEventListeners() {
+    // 視点切替 (AR ↔ 地図)
+    this.btnModeAr.addEventListener('click', () => this.switchViewMode('ar'));
+    this.btnModeMap.addEventListener('click', () => this.switchViewMode('map'));
+    document.getElementById('btn-switch-to-map-prompt').addEventListener('click', () => {
+      this.cameraPlaceholder.classList.add('hidden');
+      this.switchViewMode('map');
+    });
+
     // カメラ起動プロンプト
     const startCamBtn = document.getElementById('btn-start-camera');
     if (startCamBtn) {
       startCamBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.startCamera();
-      });
-    }
-
-    const dismissCamBtn = document.getElementById('btn-dismiss-placeholder');
-    if (dismissCamBtn) {
-      dismissCamBtn.addEventListener('click', () => {
-        this.cameraPlaceholder.classList.add('hidden');
       });
     }
 
@@ -132,7 +253,7 @@ class ARRegionalApp {
 
     // キャンバスタップ判定
     this.canvas.addEventListener('click', (e) => {
-      if (!this.isDraggingMoved) {
+      if (!this.isDraggingMoved && this.viewMode === 'ar') {
         this.handleCanvasClick(e);
       }
     });
@@ -149,12 +270,13 @@ class ARRegionalApp {
       document.getElementById('info-modal').classList.add('hidden');
     });
 
-    // AR古写真比較モーダルボタン
+    // 古写真リアルAR比較開始
     document.getElementById('btn-compare-ar').addEventListener('click', () => {
       if (this.selectedSpot && this.selectedSpot.historicalImage) {
         document.getElementById('spot-modal').classList.add('hidden');
         this.overlayImg.src = this.selectedSpot.historicalImage;
         this.historicalOverlay.classList.remove('hidden');
+        this.resetOverlayTransform();
       }
     });
 
@@ -162,29 +284,152 @@ class ARRegionalApp {
       this.historicalOverlay.classList.add('hidden');
     });
 
-    this.opacitySlider.addEventListener('input', (e) => {
-      this.overlayImg.style.opacity = e.target.value / 100;
+    document.getElementById('btn-reset-overlay').addEventListener('click', () => {
+      this.resetOverlayTransform();
     });
   }
 
-  // 直感的な画面ドラッグでカメラ向き変更
+  // モード切り替え (AR ↔ 地図)
+  switchViewMode(mode) {
+    this.viewMode = mode;
+    if (mode === 'map') {
+      this.btnModeAr.classList.remove('active');
+      this.btnModeMap.classList.add('active');
+      this.mapViewEl.classList.remove('hidden');
+      this.canvas.classList.add('hidden');
+      if (this.map) {
+        this.map.invalidateSize();
+        this.renderMapMarkers();
+      }
+    } else {
+      this.btnModeAr.classList.add('active');
+      this.btnModeMap.classList.remove('active');
+      this.mapViewEl.classList.add('hidden');
+      this.canvas.classList.remove('hidden');
+    }
+  }
+
+  // --- 古写真リアルAR重ね合わせ インタラクティブ操作機能 ---
+  setupOverlayControls() {
+    // 1. スライダーコントロール
+    this.opacitySlider.addEventListener('input', (e) => {
+      this.overlayState.opacity = e.target.value / 100;
+      document.getElementById('opacity-val').textContent = `${e.target.value}%`;
+      this.applyOverlayTransform();
+    });
+
+    this.scaleSlider.addEventListener('input', (e) => {
+      this.overlayState.scale = e.target.value / 100;
+      document.getElementById('scale-val').textContent = `${e.target.value}%`;
+      this.applyOverlayTransform();
+    });
+
+    this.rotateSlider.addEventListener('input', (e) => {
+      this.overlayState.rotate = parseFloat(e.target.value);
+      document.getElementById('rotate-val').textContent = `${e.target.value}°`;
+      this.applyOverlayTransform();
+    });
+
+    this.chkSyncHeading.addEventListener('change', (e) => {
+      this.overlayState.syncHeading = e.target.checked;
+      this.applyOverlayTransform();
+    });
+
+    // 2. 指・マウスドラッグ位置変更
+    const wrapper = this.overlayImgWrapper;
+
+    const onPointerDown = (e) => {
+      this.isDraggingOverlay = true;
+      this.overlayDragStart = {
+        x: e.clientX - this.overlayState.posX,
+        y: e.clientY - this.overlayState.posY
+      };
+      wrapper.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e) => {
+      if (!this.isDraggingOverlay) return;
+      this.overlayState.posX = e.clientX - this.overlayDragStart.x;
+      this.overlayState.posY = e.clientY - this.overlayDragStart.y;
+      this.applyOverlayTransform();
+    };
+
+    const onPointerUp = (e) => {
+      this.isDraggingOverlay = false;
+      try { wrapper.releasePointerCapture(e.pointerId); } catch (_) {}
+    };
+
+    wrapper.addEventListener('pointerdown', onPointerDown);
+    wrapper.addEventListener('pointermove', onPointerMove);
+    wrapper.addEventListener('pointerup', onPointerUp);
+    wrapper.addEventListener('pointercancel', onPointerUp);
+  }
+
+  resetOverlayTransform() {
+    this.overlayState = {
+      posX: 0,
+      posY: 0,
+      scale: 1.0,
+      rotate: 0,
+      opacity: 0.65,
+      syncHeading: true,
+      initialHeading: this.heading
+    };
+
+    this.opacitySlider.value = 65;
+    this.scaleSlider.value = 100;
+    this.rotateSlider.value = 0;
+    this.chkSyncHeading.checked = true;
+
+    document.getElementById('opacity-val').textContent = '65%';
+    document.getElementById('scale-val').textContent = '100%';
+    document.getElementById('rotate-val').textContent = '0°';
+
+    this.applyOverlayTransform();
+  }
+
+  applyOverlayTransform() {
+    if (!this.overlayImgWrapper) return;
+
+    // 方角追従オフセット計算 (視点回転連動)
+    let headingOffset = 0;
+    if (this.overlayState.syncHeading) {
+      let diff = this.heading - this.overlayState.initialHeading;
+      while (diff < -180) diff += 360;
+      while (diff > 180) diff -= 360;
+      // ピクセル移動に同期
+      headingOffset = -diff * (window.innerWidth / 60);
+    }
+
+    const totalX = this.overlayState.posX + headingOffset;
+    const totalY = this.overlayState.posY;
+
+    this.overlayImgWrapper.style.transform =
+      `translate(calc(-50% + ${totalX}px), calc(-50% + ${totalY}px)) ` +
+      `scale(${this.overlayState.scale}) ` +
+      `rotate(${this.overlayState.rotate}deg)`;
+
+    this.overlayImg.style.opacity = this.overlayState.opacity;
+  }
+
+  // --- 直感的なAR画面ドラッグによる方位変更 ---
   setupDragControls() {
     this.isDraggingMoved = false;
 
     const onPointerDown = (e) => {
-      this.isDragging = true;
+      if (this.viewMode !== 'ar') return;
+      this.isDraggingCanvas = true;
       this.isDraggingMoved = false;
       this.dragStartX = e.clientX;
       this.startHeading = this.heading;
     };
 
     const onPointerMove = (e) => {
-      if (!this.isDragging) return;
+      if (!this.isDraggingCanvas) return;
       const deltaX = e.clientX - this.dragStartX;
       if (Math.abs(deltaX) > 4) {
         this.isDraggingMoved = true;
       }
-      // ピクセル移動を角度に変換 (画面横幅 = 約120度)
       const degreesPerPixel = 120 / window.innerWidth;
       let newHeading = (this.startHeading - deltaX * degreesPerPixel) % 360;
       if (newHeading < 0) newHeading += 360;
@@ -192,7 +437,7 @@ class ARRegionalApp {
     };
 
     const onPointerUp = () => {
-      this.isDragging = false;
+      this.isDraggingCanvas = false;
     };
 
     this.canvas.addEventListener('pointerdown', onPointerDown);
@@ -210,6 +455,9 @@ class ARRegionalApp {
     if (headingValText) {
       headingValText.textContent = `${Math.round(deg)}° (${this.getHeadingDirectionName(deg)})`;
     }
+
+    // 古写真が視点連動モードの場合はトランスフォーム再適用
+    this.applyOverlayTransform();
   }
 
   async startCamera() {
@@ -221,14 +469,13 @@ class ARRegionalApp {
       this.cameraActive = true;
       this.cameraPlaceholder.classList.add('hidden');
 
-      // UI表示更新
       this.cameraIconOn.classList.add('hidden');
       this.cameraIconOff.classList.remove('hidden');
       this.cameraBtnText.textContent = 'カメラOFF';
       this.toggleCameraBtn.classList.add('active-highlight');
     } catch (err) {
       console.warn('カメラアクセスエラー:', err);
-      alert('カメラアクセスの許可が必要です。\n※スマートフォン実機やHTTPS環境でお使いいただくか、このままシミュレーターモード（Sim）でお試しください。');
+      alert('カメラアクセスの許可が必要です。\n※スマートフォン実機やHTTPS環境でお使いいただくか、このまま「地図表示」またはシミュレーターでお試しください。');
       this.cameraPlaceholder.classList.add('hidden');
     }
   }
@@ -242,7 +489,6 @@ class ARRegionalApp {
     this.cameraActive = false;
     this.cameraPlaceholder.classList.remove('hidden');
 
-    // UI表示更新
     this.cameraIconOn.classList.remove('hidden');
     this.cameraIconOff.classList.add('hidden');
     this.cameraBtnText.textContent = 'カメラON';
@@ -287,6 +533,14 @@ class ARRegionalApp {
     const latStr = this.userPos.latitude.toFixed(4);
     const lngStr = this.userPos.longitude.toFixed(4);
     this.locationText.textContent = `現在地: 北緯 ${latStr}, 東経 ${lngStr} ${this.isSimulating ? '(Sim)' : ''}`;
+
+    if (this.userMapMarker) {
+      this.userMapMarker.setLatLng([this.userPos.latitude, this.userPos.longitude]);
+      if (this.map && this.viewMode === 'map') {
+        this.map.panTo([this.userPos.latitude, this.userPos.longitude]);
+      }
+    }
+
     this.updateLayerUI();
   }
 
@@ -323,25 +577,29 @@ class ARRegionalApp {
       banner.classList.add('hidden');
     }
 
+    this.renderMapMarkers();
     if (window.lucide) lucide.createIcons();
   }
 
+  // --- AR レンダリングメインループ ---
   renderLoop() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.renderedPins = [];
+    if (this.viewMode === 'ar') {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.renderedPins = [];
 
-    if (this.currentLayer === 'disaster') {
-      this.drawARFloodWaterline();
-    }
+      if (this.currentLayer === 'disaster') {
+        this.drawARFloodWaterline();
+      }
 
-    const filteredSpots = this.spots.filter(s => s.category === this.currentLayer);
+      const filteredSpots = this.spots.filter(s => s.category === this.currentLayer);
 
-    filteredSpots.forEach(spot => {
-      this.drawARSpotMarker(spot);
-    });
+      filteredSpots.forEach(spot => {
+        this.drawARSpotMarker(spot);
+      });
 
-    if (this.currentLayer === 'disaster') {
-      this.drawARShelterMarkers();
+      if (this.currentLayer === 'disaster') {
+        this.drawARShelterMarkers();
+      }
     }
 
     requestAnimationFrame(() => this.renderLoop());
