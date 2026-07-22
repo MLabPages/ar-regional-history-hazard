@@ -58,6 +58,7 @@ class ARRegionalApp {
     this.hazardLegendBox = document.getElementById('hazard-legend-box');
     this.mapDataStatus = document.getElementById('map-data-status');
     this.hazardSourceLink = document.getElementById('hazard-source-link');
+    this.mapSpotsPanel = document.getElementById('map-spots-panel');
 
     // モード切替ボタン
     this.btnModeAr = document.getElementById('btn-mode-ar');
@@ -260,6 +261,16 @@ class ARRegionalApp {
     // フィルタリングしたスポットの表示
     const filteredSpots = this.spots.filter(s => s.category === this.currentLayer);
 
+    if (this.mapSpotsPanel) {
+      const layerLabel = this.currentLayer === 'history' ? '歴史・観光' : this.currentLayer === 'community' ? '地域理解' : '防災';
+      this.mapSpotsPanel.innerHTML = `
+        <div class="map-spots-title">${layerLabel}スポット</div>
+        ${filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
+          <strong>${spot.name}</strong><small>${spot.eraLabel || spot.hazardInfo?.typeName || '情報'}</small>
+        </button>`).join('')}
+      `;
+    }
+
     filteredSpots.forEach(spot => {
       let color = '#f59e0b';
       if (spot.category === 'community') color = '#10b981';
@@ -354,6 +365,15 @@ class ARRegionalApp {
         this.updateLayerUI();
       });
     });
+
+    if (this.mapSpotsPanel) {
+      this.mapSpotsPanel.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-spot-id]');
+        if (!button) return;
+        const spot = this.spots.find(item => item.id === button.dataset.spotId);
+        if (spot) this.openSpotModal(spot);
+      });
+    }
 
     // 時代別航空写真・タイムライン切替
     document.querySelectorAll('.era-chip').forEach(chip => {
@@ -454,6 +474,7 @@ class ARRegionalApp {
       this.canvas.classList.add('hidden');
       this.eraTimelineBar.classList.remove('hidden');
       if (this.mapDataStatus) this.mapDataStatus.classList.remove('hidden');
+      if (this.mapSpotsPanel) this.mapSpotsPanel.classList.remove('hidden');
 
       if (this.guideHintText) {
         this.guideHintText.textContent = '地図上のピンをタップすると古写真・公的データ解説を閲覧できます';
@@ -478,6 +499,7 @@ class ARRegionalApp {
       this.btnModeMap.classList.remove('active');
       this.mapViewEl.classList.add('hidden');
       if (this.mapDataStatus) this.mapDataStatus.classList.add('hidden');
+      if (this.mapSpotsPanel) this.mapSpotsPanel.classList.add('hidden');
       this.canvas.classList.remove('hidden');
       this.eraTimelineBar.classList.add('hidden');
 
@@ -761,8 +783,6 @@ class ARRegionalApp {
       if (this.currentLayer === 'disaster') {
         this.drawARFloodWaterline();
       }
-
-      const filteredSpots = this.spots.filter(s => s.category === this.currentLayer);
 
       filteredSpots.forEach(spot => {
         this.drawARSpotMarker(spot);
