@@ -963,6 +963,14 @@ class ARRegionalApp {
       return;
     }
 
+    // 収録済みスポットは外部通信を待たずに検索できるようにする。
+    const localResults = this.getLocalMapSearchResults(query);
+    if (localResults.length) {
+      this.renderMapSearchResults(localResults);
+      this.setMapNavigationStatus(`登録済みスポット${localResults.length}件を表示しています。`, 'info');
+      return;
+    }
+
     const endpoint = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`;
     this.setMapNavigationStatus('地名を検索しています…', 'info');
     this.mapSearchResults?.classList.add('hidden');
@@ -996,6 +1004,12 @@ class ARRegionalApp {
         .slice(0, 5);
 
       if (!normalized.length) {
+        const localResults = this.getLocalMapSearchResults(query);
+        if (localResults.length) {
+          this.renderMapSearchResults(localResults);
+          this.setMapNavigationStatus(`外部検索ではなく、登録済みスポット${localResults.length}件を表示しています。`, 'info');
+          return;
+        }
         this.setMapNavigationStatus(`「${query}」に一致する場所が見つかりませんでした。`, 'warning');
         return;
       }
@@ -1006,8 +1020,33 @@ class ARRegionalApp {
       const message = error?.name === 'AbortError'
         ? '検索に時間がかかっています。地名を短くするか、しばらくして再試行してください。'
         : '検索できませんでした。通信状態を確認して再試行してください。';
-      this.setMapNavigationStatus(message, 'warning');
+      const localResults = this.getLocalMapSearchResults(query);
+      if (localResults.length) {
+        this.renderMapSearchResults(localResults);
+        this.setMapNavigationStatus(`外部検索に接続できないため、登録済みスポット${localResults.length}件を表示しています。`, 'info');
+      } else {
+        this.setMapNavigationStatus(message, 'warning');
+      }
     }
+  }
+
+  getLocalMapSearchResults(query) {
+    const keyword = String(query || '').toLocaleLowerCase('ja-JP');
+    return this.spots
+      .filter((spot) => {
+        const text = [spot.name, spot.summary, spot.description, spot.eraLabel]
+          .filter(Boolean)
+          .join(' ')
+          .toLocaleLowerCase('ja-JP');
+        return text.includes(keyword);
+      })
+      .map((spot) => ({
+        name: `${spot.name}（登録スポット）`,
+        latitude: Number(spot.coordinate?.latitude),
+        longitude: Number(spot.coordinate?.longitude)
+      }))
+      .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
+      .slice(0, 5);
   }
 
   renderMapSearchResults(results) {
