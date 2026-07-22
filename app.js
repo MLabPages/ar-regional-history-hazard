@@ -59,9 +59,11 @@ class ARRegionalApp {
     this.cameraPlaceholder = document.getElementById('camera-placeholder');
     this.locationText = document.getElementById('location-text');
     this.guideHintText = document.getElementById('guide-hint-text');
+    this.guideHint = document.getElementById('drag-guide-hint');
 
     // UI追加パネル
     this.eraTimelineBar = document.getElementById('era-timeline-bar');
+    this.reopenEraPanelButton = document.getElementById('btn-reopen-era-panel');
     this.hazardLegendBox = document.getElementById('hazard-legend-box');
     this.mapDataStatus = document.getElementById('map-data-status');
     this.hazardSourceLink = document.getElementById('hazard-source-link');
@@ -71,6 +73,14 @@ class ARRegionalApp {
     this.timeTravelPanel = document.getElementById('time-travel-panel');
     this.timeTravelList = document.getElementById('time-travel-list');
     this.timeTravelLocation = document.getElementById('time-travel-location');
+
+    try {
+      if (window.localStorage?.getItem('ar-guide-dismissed') === '1') {
+        this.guideHint?.classList.add('hidden');
+      }
+    } catch (_) {
+      // Safariのプライベートブラウズ等で保存領域が使えなくても起動を継続する
+    }
 
     // モード切替ボタン
     this.btnModeAr = document.getElementById('btn-mode-ar');
@@ -512,6 +522,23 @@ class ARRegionalApp {
     if (timeTravelButton) timeTravelButton.addEventListener('click', () => this.openTimeTravel(this.selectedSpot));
     const closeTimeTravel = document.getElementById('btn-close-time-travel');
     if (closeTimeTravel) closeTimeTravel.addEventListener('click', () => this.closeTimeTravel());
+
+    document.getElementById('btn-close-era-panel')?.addEventListener('click', () => {
+      this.eraTimelineBar?.classList.add('hidden');
+      this.reopenEraPanelButton?.classList.remove('hidden');
+    });
+    this.reopenEraPanelButton?.addEventListener('click', () => {
+      this.eraTimelineBar?.classList.remove('hidden');
+      this.reopenEraPanelButton.classList.add('hidden');
+    });
+    document.getElementById('btn-close-guide')?.addEventListener('click', () => {
+      this.guideHint?.classList.add('hidden');
+      try {
+        window.localStorage?.setItem('ar-guide-dismissed', '1');
+      } catch (_) {
+        // 保存できない環境では今回の表示だけを閉じる
+      }
+    });
 
     document.querySelectorAll('.sim-btn-grid .btn-chip').forEach(btn => {
       btn.addEventListener('click', (e) => {

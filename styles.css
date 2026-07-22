@@ -667,6 +667,19 @@ body, html {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+.guide-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+}
+
 .pulse-icon {
   color: var(--primary-color);
   animation: horizontal-bounce 1.5s infinite ease-in-out;
@@ -1012,6 +1025,29 @@ body, html {
 }
 
 /* 地図モードの今昔比較 */
+.timeline-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-panel-reopen {
+  position: fixed;
+  top: 116px;
+  right: 16px;
+  z-index: 820;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-glass);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--text-main);
+  font-size: 0.72rem;
+}
+
 .map-compare-controls {
   display: grid;
   grid-template-columns: auto minmax(100px, 1fr) auto;
@@ -1202,6 +1238,11 @@ body, html {
     max-height: 154px;
     overflow-y: auto;
     margin-top: 0;
+  }
+
+  .map-mode .map-panel-reopen {
+    top: 116px;
+    right: 8px;
   }
 
   .map-mode .disaster-banner {
