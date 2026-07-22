@@ -1,7 +1,6 @@
 /**
- * AR地域理解・歴史・防災プラットフォーム 高精度データセット
- * データ出典: 国土地理院ハザードマップ, 国土交通省ポータル, 大阪市防災オープンデータ,
- *             国立国会図書館デジタルコレクション, ジャパンサーチ
+ * AR地域理解・歴史・防災プラットフォームの監査済みデータ。
+ * 不明な資料は「未確認」として扱い、歴史資料に見える仮画像を混在させない。
  */
 
 export const SAMPLE_CENTER = {
@@ -11,77 +10,225 @@ export const SAMPLE_CENTER = {
   name: '大阪城本丸・天守閣付近'
 };
 
-// 国土地理院・時代別タイルURL定義
+export const DATA_SOURCES = {
+  gsiTileList: 'https://maps.gsi.go.jp/development/ichiran.html',
+  hazardOpenData: 'https://disaportal.gsi.go.jp/hazardmapportal/hazardmap/copyright/opendata.html',
+  ndlIiifHelp: 'https://dl.ndl.go.jp/ja/help_iiif#api-%E3%81%AE%E5%88%A9%E7%94%A8%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6',
+  osmCopyright: 'https://www.openstreetmap.org/copyright'
+};
+
+export const PLACEHOLDER_IMAGE_URL =
+  'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80';
+
+const VERIFIED_AT = '2026-07-22';
+
+// 国土地理院の公式一覧で存在と大阪付近の応答を確認したタイルだけを掲載。
+// 明治・江戸・平安は、位置精度を持つ大阪向けXYZタイルが未確認のためここに含めない。
 export const HISTORICAL_MAP_TILES = {
   present: {
-    name: '現代 (標準地図)',
-    year: '2026年',
+    name: '現代地図',
+    year: '現在',
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors | 国土地理院'
+    attribution: '&copy; OpenStreetMap contributors',
+    sourceName: 'OpenStreetMap',
+    sourceUrl: DATA_SOURCES.osmCopyright,
+    materialType: 'official_map',
+    positionAccuracy: 'georeferenced',
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 0,
+    maxNativeZoom: 19
   },
   photo_latest: {
-    name: '現代 (最新航空写真)',
+    name: '現代最新写真',
     year: '2020年代',
     url: 'https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',
-    attribution: '国土地理院 seamlessphoto'
+    attribution: '国土地理院 全国最新写真（シームレス）',
+    sourceName: '国土地理院',
+    sourceUrl: DATA_SOURCES.gsiTileList,
+    materialType: 'aerial_photo',
+    positionAccuracy: 'georeferenced',
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 2,
+    maxNativeZoom: 18
   },
   showa50: {
-    name: '昭和50年代 (1974〜78年)',
-    year: '1975年頃',
-    url: 'https://cyberjapandata.gsi.go.jp/xyz/gsi-ort_1974/{z}/{x}/{y}.png',
-    attribution: '国土地理院 1974-1978年撮影航空写真'
+    name: '昭和50年代航空写真',
+    year: '1974〜1978年頃',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/gazo1/{z}/{x}/{y}.jpg',
+    attribution: '国土地理院 空中写真（1974〜1978年頃）',
+    sourceName: '国土地理院',
+    sourceUrl: DATA_SOURCES.gsiTileList,
+    materialType: 'aerial_photo',
+    positionAccuracy: 'georeferenced',
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 10,
+    maxNativeZoom: 17
   },
   showa30: {
-    name: '昭和30年代 (1961〜69年)',
-    year: '1965年頃',
-    url: 'https://cyberjapandata.gsi.go.jp/xyz/ort_1961/{z}/{x}/{y}.png',
-    attribution: '国土地理院 1961-1969年撮影航空写真'
+    name: '昭和30〜40年代航空写真',
+    year: '1961〜1969年頃',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/ort_old10/{z}/{x}/{y}.png',
+    attribution: '国土地理院 空中写真（1961〜1969年頃）',
+    sourceName: '国土地理院',
+    sourceUrl: DATA_SOURCES.gsiTileList,
+    materialType: 'aerial_photo',
+    positionAccuracy: 'georeferenced',
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 10,
+    maxNativeZoom: 17
   },
   showa20: {
-    name: '昭和20年代 (1945〜50年)',
-    year: '1948年頃',
+    name: '昭和20年代航空写真',
+    year: '1945〜1950年頃',
     url: 'https://cyberjapandata.gsi.go.jp/xyz/ort_USA10/{z}/{x}/{y}.png',
-    attribution: '国土地理院/米軍撮影航空写真 (1945-1950)'
+    attribution: '国土地理院 空中写真（1945〜1950年頃）',
+    sourceName: '国土地理院',
+    sourceUrl: DATA_SOURCES.gsiTileList,
+    materialType: 'aerial_photo',
+    positionAccuracy: 'georeferenced',
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 10,
+    maxNativeZoom: 17
   },
   showa_early: {
-    name: '昭和初期 (1936〜42年)',
-    year: '1938年頃',
-    url: 'https://cyberjapandata.gsi.go.jp/xyz/ort_ri200/{z}/{x}/{y}.png',
-    attribution: '国土地理院 陸軍撮影航空写真 (1936-1942)'
+    name: '昭和初期航空写真',
+    year: '1936〜1942年頃',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/ort_riku10/{z}/{x}/{y}.png',
+    attribution: '国土地理院 空中写真（1936〜1942年頃）',
+    sourceName: '国土地理院',
+    sourceUrl: DATA_SOURCES.gsiTileList,
+    materialType: 'aerial_photo',
+    positionAccuracy: 'georeferenced',
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 13,
+    maxNativeZoom: 18
   },
-  meiji: {
-    name: '明治時代 (古地図)',
-    year: '明治期',
-    url: 'https://cyberjapandata.gsi.go.jp/xyz/experimental_kigyo/{z}/{x}/{y}.png',
-    attribution: '国土地理院 近代移行期古地図'
-  },
-  edo: {
-    name: '江戸・平安 (歴史想定図)',
-    year: '江戸期・平安期',
-    url: 'https://disaportaldata.gsi.go.jp/raster/05_doshasaigai_kikenkasho/{z}/{x}/{y}.png', // プロトタイプ用ダミー
-    attribution: '※江戸・平安期の地図は現在整備中 (参考表示)'
+  prewar_1928: {
+    name: '1928年頃航空写真',
+    year: '1928年頃',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/ort_1928/{z}/{x}/{y}.png',
+    attribution: '国土地理院 空中写真（1928年頃）',
+    sourceName: '国土地理院',
+    sourceUrl: DATA_SOURCES.gsiTileList,
+    materialType: 'aerial_photo',
+    positionAccuracy: 'georeferenced',
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 13,
+    maxNativeZoom: 18
   }
 };
 
-// 国土交通省・国土地理院 公式ハザードマップレイヤー定義
+const NDL_PDM_LICENSE = 'PDM（NDL IIIFマニフェスト記載）';
+
+export const HISTORICAL_REFERENCE_MATERIALS = [
+  {
+    id: 'ndl-1303484',
+    title: '浪花名所図会 八けん屋着船之図',
+    date: '江戸後期（年代未詳）',
+    era: '江戸後期',
+    sourceName: '国立国会図書館デジタルコレクション',
+    sourceUrl: 'https://dl.ndl.go.jp/pid/1303484',
+    manifestUrl: 'https://dl.ndl.go.jp/api/iiif/1303484/manifest.json',
+    imageUrl: 'https://dl.ndl.go.jp/api/iiif/1303484/R0000001/full/,600/0/default.jpg',
+    license: NDL_PDM_LICENSE,
+    licenseUrl: DATA_SOURCES.ndlIiifHelp,
+    usageStatus: 'verified_reusable',
+    materialType: 'pictorial_map',
+    displayType: '名所絵・錦絵',
+    positionAccuracy: 'reference_only',
+    verifiedAt: VERIFIED_AT,
+    isHistorical: true,
+    note: '八軒家浜を描いた名所絵です。測量図ではなく、現代地図との位置一致は保証されません。'
+  },
+  {
+    id: 'ndl-1303487',
+    title: '浪花名所図会 道とんぼりの図',
+    date: '江戸後期（年代未詳）',
+    era: '江戸後期',
+    sourceName: '国立国会図書館デジタルコレクション',
+    sourceUrl: 'https://dl.ndl.go.jp/pid/1303487',
+    manifestUrl: 'https://dl.ndl.go.jp/api/iiif/1303487/manifest.json',
+    imageUrl: 'https://dl.ndl.go.jp/api/iiif/1303487/R0000001/full/,600/0/default.jpg',
+    license: NDL_PDM_LICENSE,
+    licenseUrl: DATA_SOURCES.ndlIiifHelp,
+    usageStatus: 'verified_reusable',
+    materialType: 'pictorial_map',
+    displayType: '名所絵・錦絵',
+    positionAccuracy: 'reference_only',
+    verifiedAt: VERIFIED_AT,
+    isHistorical: true,
+    note: '道頓堀を描いた名所絵です。測量図ではなく、現代地図との位置一致は保証されません。'
+  },
+  {
+    id: 'ndl-2542266',
+    title: '大坂大繪圖',
+    date: '元禄9年（1696年）',
+    era: '江戸前期',
+    sourceName: '国立国会図書館デジタルコレクション',
+    sourceUrl: 'https://dl.ndl.go.jp/pid/2542266',
+    manifestUrl: 'https://dl.ndl.go.jp/api/iiif/2542266/manifest.json',
+    imageUrl: 'https://dl.ndl.go.jp/api/iiif/2542266/R0000001/full/,800/0/default.jpg',
+    license: NDL_PDM_LICENSE,
+    licenseUrl: DATA_SOURCES.ndlIiifHelp,
+    usageStatus: 'verified_reusable',
+    materialType: 'historical_map',
+    displayType: '歴史地図・絵図',
+    positionAccuracy: 'reference_only',
+    verifiedAt: VERIFIED_AT,
+    isHistorical: true,
+    note: '江戸期の絵図です。概略位置の参考資料であり、現代地図との位置一致は保証されません。'
+  }
+];
+
+export const MATERIAL_TYPE_LABELS = {
+  official_map: '公式地図',
+  aerial_photo: '航空写真',
+  historical_photo: '古写真',
+  historical_map: '歴史地図・絵図',
+  pictorial_map: '名所絵・錦絵',
+  reconstruction: '復元・再構成',
+  illustrative_image: 'イメージ画像'
+};
+
 export const OFFICIAL_HAZARD_LAYERS = {
   flood: {
     id: 'flood',
-    name: '洪水浸水想定 (想定最大規模)',
-    tileUrl: 'https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuisoutei_kuni_data/{z}/{x}/{y}.png',
-    attribution: '国土交通省重ねるハザードマップ (洪水浸水想定)',
+    name: '洪水浸水想定（想定最大規模）',
+    tileUrl: 'https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png',
+    attribution: '国土交通省・国土地理院 重ねるハザードマップ（洪水）',
+    sourceName: '国土交通省・国土地理院',
+    sourceUrl: DATA_SOURCES.hazardOpenData,
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 2,
+    maxNativeZoom: 17,
+    note: '想定区域・浸水深は公表条件に基づく表示です。現在の警報や避難判断の代替ではありません。',
     legend: [
-      { depth: '0.5m未満 (大人の膝下)', color: '#fef0d9' },
-      { depth: '0.5〜3.0m (1階床上〜2階床下)', color: '#fdcc8a' },
-      { depth: '3.0〜5.0m (2階床上浸水)', color: '#fc8d59' },
-      { depth: '5.0m以上 (3階以上まで浸水)', color: '#d7301f' }
+      { depth: '0.5m未満', color: '#fef0d9' },
+      { depth: '0.5〜3.0m', color: '#fdcc8a' },
+      { depth: '3.0〜5.0m', color: '#fc8d59' },
+      { depth: '5.0m以上', color: '#d7301f' }
     ]
   },
   tsunami: {
     id: 'tsunami',
-    name: '津波浸水想定 (南海トラフ巨大地震)',
-    tileUrl: 'https://disaportaldata.gsi.go.jp/raster/04_tsunami_new_data/{z}/{x}/{y}.png',
-    attribution: '大阪府・国土交通省 (津波浸水想定データ)',
+    name: '津波浸水想定',
+    tileUrl: 'https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png',
+    attribution: '国土交通省・国土地理院 重ねるハザードマップ（津波）',
+    sourceName: '国土交通省・国土地理院',
+    sourceUrl: DATA_SOURCES.hazardOpenData,
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 2,
+    maxNativeZoom: 14,
+    note: '地域・ズームによって提供範囲外になる場合があります。取得できない場合はデータなしと表示します。',
     legend: [
       { depth: '0.3m未満', color: '#e0f3f8' },
       { depth: '0.3〜1.0m', color: '#67a9cf' },
@@ -91,159 +238,129 @@ export const OFFICIAL_HAZARD_LAYERS = {
   },
   sediment: {
     id: 'sediment',
-    name: '土砂災害警戒区域・危険箇所',
-    tileUrl: 'https://disaportaldata.gsi.go.jp/raster/05_doshasaigai_kikenkasho/{z}/{x}/{y}.png',
-    attribution: '国土交通省 (土砂災害警戒区域)',
+    name: '土砂災害（急傾斜地崩壊危険区域・大阪府）',
+    tileUrl: 'https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki_data/26/{z}/{x}/{y}.png',
+    attribution: '国土交通省・国土地理院 重ねるハザードマップ（大阪府・急傾斜地崩壊）',
+    sourceName: '国土交通省・国土地理院',
+    sourceUrl: DATA_SOURCES.hazardOpenData,
+    usageStatus: 'attribution_required',
+    verifiedAt: VERIFIED_AT,
+    minZoom: 2,
+    maxNativeZoom: 10,
+    note: '大阪府コード26の急傾斜地崩壊レイヤーです。土石流・地すべりは別レイヤーで、地点・ズームによりデータがない場合があります。',
     legend: [
-      { depth: '土砂災害特別警戒区域 (レッドゾーン)', color: '#dc2626' },
-      { depth: '土砂災害警戒区域 (イエローゾーン)', color: '#eab308' }
+      { depth: '土砂災害特別警戒区域', color: '#dc2626' },
+      { depth: '土砂災害警戒区域', color: '#eab308' }
     ]
   }
 };
 
+const placeholderMedia = {
+  title: '大阪の風景（開発用プレースホルダー）',
+  date: null,
+  era: null,
+  sourceName: 'Unsplash',
+  sourceUrl: 'https://unsplash.com',
+  imageUrl: PLACEHOLDER_IMAGE_URL,
+  license: '開発用プレースホルダー（利用条件・史料性は未確認）',
+  licenseUrl: 'https://unsplash.com/license',
+  usageStatus: 'unknown',
+  materialType: 'illustrative_image',
+  positionAccuracy: 'unknown',
+  verifiedAt: VERIFIED_AT,
+  isHistorical: false,
+  note: '史料画像ではありません。実資料の確認後に差し替えます。'
+};
+
+const ndl八軒家 = HISTORICAL_REFERENCE_MATERIALS[0];
+const ndl大坂図 = HISTORICAL_REFERENCE_MATERIALS[2];
+
 export const SPOT_DATA = [
-  // --- ① 歴史・観光レイヤー (history) ---
   {
-    id: 'hist-1',
-    name: '大阪城 天守閣（昭和6年復元）',
-    category: 'history',
-    coordinate: { latitude: 34.6873, longitude: 135.5260, elevationMeter: 24.0 },
-    era: 'showa',
-    eraLabel: '昭和6年 (1931年)',
-    summary: '昭和6年に市民の募金により鉄骨鉄筋コンクリート造で復元された3代目天守閣。',
-    description: '江戸時代初期(1665年)の落雷焼失から約266年ぶり、1931年に全額市民寄付（当時の金額で150万円）により復元されました。徳川時代の大坂城天守台の上に、豊臣絵巻『大坂夏の陣図屏風』に描かれた豊臣天守のデザインを取り入れた歴史的折衷建築です。',
-    historicalImage: 'https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=800&q=80',
-    source: '国立国会図書館デジタルコレクション / 大阪市写真公文書 Archive',
-    license: 'パブリックドメイン (昭和初期記録写真データ)'
+    id: 'hist-1', name: '大阪城 天守閣（昭和6年復元）', category: 'history',
+    coordinate: { latitude: 34.6873, longitude: 135.5260, elevationMeter: 24 }, era: 'showa', eraLabel: '昭和6年（1931年）',
+    summary: '現在の天守閣は1931年に再建されたものです。',
+    description: '昭和6年（1931年）に再建された大阪城天守閣についての説明です。建築の経緯・復元の詳細は、下記の公式資料を確認してから確定表示します。',
+    mediaAssets: [placeholderMedia], historicalMaterials: [ndl大坂図],
+    source: '大阪城公式サイト（要追加確認）', license: '歴史記述・表示画像は要確認',
+    sources: [{ sourceName: '未確認（要一次資料確認）', sourceUrl: null, claimStatus: 'unverified' }],
+    verificationNote: '本文は要一次資料確認。表示画像は史料ではありません。'
   },
   {
-    id: 'hist-2',
-    name: '旧陸軍第四師団司令部庁舎 (ミライザ大阪城)',
-    category: 'history',
-    coordinate: { latitude: 34.6865, longitude: 135.5252, elevationMeter: 22.0 },
-    era: 'showa',
-    eraLabel: '昭和6年 (1931年)',
-    summary: '中世ヨーロッパの城郭意匠を持つ昭和初期の重厚なロマネスク様式建築。',
-    description: '1931年建築。昭和天皇即位記念事業として市民寄付等により建設。外壁には茶褐色のスクラッチタイルの装飾が施され、戦後は大阪府警察本部や大阪市立博物館として使用されました。現在は複合施設「ミライザ大阪城」として保存活用されています。',
-    historicalImage: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80',
-    source: '大阪市近代建築調査報告書 (大阪市教育委員会)',
-    license: 'クリエイティブ・コモンズ 表示 4.0'
+    id: 'hist-2', name: '旧陸軍第四師団司令部庁舎（ミライザ大阪城）', category: 'history',
+    coordinate: { latitude: 34.6865, longitude: 135.5252, elevationMeter: 22 }, era: 'showa', eraLabel: '昭和初期',
+    summary: '大阪城公園内に残る近代建築です。',
+    description: '旧陸軍第四師団司令部庁舎に関する歴史記述は、一次資料の確認後に確定します。現在の表示画像はイメージ画像です。',
+    mediaAssets: [placeholderMedia], historicalMaterials: [],
+    source: '未確認（要一次資料確認）', license: '未確認',
+    sources: [{ sourceName: '未確認（要一次資料確認）', sourceUrl: null, claimStatus: 'unverified' }],
+    verificationNote: '歴史記述・画像とも未確認です。'
   },
   {
-    id: 'hist-3',
-    name: '極楽橋・隠し曲輪跡',
-    category: 'history',
-    coordinate: { latitude: 34.6888, longitude: 135.5255, elevationMeter: 18.0 },
-    era: 'edo',
-    eraLabel: '江戸時代 (1620年代)〜平成',
-    summary: '徳川再建大坂城の北側防衛の要衝。明治期に焼失後、平成12年に再建。',
-    description: '豊臣期から大坂城北側の表玄関とされた橋。徳川再建期(1620年代)に木造橋として建設され、戊辰戦争(1868年)の混乱下で全焼。現在の橋は平成12年(2000年)に伝統意匠を取り入れたPC鋼橋として再建されました。',
-    historicalImage: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80',
-    source: 'ジャパンサーチ (文化庁公的ポータルアーカイブ)',
-    license: 'パブリックドメイン'
-  },
-
-  // --- ② 地域理解・まち歩きレイヤー (community) ---
-  {
-    id: 'comm-1',
-    name: '旧京街道起点・野田橋跡 (八軒家浜)',
-    category: 'community',
-    coordinate: { latitude: 34.6895, longitude: 135.5212, elevationMeter: 5.5 },
-    era: 'edo',
-    eraLabel: '江戸〜明治期',
-    summary: '京都と大坂を結んだ京街道の終点であり、三十石船が往来した水陸交通の大要衝。',
-    description: '平安時代から熊野詣の水陸継承地として栄え、江戸時代には伏見と大坂を結ぶ三十石船の発着場「八軒家浜」として大いに賑わいました。明治期以降の河川改修や埋め立てにより橋自体は消失しましたが、地下には当時の護岸石垣の遺構が保存されています。',
-    historicalImage: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80',
-    source: '大阪市中央区史跡誌 / 国土交通省近畿地方整備局',
-    license: 'オープンデータ'
+    id: 'hist-3', name: '極楽橋・隠し曲輪跡', category: 'history',
+    coordinate: { latitude: 34.6888, longitude: 135.5255, elevationMeter: 18 }, era: 'edo', eraLabel: '江戸期〜現在',
+    summary: '大阪城北側の橋と周辺の変遷を学ぶスポットです。',
+    description: '現在の極楽橋は平成12年（2000年）に架け替えられました。過去の建設・焼失については、公式資料の記載範囲を確認しながら表示します。',
+    mediaAssets: [placeholderMedia], historicalMaterials: [ndl大坂図],
+    source: '大阪城公式サイト（極楽橋）', license: '表示画像は開発用プレースホルダー',
+    sources: [{ sourceName: '大阪城公式サイト', sourceUrl: 'https://osaka-castle.jp/osakajo/gokurakubashi.html', claimStatus: 'verified' }],
+    verificationNote: '江戸期の絵図は参考資料であり、現代地図との位置一致は保証されません。'
   },
   {
-    id: 'comm-2',
-    name: '旧大阪砲兵工廠跡地 (現OBP・大阪城公園東部)',
-    category: 'community',
-    coordinate: { latitude: 34.6880, longitude: 135.5310, elevationMeter: 11.5 },
-    era: 'taisho',
-    eraLabel: '明治3年〜昭和20年 (1870-1945)',
-    summary: '西日本最大級の巨大軍需工場群が存在した歴史的広大な土地変遷。',
-    description: '明治3年(1870年)に設立された兵器工場。最盛期には数万人が勤務する巨大施設でしたが、1945年8月14日の大阪大空襲で壊滅。戦後は平和的な都市再開発が進められ、大阪ビジネスパーク(OBP)および大阪城公園の緑地へと変貌した歴史的土地です。',
-    historicalImage: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=800&q=80',
-    source: '大阪市史編纂所デジタルアーカイブ',
-    license: 'パブリックドメイン'
+    id: 'comm-1', name: '旧京街道起点・八軒家浜', category: 'community',
+    coordinate: { latitude: 34.6895, longitude: 135.5212, elevationMeter: 5.5 }, era: 'edo', eraLabel: '江戸後期',
+    summary: '八軒家浜を描いたNDL公開の名所絵と大坂の歴史地図を閲覧できます。',
+    description: '八軒家浜に関連する江戸期の名所絵を、現在地の説明と分けて表示します。名所絵・絵図は測量図ではないため、現代地図との位置一致は保証されません。',
+    mediaAssets: [ndl八軒家], historicalMaterials: [ndl八軒家, ndl大坂図],
+    source: ndl八軒家.sourceName, license: ndl八軒家.license,
+    sources: [
+      { sourceName: ndl八軒家.sourceName, sourceUrl: ndl八軒家.sourceUrl, claimStatus: 'verified' },
+      { sourceName: ndl大坂図.sourceName, sourceUrl: ndl大坂図.sourceUrl, claimStatus: 'verified' }
+    ],
+    verificationNote: ndl八軒家.note
   },
   {
-    id: 'comm-3',
-    name: '難波宮跡 (飛鳥・奈良時代)',
-    category: 'community',
-    coordinate: { latitude: 34.6800, longitude: 135.5250, elevationMeter: 10.0 },
-    era: 'asuka',
-    eraLabel: '飛鳥〜奈良時代 (7世紀)',
-    summary: '大化の改新後に建設された、かつての首都「難波宮（なにわのみや）」の跡地。',
-    description: '645年の大化の改新後、孝徳天皇によって建設された古代日本の首都跡です。現在は史跡公園として整備されており、当時の宮殿の柱の跡などが復元・保存されています。',
-    historicalImage: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80',
-    source: '大阪市文化財アーカイブ',
-    license: 'パブリックドメイン'
+    id: 'comm-2', name: '旧大阪砲兵工廠跡地', category: 'community',
+    coordinate: { latitude: 34.6880, longitude: 135.5310, elevationMeter: 11.5 }, era: 'meiji', eraLabel: '明治〜昭和期',
+    summary: '大阪城東部の土地利用の変化を調べる地域理解スポットです。',
+    description: '旧大阪砲兵工廠に関する記述は、一次資料を確認してから確定します。明治期の位置精度を持つ大阪向けXYZタイルは未収録です。',
+    mediaAssets: [placeholderMedia], historicalMaterials: [],
+    source: '未確認（要一次資料確認）', license: '未確認',
+    sources: [{ sourceName: '未確認（要一次資料確認）', sourceUrl: null, claimStatus: 'unverified' }],
+    verificationNote: '表示画像は史料ではありません。'
   },
-
-  // --- ③ 防災・ハザードレイヤー (disaster) ---
   {
-    id: 'disaster-1',
-    name: '寝屋川・淀川氾濫想定浸水点 (大手前低地)',
-    category: 'disaster',
+    id: 'comm-3', name: '難波宮跡（飛鳥・奈良時代）', category: 'community',
+    coordinate: { latitude: 34.6800, longitude: 135.5250, elevationMeter: 10 }, era: 'asuka', eraLabel: '飛鳥〜奈良時代',
+    summary: '古代の難波宮跡を地域理解の入口として紹介します。',
+    description: '難波宮跡に関する詳しい年代・建物復元は、公式文化財資料を確認してから確定します。表示画像はイメージ画像です。',
+    mediaAssets: [placeholderMedia], historicalMaterials: [],
+    source: '未確認（要一次資料確認）', license: '未確認',
+    sources: [{ sourceName: '未確認（要一次資料確認）', sourceUrl: null, claimStatus: 'unverified' }],
+    verificationNote: '歴史記述・画像とも未確認です。'
+  },
+  {
+    id: 'disaster-1', name: '寝屋川・大川周辺の洪水浸水想定', category: 'disaster',
     coordinate: { latitude: 34.6890, longitude: 135.5220, elevationMeter: 3.2 },
-    hazardInfo: {
-      type: 'flood',
-      typeName: '想定最大規模洪水 (1000年に1回レベル)',
-      expectedDepthMeter: 3.5,
-      description: '淀川および寝屋川流域で24時間総雨量690mmの想定最大規模大雨が発生した場合、周辺低地で最大3.5m（ビル2階床上水準）の浸水が想定されています。'
-    },
-    summary: '想定浸水深：3.5m（目の前の建物の2階床上まで水が到達する危険があります）',
-    description: '標高約3.2mの低地エリアです。過去の1934年室戸台風での内水氾濫や過去の水害記録に基づき、国土地理院・大阪市が公表している公式ハザード数値です。大雨・氾濫警報時は直ちに3階以上の頑丈な建物へ垂直避難してください。'
+    hazardInfo: { type: 'flood', typeName: '洪水浸水想定', description: '地図上に国土交通省・国土地理院の公式洪水タイルを重ねます。地点の深さは地図の凡例と原典で確認してください。' },
+    summary: '公式洪水浸水想定タイルを表示します。',
+    description: 'このアプリの表示は防災情報の入口です。現在の警報・避難指示は自治体の最新情報を確認してください。',
+    mediaAssets: [], historicalMaterials: [], sources: [{ sourceName: '国土交通省・国土地理院', sourceUrl: DATA_SOURCES.hazardOpenData, claimStatus: 'verified' }],
+    verificationNote: '地図タイルの提供範囲外ではデータなしと表示します。'
   },
   {
-    id: 'disaster-2',
-    name: '南海トラフ巨大地震 津波避難警報ポイント',
-    category: 'disaster',
+    id: 'disaster-2', name: '大阪市内の津波浸水想定', category: 'disaster',
     coordinate: { latitude: 34.6860, longitude: 135.5200, elevationMeter: 4.1 },
-    hazardInfo: {
-      type: 'tsunami',
-      typeName: '南海トラフ巨大地震津波想定 (最大クラス)',
-      expectedDepthMeter: 2.0,
-      description: '南海トラフ巨大地震発生時、地震発生から約110分後に安治川・大川を遡上した津波が到達し、標高の低い沿岸・河川敷で最大2.0mの浸水が想定されています。'
-    },
-    summary: '想定津波高：2.0m（津波到達予想時間：地震発生後 約110分）',
-    description: '地震発生直後は川の様子を見に行かず、川から素早く離れて高台（大阪城上町台地方面）または津波避難ビル3階以上へ速やかに移動してください。'
+    hazardInfo: { type: 'tsunami', typeName: '津波浸水想定', description: '地図上に国土交通省・国土地理院の公式津波タイルを重ねます。地域・ズームによってデータがない場合があります。' },
+    summary: '公式津波浸水想定タイルを表示します。',
+    description: '地震・津波時は自治体の最新の避難情報に従ってください。表示タイルは想定情報であり、現在の警報ではありません。',
+    mediaAssets: [], historicalMaterials: [], sources: [{ sourceName: '国土交通省・国土地理院', sourceUrl: DATA_SOURCES.hazardOpenData, claimStatus: 'verified' }],
+    verificationNote: '地図タイルの提供範囲外ではデータなしと表示します。'
   }
 ];
 
 export const EVACUATION_SHELTERS = [
-  {
-    id: 'shelter-1',
-    name: '追手門学院大手前中・高等学校 (指定緊急避難場所)',
-    address: '大阪市中央区大手前1-3-20',
-    coordinate: { latitude: 34.6858, longitude: 135.5235 },
-    elevationMeter: 15.2,
-    types: ['洪水', '津波', '地震', '大規模火災'],
-    capacity: 1200,
-    source: '大阪市避難所オープンデータ (2025年更新)'
-  },
-  {
-    id: 'shelter-2',
-    name: '大阪城公園 (広域避難場所・高台エリア)',
-    address: '大阪市中央区大阪城1',
-    coordinate: { latitude: 34.6870, longitude: 135.5280 },
-    elevationMeter: 22.5,
-    types: ['大規模火災', '地震', '津波避難高台'],
-    capacity: 50000,
-    source: '大阪市避難所オープンデータ (2025年更新)'
-  },
-  {
-    id: 'shelter-3',
-    name: '開平小学校 (指定避難所・津波避難ビル)',
-    address: '大阪市中央区北浜東2-4',
-    coordinate: { latitude: 34.6892, longitude: 135.5140 },
-    elevationMeter: 6.8,
-    types: ['津波', '洪水', '地震'],
-    capacity: 800,
-    source: '大阪市避難所オープンデータ (2025年更新)'
-  }
+  { id: 'shelter-1', name: '追手門学院大手前中・高等学校', address: '大阪市中央区大手前1-3-20', coordinate: { latitude: 34.6858, longitude: 135.5235 }, elevationMeter: 15.2, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown' },
+  { id: 'shelter-2', name: '大阪城公園', address: '大阪市中央区大阪城1', coordinate: { latitude: 34.6870, longitude: 135.5280 }, elevationMeter: 22.5, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown' },
+  { id: 'shelter-3', name: '開平小学校', address: '大阪市中央区北浜東2-4', coordinate: { latitude: 34.6892, longitude: 135.5140 }, elevationMeter: 6.8, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown' }
 ];
