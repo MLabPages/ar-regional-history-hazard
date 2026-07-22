@@ -587,6 +587,12 @@ class ARRegionalApp {
     this.openSpotsButton?.addEventListener('click', () => {
       const panel = this.getMapSpotsPanel();
       if (!panel) return;
+      if (this.currentLayer === 'disaster') {
+        panel.classList.add('hidden');
+        this.openSpotsButton.classList.remove('active');
+        this.openSpotsButton.setAttribute('aria-pressed', 'false');
+        return;
+      }
       const willShow = panel.classList.contains('hidden');
       panel.classList.toggle('hidden', !willShow);
       this.openSpotsButton.classList.toggle('active', willShow);
@@ -1186,6 +1192,9 @@ class ARRegionalApp {
   updateLayerUI() {
     const banner = this.disasterBanner;
     if (this.currentLayer === 'disaster') {
+      this.mapSpotsPanel?.classList.add('hidden');
+      this.openSpotsButton?.classList.remove('active');
+      this.openSpotsButton?.setAttribute('aria-pressed', 'false');
       banner?.classList.remove('hidden');
       this.reopenHazardSheetButton?.classList.add('hidden');
       this.updateFloodConceptToggleVisibility();
