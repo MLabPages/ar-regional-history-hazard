@@ -2,11 +2,11 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AR地域理解・歴史・防災統合プラットフォーム</title>
-  <link rel="stylesheet" href="styles.css?v=p1-verify">
+  <link rel="stylesheet" href="styles.css?v=p2-map-compare">
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.468.0"></script>
   <!-- Leaflet Map CSS & JS (地図モード用) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -141,6 +141,11 @@
           <button class="era-chip" data-era="showa_early">昭和初期<br><small>1936〜42年頃</small></button>
           <button class="era-chip" data-era="prewar_1928">1928年頃</button>
         </div>
+        <div class="map-compare-controls">
+          <label for="map-opacity-slider"><i data-lucide="layers"></i> 今昔比較：<span id="map-opacity-val">65%</span></label>
+          <input type="range" id="map-opacity-slider" min="0" max="100" value="65" aria-label="過去航空写真の透明度">
+          <button id="btn-time-travel" class="btn-chip-small" type="button"><i data-lucide="clock-3"></i> この場所の時間旅行</button>
+        </div>
         <p class="timeline-note">明治・江戸・平安の大阪向け位置精度付きXYZタイルは未収録です。該当資料は地図上のスポットから「歴史資料」として閲覧できます。</p>
       </div>
 
@@ -263,6 +268,16 @@
       </footer>
     </div>
 
+    <aside id="time-travel-panel" class="time-travel-panel hidden" aria-label="この場所の時間旅行">
+      <div class="time-travel-header">
+        <div><i data-lucide="history"></i><strong>この場所の時間旅行</strong></div>
+        <button id="btn-close-time-travel" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+      </div>
+      <p id="time-travel-location" class="time-travel-location">地図上の場所を選択してください。</p>
+      <div id="time-travel-list" class="time-travel-list"></div>
+      <p class="time-travel-note">航空写真は位置合わせされた地理院タイルです。江戸期資料は非測量の歴史資料で、現代地図との一致は保証されません。</p>
+    </aside>
+
     <!-- スポット詳細ダイアログ -->
     <div id="spot-modal" class="modal-backdrop hidden">
       <div class="modal-card">
@@ -317,7 +332,7 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=p1-verify"></script>
+  <script type="module" src="app.js?v=p2-map-compare"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();
