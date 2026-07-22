@@ -7,7 +7,7 @@ import {
   MATERIAL_TYPE_LABELS,
   PLACEHOLDER_IMAGE_URL,
   TRUST_LABELS
-} from './data.js?v=p1-verify';
+} from './data.js?v=p2-map-compare';
 
 class ARRegionalApp {
   constructor() {
@@ -66,6 +66,11 @@ class ARRegionalApp {
     this.mapDataStatus = document.getElementById('map-data-status');
     this.hazardSourceLink = document.getElementById('hazard-source-link');
     this.mapSpotsPanel = document.getElementById('map-spots-panel');
+    this.mapCompareSlider = document.getElementById('map-opacity-slider');
+    this.mapCompareValue = document.getElementById('map-opacity-val');
+    this.timeTravelPanel = document.getElementById('time-travel-panel');
+    this.timeTravelList = document.getElementById('time-travel-list');
+    this.timeTravelLocation = document.getElementById('time-travel-location');
 
     // モード切替ボタン
     this.btnModeAr = document.getElementById('btn-mode-ar');
@@ -94,6 +99,10 @@ class ARRegionalApp {
     // Leafletマップインスタンス ＆ レイヤー
     this.map = null;
     this.baseTileLayer = null;
+    this.historicalOverlayTileLayer = null;
+    this.mapOverlayTileErrors = 0;
+    this.mapOverlayTileLoaded = 0;
+    this.mapOverlayOpacity = 0.65;
     this.officialHazardTileLayer = null;
     this.mapMarkers = [];
     this.userMapMarker = null;
@@ -163,7 +172,7 @@ class ARRegionalApp {
     }
   }
 
-  // 国土地理院・時代別タイル切替
+  // 現代地図を下地に置き、選択した過去資料を透明度付きで重ねる。
   updateMapBaseTile(eraKey) {
     if (!this.map) return;
     const tileDef = HISTORICAL_MAP_TILES[eraKey];
@@ -172,29 +181,59 @@ class ARRegionalApp {
       return;
     }
 
-    if (this.baseTileLayer) {
-      this.map.removeLayer(this.baseTileLayer);
+    const presentDef = HISTORICAL_MAP_TILES.present;
+    if (!this.baseTileLayer) {
+      this.baseTileLayer = L.tileLayer(presentDef.url, {
+        minZoom: presentDef.minZoom,
+        maxZoom: 18,
+        maxNativeZoom: presentDef.maxNativeZoom,
+        attribution: presentDef.attribution,
+        crossOrigin: true
+      }).addTo(this.map);
     }
 
-    this.mapDataTileErrors = 0;
-    this.mapDataTileLoaded = 0;
-    this.showMapDataStatus(`${tileDef.name}を読み込み中…`, 'info', tileDef.sourceUrl);
-    this.baseTileLayer = L.tileLayer(tileDef.url, {
+    if (this.historicalOverlayTileLayer) {
+      this.map.removeLayer(this.historicalOverlayTileLayer);
+      this.historicalOverlayTileLayer = null;
+    }
+
+    if (eraKey === 'present') {
+      this.showMapDataStatus(`${presentDef.name}｜出典: ${presentDef.sourceName}`, 'success', presentDef.sourceUrl);
+      return;
+    }
+
+    this.mapOverlayTileErrors = 0;
+    this.mapOverlayTileLoaded = 0;
+    this.showMapDataStatus(`${tileDef.name}を現代地図に重ねて読み込み中…`, 'info', tileDef.sourceUrl);
+    this.historicalOverlayTileLayer = L.tileLayer(tileDef.url, {
       minZoom: tileDef.minZoom,
       maxZoom: 18,
       maxNativeZoom: tileDef.maxNativeZoom,
+      opacity: this.mapOverlayOpacity,
       attribution: tileDef.attribution,
       crossOrigin: true
     });
-    this.baseTileLayer.on('tileload', () => {
-      this.mapDataTileLoaded += 1;
-      this.showBaseTileStatus(tileDef);
+    this.historicalOverlayTileLayer.on('tileload', () => {
+      this.mapOverlayTileLoaded += 1;
+      this.showComparisonTileStatus(tileDef);
     });
-    this.baseTileLayer.on('tileerror', () => {
-      this.mapDataTileErrors += 1;
-      this.showBaseTileStatus(tileDef);
+    this.historicalOverlayTileLayer.on('tileerror', () => {
+      this.mapOverlayTileErrors += 1;
+      this.showComparisonTileStatus(tileDef);
     });
-    this.baseTileLayer.addTo(this.map);
+    this.historicalOverlayTileLayer.addTo(this.map);
+  }
+
+  showComparisonTileStatus(tileDef) {
+    const loaded = this.mapOverlayTileLoaded || 0;
+    const errored = this.mapOverlayTileErrors || 0;
+    if (loaded > 0 && errored === 0) {
+      this.showMapDataStatus(`${tileDef.name}を現代地図に重ねて表示中（透明度 ${Math.round(this.mapOverlayOpacity * 100)}%）`, 'success', tileDef.sourceUrl);
+    } else if (loaded > 0 && errored > 0) {
+      this.showMapDataStatus(`${tileDef.name}：一部タイルにデータがありません（取得できた範囲のみ表示）。`, 'info', tileDef.sourceUrl);
+    } else if (loaded === 0 && errored > 0) {
+      this.showMapDataStatus(`この地域・ズームの「${tileDef.name}」データはありません。現代地図へ自動切替していません。`, 'warning', tileDef.sourceUrl);
+    }
   }
 
   // 「全部ない」「一部ない」「正常」をタイルの成功/失敗数から区別する。
@@ -461,6 +500,19 @@ class ARRegionalApp {
       this.setHeading(parseFloat(e.target.value), 'manual');
     });
 
+    if (this.mapCompareSlider) {
+      this.mapCompareSlider.addEventListener('input', (e) => {
+        this.mapOverlayOpacity = Number(e.target.value) / 100;
+        if (this.historicalOverlayTileLayer) this.historicalOverlayTileLayer.setOpacity(this.mapOverlayOpacity);
+        if (this.mapCompareValue) this.mapCompareValue.textContent = `${e.target.value}%`;
+      });
+    }
+
+    const timeTravelButton = document.getElementById('btn-time-travel');
+    if (timeTravelButton) timeTravelButton.addEventListener('click', () => this.openTimeTravel(this.selectedSpot));
+    const closeTimeTravel = document.getElementById('btn-close-time-travel');
+    if (closeTimeTravel) closeTimeTravel.addEventListener('click', () => this.closeTimeTravel());
+
     document.querySelectorAll('.sim-btn-grid .btn-chip').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.sim-btn-grid .btn-chip').forEach(b => b.classList.remove('active'));
@@ -515,6 +567,7 @@ class ARRegionalApp {
   // モード切り替え (AR ↔ 地図)
   switchViewMode(mode) {
     this.viewMode = mode;
+    document.getElementById('app-container')?.classList.toggle('map-mode', mode === 'map');
     const spotsPanel = this.getMapSpotsPanel();
 
     if (mode === 'map') {
@@ -1124,6 +1177,36 @@ class ARRegionalApp {
     this.renderHistoricalMaterials(spot);
 
     modal.classList.remove('hidden');
+  }
+
+  openTimeTravel(spot = null) {
+    if (!this.timeTravelPanel || !this.timeTravelList) return;
+    const target = spot || this.spots.find(item => item.id === 'hist-1') || null;
+    this.timeTravelPanel.classList.remove('hidden');
+    this.timeTravelLocation.textContent = target
+      ? `${target.name}｜地図上で確認できる資料と年代別航空写真`
+      : '大阪城周辺｜地図上で確認できる資料と年代別航空写真';
+
+    const mapItems = Object.entries(HISTORICAL_MAP_TILES)
+      .filter(([key]) => key !== 'present')
+      .map(([key, def]) => `<button type="button" class="time-travel-item" data-era="${key}">
+        <span class="time-travel-year">${def.year}</span><span><strong>${def.name}</strong><small>位置合わせ済み航空写真・地理院タイル</small></span><i data-lucide="chevron-right"></i>
+      </button>`).join('');
+    const materials = target?.historicalMaterials || [];
+    const materialItems = materials.map(material => `<article class="time-travel-material">
+      <span class="time-travel-year">${material.date || '年代未詳'}</span><span><strong>${material.title}</strong><small>${material.displayType || MATERIAL_TYPE_LABELS[material.materialType] || '歴史資料'}｜${material.license || 'ライセンス未確認'}</small><a href="${material.sourceUrl}" target="_blank" rel="noreferrer">NDL資料ページで確認</a></span>
+    </article>`).join('');
+    this.timeTravelList.innerHTML = `<div class="time-travel-section"><h3>航空写真・現在地図</h3>${mapItems}</div><div class="time-travel-section"><h3>江戸期などの歴史資料</h3>${materialItems || '<p class="material-empty">この地点に紐づく歴史資料は未収録です。地図上の別スポットを選択してください。</p>'}</div><div class="time-travel-section future"><h3>未来のリスク</h3><p>防災タブで洪水・津波・土砂災害の公式ハザード面データを確認できます。避難先の具体案内は未検証のため表示していません。</p></div>`;
+    this.timeTravelList.querySelectorAll('[data-era]').forEach(button => button.addEventListener('click', () => {
+      this.currentEra = button.dataset.era;
+      document.querySelectorAll('.era-chip').forEach(chip => chip.classList.toggle('active', chip.dataset.era === this.currentEra));
+      this.updateMapBaseTile(this.currentEra);
+    }));
+    if (window.lucide) lucide.createIcons();
+  }
+
+  closeTimeTravel() {
+    this.timeTravelPanel?.classList.add('hidden');
   }
 
   getMapSpotsPanel() {
