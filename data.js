@@ -35,6 +35,7 @@ export const HISTORICAL_MAP_TILES = {
     materialType: 'official_map',
     positionAccuracy: 'georeferenced',
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
     minZoom: 0,
     maxNativeZoom: 19
@@ -49,6 +50,7 @@ export const HISTORICAL_MAP_TILES = {
     materialType: 'aerial_photo',
     positionAccuracy: 'georeferenced',
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
     minZoom: 2,
     maxNativeZoom: 18
@@ -63,6 +65,7 @@ export const HISTORICAL_MAP_TILES = {
     materialType: 'aerial_photo',
     positionAccuracy: 'georeferenced',
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
     minZoom: 10,
     maxNativeZoom: 17
@@ -77,6 +80,7 @@ export const HISTORICAL_MAP_TILES = {
     materialType: 'aerial_photo',
     positionAccuracy: 'georeferenced',
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
     minZoom: 10,
     maxNativeZoom: 17
@@ -91,6 +95,7 @@ export const HISTORICAL_MAP_TILES = {
     materialType: 'aerial_photo',
     positionAccuracy: 'georeferenced',
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
     minZoom: 10,
     maxNativeZoom: 17
@@ -105,6 +110,7 @@ export const HISTORICAL_MAP_TILES = {
     materialType: 'aerial_photo',
     positionAccuracy: 'georeferenced',
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
     minZoom: 13,
     maxNativeZoom: 18
@@ -119,6 +125,7 @@ export const HISTORICAL_MAP_TILES = {
     materialType: 'aerial_photo',
     positionAccuracy: 'georeferenced',
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
     minZoom: 13,
     maxNativeZoom: 18
@@ -136,10 +143,15 @@ export const HISTORICAL_REFERENCE_MATERIALS = [
     sourceName: '国立国会図書館デジタルコレクション',
     sourceUrl: 'https://dl.ndl.go.jp/pid/1303484',
     manifestUrl: 'https://dl.ndl.go.jp/api/iiif/1303484/manifest.json',
-    imageUrl: 'https://dl.ndl.go.jp/api/iiif/1303484/R0000001/full/,600/0/default.jpg',
+    imageUrl: null,
     license: NDL_PDM_LICENSE,
     licenseUrl: DATA_SOURCES.ndlIiifHelp,
     usageStatus: 'verified_reusable',
+    metadataVerified: true,
+    manifestVerified: false,
+    imageUrlVerified: false,
+    verificationStatus: 'partially_verified',
+    verificationNote: 'PID・年代・PDMは確認済み。マニフェストと個別画像リソースは本番環境からのHTTP検証後に表示します。現在はNDL資料ページとIIIFマニフェストへのリンクを提供します。',
     materialType: 'pictorial_map',
     displayType: '名所絵・錦絵',
     positionAccuracy: 'reference_only',
@@ -155,10 +167,15 @@ export const HISTORICAL_REFERENCE_MATERIALS = [
     sourceName: '国立国会図書館デジタルコレクション',
     sourceUrl: 'https://dl.ndl.go.jp/pid/1303487',
     manifestUrl: 'https://dl.ndl.go.jp/api/iiif/1303487/manifest.json',
-    imageUrl: 'https://dl.ndl.go.jp/api/iiif/1303487/R0000001/full/,600/0/default.jpg',
+    imageUrl: null,
     license: NDL_PDM_LICENSE,
     licenseUrl: DATA_SOURCES.ndlIiifHelp,
     usageStatus: 'verified_reusable',
+    metadataVerified: true,
+    manifestVerified: false,
+    imageUrlVerified: false,
+    verificationStatus: 'partially_verified',
+    verificationNote: 'PID・年代・PDMは確認済み。マニフェストと個別画像リソースは本番環境からのHTTP検証後に表示します。現在はNDL資料ページとIIIFマニフェストへのリンクを提供します。',
     materialType: 'pictorial_map',
     displayType: '名所絵・錦絵',
     positionAccuracy: 'reference_only',
@@ -174,10 +191,15 @@ export const HISTORICAL_REFERENCE_MATERIALS = [
     sourceName: '国立国会図書館デジタルコレクション',
     sourceUrl: 'https://dl.ndl.go.jp/pid/2542266',
     manifestUrl: 'https://dl.ndl.go.jp/api/iiif/2542266/manifest.json',
-    imageUrl: 'https://dl.ndl.go.jp/api/iiif/2542266/R0000001/full/,800/0/default.jpg',
+    imageUrl: null,
     license: NDL_PDM_LICENSE,
     licenseUrl: DATA_SOURCES.ndlIiifHelp,
     usageStatus: 'verified_reusable',
+    metadataVerified: true,
+    manifestVerified: false,
+    imageUrlVerified: false,
+    verificationStatus: 'partially_verified',
+    verificationNote: 'PID・年代・PDMは確認済み。マニフェストと個別画像リソースは本番環境からのHTTP検証後に表示します。現在はNDL資料ページとIIIFマニフェストへのリンクを提供します。',
     materialType: 'historical_map',
     displayType: '歴史地図・絵図',
     positionAccuracy: 'reference_only',
@@ -206,6 +228,7 @@ export const OFFICIAL_HAZARD_LAYERS = {
     sourceName: '国土交通省・国土地理院',
     sourceUrl: DATA_SOURCES.hazardOpenData,
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
     minZoom: 2,
     maxNativeZoom: 17,
@@ -225,6 +248,7 @@ export const OFFICIAL_HAZARD_LAYERS = {
     sourceName: '国土交通省・国土地理院',
     sourceUrl: DATA_SOURCES.hazardOpenData,
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
     minZoom: 2,
     maxNativeZoom: 14,
@@ -238,16 +262,21 @@ export const OFFICIAL_HAZARD_LAYERS = {
   },
   sediment: {
     id: 'sediment',
-    name: '土砂災害（急傾斜地崩壊危険区域・大阪府）',
-    tileUrl: 'https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki_data/26/{z}/{x}/{y}.png',
-    attribution: '国土交通省・国土地理院 重ねるハザードマップ（大阪府・急傾斜地崩壊）',
+    name: '土砂災害（急傾斜地の崩壊・大阪府）',
+    tileUrl: 'https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki_data/27/{z}/{x}/{y}.png',
+    attribution: 'ハザードマップポータルサイト（大阪府・急傾斜地の崩壊）',
     sourceName: '国土交通省・国土地理院',
     sourceUrl: DATA_SOURCES.hazardOpenData,
+    officialSource: 'ハザードマップポータルサイト オープンデータ配信',
+    datasetName: '土砂災害警戒区域（急傾斜地の崩壊）',
+    coverage: '大阪府（都道府県コード27）',
     usageStatus: 'attribution_required',
+    verificationStatus: 'verified',
     verifiedAt: VERIFIED_AT,
+    lastVerifiedAt: VERIFIED_AT,
     minZoom: 2,
-    maxNativeZoom: 10,
-    note: '大阪府コード26の急傾斜地崩壊レイヤーです。土石流・地すべりは別レイヤーで、地点・ズームによりデータがない場合があります。',
+    maxNativeZoom: 17,
+    note: '国土地理院の公式一覧に掲載された大阪府27のタイルです。地域・ズームによりデータがない場合があります。',
     legend: [
       { depth: '土砂災害特別警戒区域', color: '#dc2626' },
       { depth: '土砂災害警戒区域', color: '#eab308' }
@@ -279,6 +308,7 @@ export const SPOT_DATA = [
   {
     id: 'hist-1', name: '大阪城 天守閣（昭和6年復元）', category: 'history',
     coordinate: { latitude: 34.6873, longitude: 135.5260, elevationMeter: 24 }, era: 'showa', eraLabel: '昭和6年（1931年）',
+    verificationStatus: 'unverified',
     summary: '現在の天守閣は1931年に再建されたものです。',
     description: '昭和6年（1931年）に再建された大阪城天守閣についての説明です。建築の経緯・復元の詳細は、下記の公式資料を確認してから確定表示します。',
     mediaAssets: [placeholderMedia], historicalMaterials: [ndl大坂図],
@@ -289,6 +319,7 @@ export const SPOT_DATA = [
   {
     id: 'hist-2', name: '旧陸軍第四師団司令部庁舎（ミライザ大阪城）', category: 'history',
     coordinate: { latitude: 34.6865, longitude: 135.5252, elevationMeter: 22 }, era: 'showa', eraLabel: '昭和初期',
+    verificationStatus: 'unverified',
     summary: '大阪城公園内に残る近代建築です。',
     description: '旧陸軍第四師団司令部庁舎に関する歴史記述は、一次資料の確認後に確定します。現在の表示画像はイメージ画像です。',
     mediaAssets: [placeholderMedia], historicalMaterials: [],
@@ -299,6 +330,7 @@ export const SPOT_DATA = [
   {
     id: 'hist-3', name: '極楽橋・隠し曲輪跡', category: 'history',
     coordinate: { latitude: 34.6888, longitude: 135.5255, elevationMeter: 18 }, era: 'edo', eraLabel: '江戸期〜現在',
+    verificationStatus: 'partially_verified',
     summary: '大阪城北側の橋と周辺の変遷を学ぶスポットです。',
     description: '現在の極楽橋は平成12年（2000年）に架け替えられました。過去の建設・焼失については、公式資料の記載範囲を確認しながら表示します。',
     mediaAssets: [placeholderMedia], historicalMaterials: [ndl大坂図],
@@ -309,6 +341,7 @@ export const SPOT_DATA = [
   {
     id: 'comm-1', name: '旧京街道起点・八軒家浜', category: 'community',
     coordinate: { latitude: 34.6895, longitude: 135.5212, elevationMeter: 5.5 }, era: 'edo', eraLabel: '江戸後期',
+    verificationStatus: 'partially_verified',
     summary: '八軒家浜を描いたNDL公開の名所絵と大坂の歴史地図を閲覧できます。',
     description: '八軒家浜に関連する江戸期の名所絵を、現在地の説明と分けて表示します。名所絵・絵図は測量図ではないため、現代地図との位置一致は保証されません。',
     mediaAssets: [ndl八軒家], historicalMaterials: [ndl八軒家, ndl大坂図],
@@ -322,6 +355,7 @@ export const SPOT_DATA = [
   {
     id: 'comm-2', name: '旧大阪砲兵工廠跡地', category: 'community',
     coordinate: { latitude: 34.6880, longitude: 135.5310, elevationMeter: 11.5 }, era: 'meiji', eraLabel: '明治〜昭和期',
+    verificationStatus: 'unverified',
     summary: '大阪城東部の土地利用の変化を調べる地域理解スポットです。',
     description: '旧大阪砲兵工廠に関する記述は、一次資料を確認してから確定します。明治期の位置精度を持つ大阪向けXYZタイルは未収録です。',
     mediaAssets: [placeholderMedia], historicalMaterials: [],
@@ -332,6 +366,7 @@ export const SPOT_DATA = [
   {
     id: 'comm-3', name: '難波宮跡（飛鳥・奈良時代）', category: 'community',
     coordinate: { latitude: 34.6800, longitude: 135.5250, elevationMeter: 10 }, era: 'asuka', eraLabel: '飛鳥〜奈良時代',
+    verificationStatus: 'unverified',
     summary: '古代の難波宮跡を地域理解の入口として紹介します。',
     description: '難波宮跡に関する詳しい年代・建物復元は、公式文化財資料を確認してから確定します。表示画像はイメージ画像です。',
     mediaAssets: [placeholderMedia], historicalMaterials: [],
@@ -342,6 +377,7 @@ export const SPOT_DATA = [
   {
     id: 'disaster-1', name: '寝屋川・大川周辺の洪水浸水想定', category: 'disaster',
     coordinate: { latitude: 34.6890, longitude: 135.5220, elevationMeter: 3.2 },
+    verificationStatus: 'verified',
     hazardInfo: { type: 'flood', typeName: '洪水浸水想定', description: '地図上に国土交通省・国土地理院の公式洪水タイルを重ねます。地点の深さは地図の凡例と原典で確認してください。' },
     summary: '公式洪水浸水想定タイルを表示します。',
     description: 'このアプリの表示は防災情報の入口です。現在の警報・避難指示は自治体の最新情報を確認してください。',
@@ -351,6 +387,7 @@ export const SPOT_DATA = [
   {
     id: 'disaster-2', name: '大阪市内の津波浸水想定', category: 'disaster',
     coordinate: { latitude: 34.6860, longitude: 135.5200, elevationMeter: 4.1 },
+    verificationStatus: 'verified',
     hazardInfo: { type: 'tsunami', typeName: '津波浸水想定', description: '地図上に国土交通省・国土地理院の公式津波タイルを重ねます。地域・ズームによってデータがない場合があります。' },
     summary: '公式津波浸水想定タイルを表示します。',
     description: '地震・津波時は自治体の最新の避難情報に従ってください。表示タイルは想定情報であり、現在の警報ではありません。',
@@ -359,8 +396,10 @@ export const SPOT_DATA = [
   }
 ];
 
+// 避難所データは全て未検証。座標は住所からの概算であり公式データではない。
+// 公式一次資料（大阪市避難所一覧等）で確認するまでユーザーへの避難誘導に使用しない。
 export const EVACUATION_SHELTERS = [
-  { id: 'shelter-1', name: '追手門学院大手前中・高等学校', address: '大阪市中央区大手前1-3-20', coordinate: { latitude: 34.6858, longitude: 135.5235 }, elevationMeter: 15.2, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown' },
-  { id: 'shelter-2', name: '大阪城公園', address: '大阪市中央区大阪城1', coordinate: { latitude: 34.6870, longitude: 135.5280 }, elevationMeter: 22.5, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown' },
-  { id: 'shelter-3', name: '開平小学校', address: '大阪市中央区北浜東2-4', coordinate: { latitude: 34.6892, longitude: 135.5140 }, elevationMeter: 6.8, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown' }
+  { id: 'shelter-1', name: '追手門学院大手前中・高等学校', address: '大阪市中央区大手前1-3-20', coordinate: { latitude: 34.6858, longitude: 135.5235 }, elevationMeter: 15.2, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown', verificationStatus: 'unverified', coordinateSource: '住所から概算（公式データではない）' },
+  { id: 'shelter-2', name: '大阪城公園', address: '大阪市中央区大阪城1', coordinate: { latitude: 34.6870, longitude: 135.5280 }, elevationMeter: 22.5, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown', verificationStatus: 'unverified', coordinateSource: '住所から概算（公式データではない）' },
+  { id: 'shelter-3', name: '開平小学校', address: '大阪市中央区北浜東2-4', coordinate: { latitude: 34.6892, longitude: 135.5140 }, elevationMeter: 6.8, types: ['要確認'], capacity: null, source: '大阪市の最新避難所情報を確認してください', usageStatus: 'unknown', verificationStatus: 'unverified', coordinateSource: '住所から概算（公式データではない）' }
 ];

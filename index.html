@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR地域理解・歴史・防災統合プラットフォーム</title>
-  <link rel="stylesheet" href="styles.css?v=spot-list-fallback-2">
+  <link rel="stylesheet" href="styles.css?v=audit-v3">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Leaflet Map CSS & JS (地図モード用) -->
@@ -60,7 +60,7 @@
           <div class="toggle-row">
             <label class="checkbox-label">
               <input type="checkbox" id="chk-sync-heading" checked>
-              <span><i data-lucide="compass"></i> 視点回転に追従 (3D空間連動)</span>
+              <span><i data-lucide="compass"></i> 視点回転に追従（方角連動）</span>
             </label>
           </div>
         </div>
@@ -159,7 +159,7 @@
         </div>
         <div id="shelter-guide-text" class="shelter-guide">
           <i data-lucide="navigation"></i>
-          <span>最寄り避難所: 大阪城公園 (東へ約350m / 標高22.5m)</span>
+          <span>避難所情報を確認中…</span>
         </div>
         <!-- 公式ハザード凡例バー -->
         <div id="hazard-legend-box" class="hazard-legend"></div>
@@ -206,7 +206,7 @@
           </div>
           <div class="sim-guide-step">
             <span class="step-num">3</span>
-            <span>マーカータップで古写真表示後、ドラッグや拡大で現像比較</span>
+            <span>マーカータップで古写真表示後、ドラッグや拡大で現在の景観と比較</span>
           </div>
         </div>
 
@@ -293,14 +293,14 @@
           <ul>
             <li><strong>ハザードデータ</strong>：国土交通省・国土地理院の公式タイルを表示します。地域・ズームによってデータがない場合は自動で別年代へ切り替えません。</li>
             <li><strong>時代別写真</strong>：国土地理院の公式一覧で確認した昭和期〜現代の航空写真タイルを使用しています。明治・江戸・平安の大阪向けXYZタイルは未収録です。</li>
-            <li><strong>歴史資料</strong>：NDLの資料ページとIIIFマニフェストを紐づけ、名所絵・歴史地図を測量図と区別して表示します。未確認の記述や画像は明示します。</li>
+            <li><strong>歴史資料</strong>：NDLの資料ページとIIIFマニフェストの確認状態を分けて管理し、名所絵・歴史地図を測量図と区別して表示します。個別画像URLが未検証の場合は埋め込まず、NDLへのリンクを表示します。</li>
           </ul>
         </div>
       </div>
     </div>
   </div>
 
-  <script type="module" src="app.js?v=spot-list-fallback-2"></script>
+  <script type="module" src="app.js?v=audit-v3"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();
