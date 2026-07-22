@@ -981,9 +981,12 @@ class ARRegionalApp {
     this.setMapNavigationStatus('地名を検索しています…', 'info');
     this.mapSearchResults?.classList.add('hidden');
 
+    let timeoutId;
     try {
       const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+      // 町名検索は候補の照合に時間がかかることがあるため、
+      // 短すぎるタイムアウトで「見つからない」と誤認させない。
+      timeoutId = window.setTimeout(() => controller.abort(), 20000);
       const response = await fetch(endpoint, {
         headers: { Accept: 'application/json' },
         signal: controller.signal
@@ -1064,8 +1067,11 @@ class ARRegionalApp {
         this.renderMapSearchResults(localResults);
         this.setMapNavigationStatus(`外部検索に接続できないため、登録済みスポット${localResults.length}件を表示しています。`, 'info');
       } else {
-        this.setMapNavigationStatus(message, 'warning');
+      this.setMapNavigationStatus(message, 'warning');
       }
+    } finally {
+      // 成功・失敗・タイムアウトのいずれでもタイマーを残さない。
+      window.clearTimeout(timeoutId);
     }
   }
 
