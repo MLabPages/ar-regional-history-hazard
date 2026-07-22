@@ -22,32 +22,44 @@ export const HISTORICAL_MAP_TILES = {
   photo_latest: {
     name: '現代 (最新航空写真)',
     year: '2020年代',
-    url: 'https://maps.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',
     attribution: '国土地理院 seamlessphoto'
   },
   showa50: {
     name: '昭和50年代 (1974〜78年)',
     year: '1975年頃',
-    url: 'https://maps.gsi.go.jp/xyz/gsi-ort_1974/{z}/{x}/{y}.png',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/gsi-ort_1974/{z}/{x}/{y}.png',
     attribution: '国土地理院 1974-1978年撮影航空写真'
   },
   showa30: {
     name: '昭和30年代 (1961〜69年)',
     year: '1965年頃',
-    url: 'https://maps.gsi.go.jp/xyz/ort_1961/{z}/{x}/{y}.png',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/ort_1961/{z}/{x}/{y}.png',
     attribution: '国土地理院 1961-1969年撮影航空写真'
   },
   showa20: {
     name: '昭和20年代 (1945〜50年)',
     year: '1948年頃',
-    url: 'https://maps.gsi.go.jp/xyz/ort_usa10/{z}/{x}/{y}.png',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/ort_USA10/{z}/{x}/{y}.png',
     attribution: '国土地理院/米軍撮影航空写真 (1945-1950)'
   },
   showa_early: {
     name: '昭和初期 (1936〜42年)',
     year: '1938年頃',
-    url: 'https://maps.gsi.go.jp/xyz/ort_ri200/{z}/{x}/{y}.png',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/ort_ri200/{z}/{x}/{y}.png',
     attribution: '国土地理院 陸軍撮影航空写真 (1936-1942)'
+  },
+  meiji: {
+    name: '明治時代 (古地図)',
+    year: '明治期',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/experimental_kigyo/{z}/{x}/{y}.png',
+    attribution: '国土地理院 近代移行期古地図'
+  },
+  edo: {
+    name: '江戸・平安 (歴史想定図)',
+    year: '江戸期・平安期',
+    url: 'https://disaportaldata.gsi.go.jp/raster/05_doshasaigai_kikenkasho/{z}/{x}/{y}.png', // プロトタイプ用ダミー
+    attribution: '※江戸・平安期の地図は現在整備中 (参考表示)'
   }
 };
 
@@ -156,6 +168,19 @@ export const SPOT_DATA = [
     description: '明治3年(1870年)に設立された兵器工場。最盛期には数万人が勤務する巨大施設でしたが、1945年8月14日の大阪大空襲で壊滅。戦後は平和的な都市再開発が進められ、大阪ビジネスパーク(OBP)および大阪城公園の緑地へと変貌した歴史的土地です。',
     historicalImage: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=800&q=80',
     source: '大阪市史編纂所デジタルアーカイブ',
+    license: 'パブリックドメイン'
+  },
+  {
+    id: 'comm-3',
+    name: '難波宮跡 (飛鳥・奈良時代)',
+    category: 'community',
+    coordinate: { latitude: 34.6800, longitude: 135.5250, elevationMeter: 10.0 },
+    era: 'asuka',
+    eraLabel: '飛鳥〜奈良時代 (7世紀)',
+    summary: '大化の改新後に建設された、かつての首都「難波宮（なにわのみや）」の跡地。',
+    description: '645年の大化の改新後、孝徳天皇によって建設された古代日本の首都跡です。現在は史跡公園として整備されており、当時の宮殿の柱の跡などが復元・保存されています。',
+    historicalImage: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=800&q=80',
+    source: '大阪市文化財アーカイブ',
     license: 'パブリックドメイン'
   },
 
