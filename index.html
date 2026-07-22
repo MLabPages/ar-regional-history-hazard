@@ -41,9 +41,16 @@
           </div>
         </div>
         <div class="header-actions">
-          <button id="btn-toggle-sim" class="btn-glass" title="シミュレータ表示/非表示">
+          <!-- カメラON/OFFボタン -->
+          <button id="btn-toggle-camera" class="btn-glass" title="カメラON/OFF">
+            <i data-lucide="video" id="camera-icon-on"></i>
+            <i data-lucide="video-off" id="camera-icon-off" class="hidden"></i>
+            <span id="camera-btn-text">カメラON</span>
+          </button>
+          <!-- シミュレータボタン -->
+          <button id="btn-toggle-sim" class="btn-glass active-highlight" title="シミュレータ操作パネル">
             <i data-lucide="sliders"></i>
-            <span>Sim</span>
+            <span>Sim操作</span>
           </button>
           <button id="btn-info" class="btn-glass" title="アプリについて">
             <i data-lucide="info"></i>
@@ -54,11 +61,16 @@
       <!-- カメラ未起動時のプロンプト案内 (最前面) -->
       <div id="camera-placeholder">
         <i data-lucide="camera"></i>
-        <p>実機のカメラ映像にARを重ね合わせます。<br>PC環境や屋内ではシミュレーターモード（Sim）でもお試しいただけます。</p>
-        <button id="btn-start-camera" class="btn-primary">
-          <i data-lucide="video"></i>
-          <span>カメラを起動する</span>
-        </button>
+        <p>実際の街にスマホをかざして体験します。<br>PCや室内では画面ドラッグや下記Sim機能で自由に体験できます。</p>
+        <div class="placeholder-actions">
+          <button id="btn-start-camera" class="btn-primary">
+            <i data-lucide="video"></i>
+            <span>カメラを起動する</span>
+          </button>
+          <button id="btn-dismiss-placeholder" class="btn-secondary">
+            <span>シミュレーターで体験する</span>
+          </button>
+        </div>
       </div>
 
       <!-- レイヤー切替タブ -->
@@ -89,23 +101,59 @@
         </div>
       </div>
 
+      <!-- 画面ドラッグ操作ガイドヒント -->
+      <div id="drag-guide-hint" class="drag-hint-badge">
+        <i data-lucide="move-horizontal" class="pulse-icon"></i>
+        <span>画面を左右にドラッグして全方位 (360°) 見回せます</span>
+      </div>
+
       <!-- シミュレーター操作パネル (PC/室内テスト用) -->
-      <section id="simulator-panel" class="sim-panel hidden">
+      <section id="simulator-panel" class="sim-panel">
         <div class="sim-header">
-          <span><i data-lucide="cpu"></i> 位置・方角シミュレーター</span>
+          <span><i data-lucide="cpu"></i> シミュレーター操作パネル</span>
           <button id="btn-close-sim" class="btn-icon-small"><i data-lucide="x"></i></button>
         </div>
+        
+        <!-- 初心者向け操作方法ガイドステップ -->
+        <div class="sim-guide-box">
+          <div class="sim-guide-step">
+            <span class="step-num">1</span>
+            <span>下記の「向きスライダー」または<strong>画面ドラッグ</strong>でカメラの向きを変える</span>
+          </div>
+          <div class="sim-guide-step">
+            <span class="step-num">2</span>
+            <span>「位置切り替え」で大阪城・京街道など好きな場所に移動する</span>
+          </div>
+          <div class="sim-guide-step">
+            <span class="step-num">3</span>
+            <span>画面に浮かぶマーカーをタップして古写真やハザード情報を比較する</span>
+          </div>
+        </div>
+
         <div class="sim-controls">
           <div class="control-group">
-            <label>カメラ向き (方角): <span id="sim-heading-val">0° (北)</span></label>
-            <input type="range" id="sim-heading" min="0" max="360" value="0">
+            <div class="label-row">
+              <label><i data-lucide="compass"></i> カメラの向き (方角):</label>
+              <span id="sim-heading-val" class="heading-badge">0° (北)</span>
+            </div>
+            <div class="slider-with-direction">
+              <span class="dir-hint">西</span>
+              <input type="range" id="sim-heading" min="0" max="360" value="0">
+              <span class="dir-hint">東</span>
+            </div>
           </div>
           <div class="control-group">
-            <label>位置プリセット:</label>
+            <label><i data-lucide="map-pin"></i> 位置切り替え (ワープ):</label>
             <div class="sim-btn-grid">
-              <button class="btn-chip active" data-lat="34.6873" data-lng="135.5260">大阪城本丸</button>
-              <button class="btn-chip" data-lat="34.6890" data-lng="135.5220">野田橋・京街道口</button>
-              <button class="btn-chip" data-lat="34.6860" data-lng="135.5200">大手前・浸水想定区</button>
+              <button class="btn-chip active" data-lat="34.6873" data-lng="135.5260">
+                <i data-lucide="navigation-2"></i> 大阪城本丸
+              </button>
+              <button class="btn-chip" data-lat="34.6890" data-lng="135.5220">
+                <i data-lucide="navigation-2"></i> 野田橋・旧京街道
+              </button>
+              <button class="btn-chip" data-lat="34.6860" data-lng="135.5200">
+                <i data-lucide="navigation-2"></i> 大手前・想定浸水区
+              </button>
             </div>
           </div>
         </div>
@@ -114,7 +162,7 @@
       <!-- 下部フッターコントロール -->
       <footer class="app-footer">
         <div class="quick-status">
-          <span id="active-layer-desc"><i data-lucide="eye"></i> 視界内のスポットをタップで古写真・詳細を表示</span>
+          <span id="active-layer-desc"><i data-lucide="touch-point"></i> 浮遊するマーカーをタップすると古写真・解説を表示</span>
         </div>
       </footer>
     </div>
@@ -158,14 +206,14 @@
           <p class="subtitle">「場所にスマホをかざすと、その土地の時間とリスクが見える」</p>
           <hr>
           <h3>コンセプト</h3>
-          <p>歴史・観光理解と、地域の変遷、そして防災・ハザード情報を1つのAR体験に統合した次世代地域プラットフォームプロトタイプです。</p>
-          <h3>体験のポイント</h3>
+          <p>歴史・観光理解と、地域の変変、そして防災・ハザード情報を1つのAR体験に統合した次世代地域プラットフォームプロトタイプです。</p>
+          <h3>操作のヒント</h3>
           <ul>
+            <li><strong>画面ドラッグ</strong>：画面を左右にドラッグすると全方位360度見回せます。</li>
             <li><strong>① 歴史・観光レイヤー</strong>：現在地周辺の古写真を表示し、スライダーで現在の景観と重ね合わせて比較できます。</li>
             <li><strong>② 地域理解レイヤー</strong>：かつての街道や跡地、土地の記憶を空間上で辿れます。</li>
             <li><strong>③ 防災・ハザードレイヤー</strong>：目の前の建築物に対して「想定浸水深 3.5m」等をAR高さ標識として表示し、最寄り避難所をコンパス案内します。</li>
           </ul>
-          <p class="meta-note">※ 屋内やPC検証時は「Sim」ボタンからカメラ向きや位置を自由に模擬操作できます。</p>
         </div>
       </div>
     </div>

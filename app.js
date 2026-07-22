@@ -6,8 +6,14 @@ class ARRegionalApp {
     this.currentLayer = 'history'; // history | community | disaster
     this.userPos = { ...SAMPLE_CENTER };
     this.heading = 0; // 北 = 0度
-    this.isSimulating = true; // デフォルトでPC/ indoorでも動作確認できるように
+    this.isSimulating = true;
     this.cameraActive = false;
+    this.mediaStream = null;
+
+    // ドラッグ操作ステート
+    this.isDragging = false;
+    this.dragStartX = 0;
+    this.startHeading = 0;
 
     this.spots = [...SPOT_DATA];
     this.shelters = [...EVACUATION_SHELTERS];
@@ -20,6 +26,12 @@ class ARRegionalApp {
     this.cameraPlaceholder = document.getElementById('camera-placeholder');
     this.locationText = document.getElementById('location-text');
 
+    // カメラON/OFFボタン要素
+    this.toggleCameraBtn = document.getElementById('btn-toggle-camera');
+    this.cameraIconOn = document.getElementById('camera-icon-on');
+    this.cameraIconOff = document.getElementById('camera-icon-off');
+    this.cameraBtnText = document.getElementById('camera-btn-text');
+
     // UIモーダル・バナー
     this.disasterBanner = document.getElementById('disaster-alert-banner');
     this.hazardDepthText = document.getElementById('hazard-depth-text');
@@ -28,7 +40,7 @@ class ARRegionalApp {
     this.overlayImg = document.getElementById('historical-overlay-img');
     this.opacitySlider = document.getElementById('opacity-slider');
 
-    // ARスクリーンスポット情報 (クリック判定用)
+    // ARスクリーンスポット情報
     this.renderedPins = [];
 
     this.init();
@@ -39,9 +51,9 @@ class ARRegionalApp {
     window.addEventListener('resize', () => this.resizeCanvas());
 
     this.setupEventListeners();
+    this.setupDragControls();
     this.setupGeolocationAndSensors();
 
-    // アニメーションループ開始
     requestAnimationFrame(() => this.renderLoop());
   }
 
@@ -51,12 +63,30 @@ class ARRegionalApp {
   }
 
   setupEventListeners() {
-    // カメラ起動ボタン
+    // カメラ起動プロンプト
     const startCamBtn = document.getElementById('btn-start-camera');
     if (startCamBtn) {
       startCamBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.startCamera();
+      });
+    }
+
+    const dismissCamBtn = document.getElementById('btn-dismiss-placeholder');
+    if (dismissCamBtn) {
+      dismissCamBtn.addEventListener('click', () => {
+        this.cameraPlaceholder.classList.add('hidden');
+      });
+    }
+
+    // ヘッダー カメラON/OFFボタン
+    if (this.toggleCameraBtn) {
+      this.toggleCameraBtn.addEventListener('click', () => {
+        if (this.cameraActive) {
+          this.stopCamera();
+        } else {
+          this.startCamera();
+        }
       });
     }
 
@@ -73,35 +103,39 @@ class ARRegionalApp {
 
     // シミュレータパネル切り替え
     const simPanel = document.getElementById('simulator-panel');
-    document.getElementById('btn-toggle-sim').addEventListener('click', () => {
+    const simToggleBtn = document.getElementById('btn-toggle-sim');
+    simToggleBtn.addEventListener('click', () => {
       simPanel.classList.toggle('hidden');
+      simToggleBtn.classList.toggle('active-highlight', !simPanel.classList.contains('hidden'));
     });
     document.getElementById('btn-close-sim').addEventListener('click', () => {
       simPanel.classList.add('hidden');
+      simToggleBtn.classList.remove('active-highlight');
     });
 
     // シミュレータコントロール
     const headingInput = document.getElementById('sim-heading');
-    const headingValText = document.getElementById('sim-heading-val');
     headingInput.addEventListener('input', (e) => {
-      this.heading = parseFloat(e.target.value);
-      this.isSimulating = true;
-      headingValText.textContent = `${Math.round(this.heading)}° (${this.getHeadingDirectionName(this.heading)})`;
+      this.setHeading(parseFloat(e.target.value));
     });
 
     document.querySelectorAll('.sim-btn-grid .btn-chip').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.sim-btn-grid .btn-chip').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        this.userPos.latitude = parseFloat(e.target.dataset.lat);
-        this.userPos.longitude = parseFloat(e.target.dataset.lng);
+        e.currentTarget.classList.add('active');
+        this.userPos.latitude = parseFloat(e.currentTarget.dataset.lat);
+        this.userPos.longitude = parseFloat(e.currentTarget.dataset.lng);
         this.isSimulating = true;
         this.updateLocationStatus();
       });
     });
 
-    // キャンバスタップ判定（ARマーカーのタップ）
-    this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+    // キャンバスタップ判定
+    this.canvas.addEventListener('click', (e) => {
+      if (!this.isDraggingMoved) {
+        this.handleCanvasClick(e);
+      }
+    });
 
     // モーダル操作
     document.getElementById('btn-close-modal').addEventListener('click', () => {
@@ -133,19 +167,86 @@ class ARRegionalApp {
     });
   }
 
+  // 直感的な画面ドラッグでカメラ向き変更
+  setupDragControls() {
+    this.isDraggingMoved = false;
+
+    const onPointerDown = (e) => {
+      this.isDragging = true;
+      this.isDraggingMoved = false;
+      this.dragStartX = e.clientX;
+      this.startHeading = this.heading;
+    };
+
+    const onPointerMove = (e) => {
+      if (!this.isDragging) return;
+      const deltaX = e.clientX - this.dragStartX;
+      if (Math.abs(deltaX) > 4) {
+        this.isDraggingMoved = true;
+      }
+      // ピクセル移動を角度に変換 (画面横幅 = 約120度)
+      const degreesPerPixel = 120 / window.innerWidth;
+      let newHeading = (this.startHeading - deltaX * degreesPerPixel) % 360;
+      if (newHeading < 0) newHeading += 360;
+      this.setHeading(newHeading);
+    };
+
+    const onPointerUp = () => {
+      this.isDragging = false;
+    };
+
+    this.canvas.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  }
+
+  setHeading(deg) {
+    this.heading = deg;
+    this.isSimulating = true;
+    const headingInput = document.getElementById('sim-heading');
+    const headingValText = document.getElementById('sim-heading-val');
+
+    if (headingInput) headingInput.value = Math.round(deg);
+    if (headingValText) {
+      headingValText.textContent = `${Math.round(deg)}° (${this.getHeadingDirectionName(deg)})`;
+    }
+  }
+
   async startCamera() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' }
       });
-      this.video.srcObject = stream;
+      this.video.srcObject = this.mediaStream;
       this.cameraActive = true;
       this.cameraPlaceholder.classList.add('hidden');
+
+      // UI表示更新
+      this.cameraIconOn.classList.add('hidden');
+      this.cameraIconOff.classList.remove('hidden');
+      this.cameraBtnText.textContent = 'カメラOFF';
+      this.toggleCameraBtn.classList.add('active-highlight');
     } catch (err) {
       console.warn('カメラアクセスエラー:', err);
       alert('カメラアクセスの許可が必要です。\n※スマートフォン実機やHTTPS環境でお使いいただくか、このままシミュレーターモード（Sim）でお試しください。');
       this.cameraPlaceholder.classList.add('hidden');
     }
+  }
+
+  stopCamera() {
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream = null;
+    }
+    this.video.srcObject = null;
+    this.cameraActive = false;
+    this.cameraPlaceholder.classList.remove('hidden');
+
+    // UI表示更新
+    this.cameraIconOn.classList.remove('hidden');
+    this.cameraIconOff.classList.add('hidden');
+    this.cameraBtnText.textContent = 'カメラON';
+    this.toggleCameraBtn.classList.remove('active-highlight');
   }
 
   setupGeolocationAndSensors() {
@@ -170,7 +271,7 @@ class ARRegionalApp {
           heading = e.webkitCompassHeading;
         }
         if (heading !== null && heading !== undefined) {
-          this.heading = (360 - heading) % 360;
+          this.setHeading((360 - heading) % 360);
         }
       }
     };
@@ -324,7 +425,7 @@ class ARRegionalApp {
     const cardX = -cardW / 2;
     const cardY = -cardH;
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     this.drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 10);
@@ -350,7 +451,7 @@ class ARRegionalApp {
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '10px sans-serif';
-    ctx.fillText(`距離: 約${Math.round(distanceMeters)}m`, cardX + 10, cardY + 50);
+    ctx.fillText(`距離: 約${Math.round(distanceMeters)}m (タップで表示)`, cardX + 10, cardY + 50);
 
     ctx.restore();
 
