@@ -6,7 +6,7 @@ import {
   EVACUATION_SHELTERS,
   MATERIAL_TYPE_LABELS,
   PLACEHOLDER_IMAGE_URL
-} from './data.js?v=spot-list-fallback-2';
+} from './data.js?v=audit-v3';
 
 class ARRegionalApp {
   constructor() {
@@ -225,6 +225,13 @@ class ARRegionalApp {
           this.hazardSourceLink.textContent = `公式出典: ${hazardDef.sourceName}`;
         }
       }
+      else {
+        this.showMapDataStatus(
+          `「${hazardKey}」のハザードデータは現在未確認のため表示できません。公式一次資料での検証後に有効化します。`,
+          'warning'
+        );
+        this.renderHazardLegend(null);
+      }
     }
   }
 
@@ -259,14 +266,14 @@ class ARRegionalApp {
     this.mapMarkers = [];
 
     // フィルタリングしたスポットの表示
-    const filteredSpots = this.spots.filter(s => s.category === this.currentLayer);
+    const filteredSpots = this.getDisplayableSpots().filter(s => s.category === this.currentLayer);
 
     const spotsPanel = this.getMapSpotsPanel();
     if (spotsPanel) {
       const layerLabel = this.currentLayer === 'history' ? '歴史・観光' : this.currentLayer === 'community' ? '地域理解' : '防災';
       spotsPanel.innerHTML = `
         <div class="map-spots-title">${layerLabel}スポット</div>
-        ${filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
+        ${filteredSpots.length === 0 ? '<p class="material-empty">検証済みまたは一部確認済みのスポットは現在未収録です。</p>' : filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
           <strong>${spot.name}</strong><small>${spot.eraLabel || spot.hazardInfo?.typeName || '情報'}</small>
         </button>`).join('')}
       `;
@@ -292,21 +299,9 @@ class ARRegionalApp {
       this.mapMarkers.push(marker);
     });
 
-    // 防災レイヤー時は避難所もプロット
+    // 防災レイヤー時は避難所もプロット（公式データ検証後に再有効化）
     if (this.currentLayer === 'disaster') {
-      this.shelters.forEach(shelter => {
-        const icon = L.divIcon({
-          className: 'custom-shelter-pin',
-          html: `<div style="background:#10b981; padding:5px 10px; border-radius:14px; color:#fff; font-size:11px; font-weight:bold; border:2px solid #fff; cursor:pointer;">避難所: ${shelter.name.substring(0, 7)}</div>`,
-          iconSize: [120, 26]
-        });
-
-        const marker = L.marker([shelter.coordinate.latitude, shelter.coordinate.longitude], { icon })
-          .addTo(this.map)
-          .bindPopup(`<strong>${shelter.name}</strong><br>${shelter.address}<br>標高: ${shelter.elevationMeter}m<br><small>定員: ${shelter.capacity ?? '未確認'} / ${shelter.source}</small>`);
-
-        this.mapMarkers.push(marker);
-      });
+      // 避難所マーカーは座標・種別の公式確認後に再有効化
 
       if (!this.officialHazardTileLayer || this.officialHazardLayerKey !== this.currentHazardType) {
         this.updateOfficialHazardTile(this.currentHazardType);
@@ -448,7 +443,7 @@ class ARRegionalApp {
     // 古写真リアルAR比較開始
     document.getElementById('btn-compare-ar').addEventListener('click', () => {
       const media = this.getPrimaryMedia(this.selectedSpot);
-      if (this.selectedSpot && media?.isHistorical) {
+      if (this.selectedSpot && media?.isHistorical && media.imageUrl && media.imageUrlVerified !== false) {
         document.getElementById('spot-modal').classList.add('hidden');
         this.overlayImg.src = media.imageUrl;
         this.historicalOverlay.classList.remove('hidden');
@@ -748,28 +743,9 @@ class ARRegionalApp {
     if (this.currentLayer === 'disaster') {
       banner.classList.remove('hidden');
 
-      let nearestShelter = null;
-      let minDistance = Infinity;
-
-      this.shelters.forEach(s => {
-        const dist = this.calculateDistance(
-          this.userPos.latitude, this.userPos.longitude,
-          s.coordinate.latitude, s.coordinate.longitude
-        );
-        if (dist < minDistance) {
-          minDistance = dist;
-          nearestShelter = s;
-        }
-      });
-
-      if (nearestShelter) {
-        const bearing = this.calculateBearing(
-          this.userPos.latitude, this.userPos.longitude,
-          nearestShelter.coordinate.latitude, nearestShelter.coordinate.longitude
-        );
-        const dirName = this.getHeadingDirectionName(bearing);
-        this.shelterGuideText.innerHTML = `<i data-lucide="navigation"></i> 避難先候補: <strong>${nearestShelter.name}</strong> (${dirName}へ約${Math.round(minDistance)}m) <small>※開設状況・対象災害は自治体の最新情報で確認</small>`;
-      }
+      // 避難所データは公式一次資料で未検証のため、具体的な方向・距離の案内を一時停止。
+      // 公式データで施設名・座標・対象災害・種別を確認後に再有効化する。
+      this.shelterGuideText.innerHTML = `<i data-lucide="info"></i> 避難所情報は現在確認中です。災害時は<a href="https://www.city.osaka.lg.jp/kikikanrishitsu/page/0000349214.html" target="_blank" rel="noreferrer" style="color:#93c5fd;">大阪市の最新避難所情報</a>を確認してください。`;
     } else {
       banner.classList.add('hidden');
     }
@@ -787,12 +763,14 @@ class ARRegionalApp {
         this.drawARFloodWaterline();
       }
 
+      const filteredSpots = this.getDisplayableSpots().filter(s => s.category === this.currentLayer);
       filteredSpots.forEach(spot => {
         this.drawARSpotMarker(spot);
       });
 
       if (this.currentLayer === 'disaster') {
-        this.drawARShelterMarkers();
+        // 避難所AR表示は公式データ検証後に再有効化
+        // this.drawARShelterMarkers();
       }
     }
 
@@ -822,11 +800,14 @@ class ARRegionalApp {
     ctx.setLineDash([]);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 18px sans-serif';
     ctx.textAlign = 'left';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 8;
-    ctx.fillText('▲ 浸水イメージ（地点別の深さは公式ハザードタイルで確認）', 20, waterY - 10);
+    ctx.fillText('⚠ シミュレーションイメージ', 20, waterY - 30);
+    ctx.font = '14px sans-serif';
+    ctx.fillText('この高さは実際の想定浸水深を示していません', 20, waterY - 10);
+    ctx.fillText('正確な想定浸水深は地図表示の公式ハザードタイルで確認してください', 20, waterY + 16);
     ctx.shadowBlur = 0;
   }
 
@@ -979,10 +960,18 @@ class ARRegionalApp {
     const media = this.getPrimaryMedia(spot);
 
     document.getElementById('modal-title').textContent = spot.name;
-    document.getElementById('modal-summary').textContent = spot.summary || '';
+    // verificationStatus に応じた信頼度表示
+    const vStatus = spot.verificationStatus || 'unknown';
+    const vLabel = vStatus === 'verified' ? '' :
+      vStatus === 'partially_verified' ? '【一部未確認】 ' :
+      '【未確認情報を含む】 ';
+    document.getElementById('modal-summary').textContent = vLabel + (spot.summary || '');
     document.getElementById('modal-desc').textContent = `${spot.description || ''}${spot.verificationNote ? `\n\n注意: ${spot.verificationNote}` : ''}`;
-    document.getElementById('modal-img').src = media?.imageUrl || PLACEHOLDER_IMAGE_URL;
-    document.getElementById('modal-img').alt = media?.title || `${spot.name}の画像`;
+    const modalImg = document.getElementById('modal-img');
+    const hasVerifiedImage = Boolean(media?.imageUrl && media.imageUrlVerified !== false);
+    modalImg.src = hasVerifiedImage ? media.imageUrl : (media?.isHistorical ? '' : PLACEHOLDER_IMAGE_URL);
+    modalImg.alt = hasVerifiedImage ? (media?.title || `${spot.name}の画像`) : '画像未検証（資料ページで確認してください）';
+    modalImg.classList.toggle('hidden', !hasVerifiedImage);
 
     const eraBadge = document.getElementById('modal-era-badge');
     eraBadge.textContent = spot.eraLabel || '歴史';
@@ -1003,10 +992,12 @@ class ARRegionalApp {
 
     const mediaStatus = document.getElementById('modal-media-status');
     if (mediaStatus) {
-      mediaStatus.textContent = media?.isHistorical
+      mediaStatus.textContent = media?.isHistorical && !hasVerifiedImage
+        ? `表示画像: 個別画像URL未検証（${media.sourceName}の資料ページで閲覧）`
+        : media?.isHistorical
         ? `表示画像: ${MATERIAL_TYPE_LABELS[media.materialType] || media.materialType}（確認済み資料）`
         : '表示画像: イメージ画像（開発用プレースホルダー。史料ではありません）';
-      mediaStatus.className = `media-status ${media?.isHistorical ? 'verified' : 'unverified'}`;
+      mediaStatus.className = `media-status ${media?.isHistorical && hasVerifiedImage ? 'verified' : 'unverified'}`;
     }
     const materialType = document.getElementById('modal-material-type');
     if (materialType) materialType.textContent = `資料種別: ${media ? (media.displayType || MATERIAL_TYPE_LABELS[media.materialType] || media.materialType) : '資料画像なし'}`;
@@ -1014,7 +1005,7 @@ class ARRegionalApp {
     if (positionAccuracy) positionAccuracy.textContent = `位置精度: ${media?.positionAccuracy === 'reference_only' ? '参考資料（現代地図との一致は保証されません）' : (media?.positionAccuracy || '不明')}`;
 
     const compareButton = document.getElementById('btn-compare-ar');
-    compareButton.classList.toggle('hidden', !media?.isHistorical);
+    compareButton.classList.toggle('hidden', !media?.isHistorical || !hasVerifiedImage);
     this.renderHistoricalMaterials(spot);
 
     modal.classList.remove('hidden');
@@ -1022,6 +1013,11 @@ class ARRegionalApp {
 
   getMapSpotsPanel() {
     return this.mapSpotsPanel || document.getElementById('map-spots-panel');
+  }
+
+  getDisplayableSpots() {
+    // unverified は本番表示しない。partially_verified はモーダルで明示する。
+    return this.spots.filter(spot => spot.verificationStatus !== 'unverified');
   }
 
   getPrimaryMedia(spot) {
@@ -1040,11 +1036,13 @@ class ARRegionalApp {
       <h3>関連する歴史資料</h3>
       ${materials.map(material => `
         <article class="material-card">
-          <img src="${material.imageUrl}" alt="${material.title}" loading="lazy">
+          ${material.imageUrl && material.imageUrlVerified !== false ? `<img src="${material.imageUrl}" alt="${material.title}" loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.querySelector('.img-fallback').classList.remove('hidden');">` : ''}
           <div>
+            <p class="img-fallback" style="color:#fbbf24; font-size:0.72rem;">個別画像URLは未検証です。下記リンクからNDLで直接閲覧してください。</p>
             <strong>${material.title}</strong>
             <small>${material.date}｜${material.displayType || MATERIAL_TYPE_LABELS[material.materialType] || material.materialType}</small>
-            <small>${material.license}｜位置精度: 参考資料</small>
+            <small>${material.license}｜位置精度: 参考資料${material.imageUrlVerified === false ? '｜画像URL未検証' : ''}</small>
             <p>${material.note}</p>
             <a href="${material.sourceUrl}" target="_blank" rel="noreferrer">NDL資料ページを開く</a>
             <a href="${material.manifestUrl}" target="_blank" rel="noreferrer">IIIFマニフェスト</a>
