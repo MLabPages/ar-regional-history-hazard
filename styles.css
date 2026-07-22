@@ -990,8 +990,15 @@ body, html {
   color: var(--text-main);
   font-size: 0.75rem;
   line-height: 1.35;
-  pointer-events: none;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
+
+.map-status-content { min-width: 0; }
+.map-status-close { flex: 0 0 auto; }
 
 .map-data-status a,
 .hazard-source-link,
@@ -1046,6 +1053,21 @@ body, html {
   background: rgba(15, 23, 42, 0.9);
   color: var(--text-main);
   font-size: 0.72rem;
+}
+
+.map-status-reopen {
+  top: auto;
+  bottom: 88px;
+  left: 16px;
+  right: auto;
+}
+
+.map-guide-reopen {
+  top: auto;
+  bottom: 72px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
 }
 
 .map-compare-controls {
@@ -1190,6 +1212,30 @@ body, html {
   bottom: 52px;
 }
 
+/* 地図モードでは地図を主役にし、切替と補助情報を端へ寄せる。 */
+.map-mode .layer-tabs-compact {
+  position: fixed;
+  top: 72px;
+  right: 16px;
+  z-index: 820;
+  margin-top: 0;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.map-mode .layer-tabs-compact .tab-btn { justify-content: flex-start; }
+
+.map-mode .era-timeline-container {
+  position: fixed;
+  top: 160px;
+  left: 16px;
+  right: 16px;
+  z-index: 810;
+  max-height: 190px;
+  overflow-y: auto;
+  margin-top: 0;
+}
+
 /* スマホでは地図上の操作を薄く・短くし、地図の可視領域を確保する。 */
 @media (max-width: 600px) {
   .ui-layer {
@@ -1222,17 +1268,21 @@ body, html {
   .map-mode .layer-tabs-compact {
     position: fixed;
     top: 72px;
-    left: 8px;
+    left: auto;
     right: 8px;
-    width: auto;
-    overflow-x: auto;
+    width: max-content;
+    max-width: calc(100vw - 16px);
+    flex-direction: column;
+    align-items: stretch;
     justify-content: flex-start;
     margin-top: 0;
   }
 
+  .map-mode .layer-tabs-compact .tab-btn { justify-content: flex-start; }
+
   .map-mode .era-timeline-container {
     position: fixed;
-    top: 116px;
+    top: 160px;
     left: 8px;
     right: 8px;
     max-height: 154px;
@@ -1266,6 +1316,15 @@ body, html {
 
   .map-mode #map-data-status {
     bottom: 48px;
+  }
+
+  .map-mode .map-status-reopen {
+    left: 8px;
+    bottom: 58px;
+  }
+
+  .map-mode .map-guide-reopen {
+    bottom: 58px;
   }
 
   .map-compare-controls {

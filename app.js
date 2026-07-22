@@ -64,6 +64,9 @@ class ARRegionalApp {
     // UI追加パネル
     this.eraTimelineBar = document.getElementById('era-timeline-bar');
     this.reopenEraPanelButton = document.getElementById('btn-reopen-era-panel');
+    this.reopenMapDataStatusButton = document.getElementById('btn-reopen-map-data-status');
+    this.reopenMapGuideButton = document.getElementById('btn-reopen-map-guide');
+    this.mapGuide = document.querySelector('.quick-status');
     this.hazardLegendBox = document.getElementById('hazard-legend-box');
     this.mapDataStatus = document.getElementById('map-data-status');
     this.hazardSourceLink = document.getElementById('hazard-source-link');
@@ -323,7 +326,14 @@ class ARRegionalApp {
   showMapDataStatus(message, tone = 'info', sourceUrl = null) {
     if (!this.mapDataStatus) return;
     this.mapDataStatus.className = `map-data-status ${tone}`;
-    this.mapDataStatus.innerHTML = `<span>${message}</span>${sourceUrl ? ` <a href="${sourceUrl}" target="_blank" rel="noreferrer">出典</a>` : ''}`;
+    this.mapDataStatus.innerHTML = `<div class="map-status-content"><span>${message}</span>${sourceUrl ? ` <a href="${sourceUrl}" target="_blank" rel="noreferrer">出典</a>` : ''}</div><button id="btn-close-map-data-status" class="guide-close map-status-close" type="button" title="案内を隠す" aria-label="地図データ案内を隠す"><i data-lucide="x"></i></button>`;
+    this.reopenMapDataStatusButton?.classList.add('hidden');
+    if (window.lucide) lucide.createIcons();
+  }
+
+  hideMapDataStatus() {
+    this.mapDataStatus?.classList.add('hidden');
+    this.reopenMapDataStatusButton?.classList.remove('hidden');
   }
 
   renderHazardLegend(hazardDef) {
@@ -526,10 +536,27 @@ class ARRegionalApp {
     document.getElementById('btn-close-era-panel')?.addEventListener('click', () => {
       this.eraTimelineBar?.classList.add('hidden');
       this.reopenEraPanelButton?.classList.remove('hidden');
+      try { window.localStorage?.setItem('ar-era-panel-dismissed', '1'); } catch (_) {}
     });
     this.reopenEraPanelButton?.addEventListener('click', () => {
       this.eraTimelineBar?.classList.remove('hidden');
       this.reopenEraPanelButton.classList.add('hidden');
+      try { window.localStorage?.removeItem('ar-era-panel-dismissed'); } catch (_) {}
+    });
+    this.reopenMapDataStatusButton?.addEventListener('click', () => {
+      this.mapDataStatus?.classList.remove('hidden');
+      this.reopenMapDataStatusButton.classList.add('hidden');
+    });
+    this.mapDataStatus?.addEventListener('click', (event) => {
+      if (event.target.closest('#btn-close-map-data-status')) this.hideMapDataStatus();
+    });
+    document.getElementById('btn-close-map-guide')?.addEventListener('click', () => {
+      this.mapGuide?.classList.add('hidden');
+      this.reopenMapGuideButton?.classList.remove('hidden');
+    });
+    this.reopenMapGuideButton?.addEventListener('click', () => {
+      this.mapGuide?.classList.remove('hidden');
+      this.reopenMapGuideButton.classList.add('hidden');
     });
     document.getElementById('btn-close-guide')?.addEventListener('click', () => {
       this.guideHint?.classList.add('hidden');
@@ -602,7 +629,10 @@ class ARRegionalApp {
       this.btnModeMap.classList.add('active');
       this.mapViewEl.classList.remove('hidden');
       this.canvas.classList.add('hidden');
-      this.eraTimelineBar.classList.remove('hidden');
+      let eraDismissed = false;
+      try { eraDismissed = window.localStorage?.getItem('ar-era-panel-dismissed') === '1'; } catch (_) {}
+      this.eraTimelineBar.classList.toggle('hidden', eraDismissed);
+      this.reopenEraPanelButton?.classList.toggle('hidden', !eraDismissed);
       if (this.mapDataStatus) this.mapDataStatus.classList.remove('hidden');
       if (spotsPanel) spotsPanel.classList.remove('hidden');
 
@@ -632,6 +662,10 @@ class ARRegionalApp {
       if (spotsPanel) spotsPanel.classList.add('hidden');
       this.canvas.classList.remove('hidden');
       this.eraTimelineBar.classList.add('hidden');
+      this.reopenEraPanelButton?.classList.add('hidden');
+      this.reopenMapDataStatusButton?.classList.add('hidden');
+      this.reopenMapGuideButton?.classList.add('hidden');
+      this.mapGuide?.classList.remove('hidden');
 
       if (this.guideHintText) {
         this.guideHintText.textContent = '画面を左右にドラッグして全方位 (360°) 見回せます';
