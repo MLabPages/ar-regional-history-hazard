@@ -347,7 +347,8 @@ class ARRegionalApp {
     const shortMsg = String(message || '').replace(/\s+/g, ' ').trim();
     const compact = shortMsg.length > 72 ? `${shortMsg.slice(0, 70)}…` : shortMsg;
     if (sourceUrl) {
-      this.attributionText.innerHTML = `${compact} <a href="${sourceUrl}" target="_blank" rel="noreferrer">出典</a>`;
+      // メッセージ側に「出典:」が含まれる場合があるため、リンク名を「詳細」にして重複を避ける。
+      this.attributionText.innerHTML = `${compact} <a href="${sourceUrl}" target="_blank" rel="noreferrer">詳細</a>`;
     } else {
       this.attributionText.textContent = compact || '出典は地図・資料ごとに表示します';
     }
