@@ -1,10 +1,19 @@
-import { SAMPLE_CENTER, SPOT_DATA, EVACUATION_SHELTERS } from './data.js';
+import {
+  SAMPLE_CENTER,
+  HISTORICAL_MAP_TILES,
+  OFFICIAL_HAZARD_LAYERS,
+  SPOT_DATA,
+  EVACUATION_SHELTERS
+} from './data.js';
 
 class ARRegionalApp {
   constructor() {
     // モードステート: 'ar' | 'map'
     this.viewMode = 'ar';
     this.currentLayer = 'history'; // history | community | disaster
+    this.currentEra = 'present';   // present | photo_latest | showa50 | showa30 | showa20 | showa_early
+    this.currentHazardType = 'flood'; // flood | tsunami | sediment
+
     this.userPos = { ...SAMPLE_CENTER };
     this.heading = 0; // 北 = 0度
     this.isSimulating = true;
@@ -42,6 +51,10 @@ class ARRegionalApp {
     this.locationText = document.getElementById('location-text');
     this.guideHintText = document.getElementById('guide-hint-text');
 
+    // UI追加パネル
+    this.eraTimelineBar = document.getElementById('era-timeline-bar');
+    this.hazardLegendBox = document.getElementById('hazard-legend-box');
+
     // モード切替ボタン
     this.btnModeAr = document.getElementById('btn-mode-ar');
     this.btnModeMap = document.getElementById('btn-mode-map');
@@ -66,8 +79,10 @@ class ARRegionalApp {
     this.rotateSlider = document.getElementById('rotate-slider');
     this.chkSyncHeading = document.getElementById('chk-sync-heading');
 
-    // Leafletマップインスタンス
+    // Leafletマップインスタンス ＆ レイヤー
     this.map = null;
+    this.baseTileLayer = null;
+    this.officialHazardTileLayer = null;
     this.mapMarkers = [];
     this.userMapMarker = null;
 
@@ -115,11 +130,8 @@ class ARRegionalApp {
         zoomControl: false
       });
 
-      // 国土地理院・標準地図タイル
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors | 国土地理院'
-      }).addTo(this.map);
+      // 初期のベース地図タイル (現代標準地図)
+      this.updateMapBaseTile(this.currentEra);
 
       // ユーザー現在地ピン
       const userIcon = L.divIcon({
@@ -131,20 +143,67 @@ class ARRegionalApp {
         .addTo(this.map)
         .bindPopup('現在地 (シミュレート位置)');
 
-      // 浸水想定ゾーン (円)
-      L.circle([34.6890, 135.5220], {
-        color: '#ef4444',
-        fillColor: '#f87171',
-        fillOpacity: 0.35,
-        radius: 250
-      }).addTo(this.map).bindPopup('想定洪水浸水エリア (最大 3.5m)');
-
       this.renderMapMarkers();
       return true;
     } catch (e) {
       console.error('Leaflet初期化エラー:', e);
       return false;
     }
+  }
+
+  // 国土地理院・時代別タイル切替
+  updateMapBaseTile(eraKey) {
+    if (!this.map) return;
+    const tileDef = HISTORICAL_MAP_TILES[eraKey] || HISTORICAL_MAP_TILES.present;
+
+    if (this.baseTileLayer) {
+      this.map.removeLayer(this.baseTileLayer);
+    }
+
+    this.baseTileLayer = L.tileLayer(tileDef.url, {
+      maxZoom: 18,
+      attribution: tileDef.attribution
+    }).addTo(this.map);
+  }
+
+  // 国土交通省・国土地理院 公式ハザードマップタイルの重畳表示
+  updateOfficialHazardTile(hazardKey) {
+    if (!this.map) return;
+
+    if (this.officialHazardTileLayer) {
+      this.map.removeLayer(this.officialHazardTileLayer);
+      this.officialHazardTileLayer = null;
+    }
+
+    if (this.currentLayer === 'disaster') {
+      const hazardDef = OFFICIAL_HAZARD_LAYERS[hazardKey];
+      if (hazardDef) {
+        this.officialHazardTileLayer = L.tileLayer(hazardDef.tileUrl, {
+          maxZoom: 17,
+          opacity: 0.75,
+          attribution: hazardDef.attribution
+        }).addTo(this.map);
+
+        this.renderHazardLegend(hazardDef);
+      }
+    }
+  }
+
+  renderHazardLegend(hazardDef) {
+    if (!this.hazardLegendBox) return;
+    if (!hazardDef || !hazardDef.legend) {
+      this.hazardLegendBox.innerHTML = '';
+      return;
+    }
+
+    const html = hazardDef.legend.map(item => `
+      <div class="legend-item">
+        <div class="legend-color-box" style="background:${item.color};"></div>
+        <span>${item.depth}</span>
+      </div>
+    `).join('');
+
+    this.hazardLegendBox.innerHTML = html;
   }
 
   renderMapMarkers() {
@@ -164,8 +223,8 @@ class ARRegionalApp {
 
       const icon = L.divIcon({
         className: 'custom-spot-pin',
-        html: `<div style="background:${color}; padding:5px 10px; border-radius:14px; color:#fff; font-weight:bold; font-size:12px; border:2px solid #fff; box-shadow:0 4px 14px rgba(0,0,0,0.5); white-space:nowrap; cursor:pointer;">${spot.name.substring(0, 10)}</div>`,
-        iconSize: [110, 26]
+        html: `<div style="background:${color}; padding:5px 10px; border-radius:14px; color:#fff; font-weight:bold; font-size:12px; border:2px solid #fff; box-shadow:0 4px 14px rgba(0,0,0,0.5); white-space:nowrap; cursor:pointer;">${spot.name.substring(0, 11)}</div>`,
+        iconSize: [115, 26]
       });
 
       const marker = L.marker([spot.coordinate.latitude, spot.coordinate.longitude], { icon })
@@ -182,16 +241,23 @@ class ARRegionalApp {
       this.shelters.forEach(shelter => {
         const icon = L.divIcon({
           className: 'custom-shelter-pin',
-          html: `<div style="background:#10b981; padding:5px 10px; border-radius:14px; color:#fff; font-size:11px; font-weight:bold; border:2px solid #fff; cursor:pointer;">避難所: ${shelter.name.substring(0, 6)}</div>`,
-          iconSize: [115, 26]
+          html: `<div style="background:#10b981; padding:5px 10px; border-radius:14px; color:#fff; font-size:11px; font-weight:bold; border:2px solid #fff; cursor:pointer;">避難所: ${shelter.name.substring(0, 7)}</div>`,
+          iconSize: [120, 26]
         });
 
         const marker = L.marker([shelter.coordinate.latitude, shelter.coordinate.longitude], { icon })
           .addTo(this.map)
-          .bindPopup(`<strong>${shelter.name}</strong><br>${shelter.address}<br>定員: ${shelter.capacity}名`);
+          .bindPopup(`<strong>${shelter.name}</strong><br>${shelter.address}<br>標高: ${shelter.elevationMeter}m / 定員: ${shelter.capacity}名<br><small>${shelter.source}</small>`);
 
         this.mapMarkers.push(marker);
       });
+
+      this.updateOfficialHazardTile(this.currentHazardType);
+    } else {
+      if (this.officialHazardTileLayer) {
+        this.map.removeLayer(this.officialHazardTileLayer);
+        this.officialHazardTileLayer = null;
+      }
     }
   }
 
@@ -232,13 +298,33 @@ class ARRegionalApp {
     }
 
     // レイヤー切り替えタブ
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    document.querySelectorAll('.layer-tabs-compact .tab-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const targetBtn = e.currentTarget;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.layer-tabs-compact .tab-btn').forEach(b => b.classList.remove('active'));
         targetBtn.classList.add('active');
         this.currentLayer = targetBtn.dataset.layer;
         this.updateLayerUI();
+      });
+    });
+
+    // 時代別航空写真・タイムライン切替
+    document.querySelectorAll('.era-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        document.querySelectorAll('.era-chip').forEach(c => c.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        this.currentEra = e.currentTarget.dataset.era;
+        this.updateMapBaseTile(this.currentEra);
+      });
+    });
+
+    // 防災サブレイヤー（洪水・津波・土砂災害）切替
+    document.querySelectorAll('.hazard-type-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.hazard-type-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        this.currentHazardType = e.currentTarget.dataset.hazard;
+        this.updateOfficialHazardTile(this.currentHazardType);
       });
     });
 
@@ -318,16 +404,15 @@ class ARRegionalApp {
       this.btnModeMap.classList.add('active');
       this.mapViewEl.classList.remove('hidden');
       this.canvas.classList.add('hidden');
+      this.eraTimelineBar.classList.remove('hidden');
 
       if (this.guideHintText) {
-        this.guideHintText.textContent = '地図上のピンをタップすると古写真・ハザード情報を閲覧できます';
+        this.guideHintText.textContent = '地図上のピンをタップすると古写真・公的データ解説を閲覧できます';
       }
 
-      // シミュレーターを閉じて地図を広げる
       const simPanel = document.getElementById('simulator-panel');
       if (simPanel) simPanel.classList.add('hidden');
 
-      // 地図の初期化・表示更新
       if (!this.map) {
         this.initLeafletMap();
       }
@@ -344,6 +429,7 @@ class ARRegionalApp {
       this.btnModeMap.classList.remove('active');
       this.mapViewEl.classList.add('hidden');
       this.canvas.classList.remove('hidden');
+      this.eraTimelineBar.classList.add('hidden');
 
       if (this.guideHintText) {
         this.guideHintText.textContent = '画面を左右にドラッグして全方位 (360°) 見回せます';
@@ -607,10 +693,8 @@ class ARRegionalApp {
           nearestShelter.coordinate.latitude, nearestShelter.coordinate.longitude
         );
         const dirName = this.getHeadingDirectionName(bearing);
-        this.shelterGuideText.innerHTML = `<i data-lucide="navigation"></i> 避難所: <strong>${nearestShelter.name}</strong> (${dirName}へ約${Math.round(minDistance)}m)`;
+        this.shelterGuideText.innerHTML = `<i data-lucide="navigation"></i> 避難所: <strong>${nearestShelter.name}</strong> (${dirName}へ約${Math.round(minDistance)}m / 標高${nearestShelter.elevationMeter}m)`;
       }
-
-      this.hazardDepthText.textContent = '想定浸水深: 3.5m (淀川・寝屋川溢水時想定)';
     } else {
       banner.classList.add('hidden');
     }
@@ -669,7 +753,7 @@ class ARRegionalApp {
     ctx.textAlign = 'left';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 8;
-    ctx.fillText('▲ 想定浸水深 3.5m (ビル2階床上水準)', 20, waterY - 10);
+    ctx.fillText('▲ 国交省想定 浸水深 3.5m (ビル2階床上水準)', 20, waterY - 10);
     ctx.shadowBlur = 0;
   }
 
@@ -794,7 +878,7 @@ class ARRegionalApp {
       ctx.textAlign = 'center';
       ctx.fillText(`避難所: ${shelter.name.substring(0, 8)}`, 0, -4);
       ctx.font = '9px sans-serif';
-      ctx.fillText(`${Math.round(dist)}m`, 0, 10);
+      ctx.fillText(`${Math.round(dist)}m (標高${shelter.elevationMeter}m)`, 0, 10);
       ctx.restore();
     });
   }
@@ -831,13 +915,16 @@ class ARRegionalApp {
     const hazardBox = document.getElementById('modal-hazard-box');
     if (spot.hazardInfo) {
       hazardBox.classList.remove('hidden');
-      document.getElementById('modal-hazard-detail').textContent = spot.hazardInfo.description;
+      document.getElementById('modal-hazard-detail').innerHTML = `
+        <strong>【${spot.hazardInfo.typeName}】</strong><br>
+        ${spot.hazardInfo.description}
+      `;
     } else {
       hazardBox.classList.add('hidden');
     }
 
-    document.getElementById('modal-source').textContent = `出典: ${spot.source || '未指定'}`;
-    document.getElementById('modal-license').textContent = `ライセンス: ${spot.license || 'パブリックドメイン'}`;
+    document.getElementById('modal-source').textContent = `公的データ出典: ${spot.source || '未指定'}`;
+    document.getElementById('modal-license').textContent = `ライセンス: ${spot.license || 'オープンデータ / パブリックドメイン'}`;
 
     modal.classList.remove('hidden');
   }
