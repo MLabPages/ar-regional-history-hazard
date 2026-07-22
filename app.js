@@ -40,6 +40,7 @@ class ARRegionalApp {
     this.mapViewEl = document.getElementById('map-view');
     this.cameraPlaceholder = document.getElementById('camera-placeholder');
     this.locationText = document.getElementById('location-text');
+    this.guideHintText = document.getElementById('guide-hint-text');
 
     // モード切替ボタン
     this.btnModeAr = document.getElementById('btn-mode-ar');
@@ -85,7 +86,7 @@ class ARRegionalApp {
     this.setupOverlayControls();
     this.setupGeolocationAndSensors();
 
-    // Leafletマップ初期化
+    // Leafletマップ初期化を試行
     this.initLeafletMap();
 
     requestAnimationFrame(() => this.renderLoop());
@@ -94,43 +95,56 @@ class ARRegionalApp {
   resizeCanvas() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
-    if (this.map) this.map.invalidateSize();
+    if (this.map) {
+      setTimeout(() => this.map.invalidateSize(), 100);
+    }
   }
 
   // --- Leaflet 地図モードの初期化 ---
   initLeafletMap() {
-    if (typeof L === 'undefined') return;
+    if (this.map) return true;
+    if (typeof L === 'undefined') {
+      console.warn('Leaflet JS 読み込み待ち...');
+      return false;
+    }
 
-    this.map = L.map('map-view', {
-      center: [this.userPos.latitude, this.userPos.longitude],
-      zoom: 16,
-      zoomControl: false
-    });
+    try {
+      this.map = L.map('map-view', {
+        center: [this.userPos.latitude, this.userPos.longitude],
+        zoom: 16,
+        zoomControl: false
+      });
 
-    // 国土地理院・標準地図タイル
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors | 国土地理院オープンデータ'
-    }).addTo(this.map);
+      // 国土地理院・標準地図タイル
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors | 国土地理院'
+      }).addTo(this.map);
 
-    // ユーザー現在地ピン
-    const userIcon = L.divIcon({
-      className: 'custom-user-pin',
-      html: `<div style="background:#3b82f6; width:16px; height:16px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 10px rgba(59,130,246,0.8);"></div>`,
-      iconSize: [16, 16]
-    });
-    this.userMapMarker = L.marker([this.userPos.latitude, this.userPos.longitude], { icon: userIcon })
-      .addTo(this.map)
-      .bindPopup('現在地 (シミュレート位置)');
+      // ユーザー現在地ピン
+      const userIcon = L.divIcon({
+        className: 'custom-user-pin',
+        html: `<div style="background:#3b82f6; width:18px; height:18px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 12px rgba(59,130,246,0.9);"></div>`,
+        iconSize: [18, 18]
+      });
+      this.userMapMarker = L.marker([this.userPos.latitude, this.userPos.longitude], { icon: userIcon })
+        .addTo(this.map)
+        .bindPopup('現在地 (シミュレート位置)');
 
-    // 浸水想定ゾーン (円)
-    L.circle([34.6890, 135.5220], {
-      color: '#ef4444',
-      fillColor: '#f87171',
-      fillOpacity: 0.35,
-      radius: 250
-    }).addTo(this.map).bindPopup('想定洪水浸水エリア (最大 3.5m)');
+      // 浸水想定ゾーン (円)
+      L.circle([34.6890, 135.5220], {
+        color: '#ef4444',
+        fillColor: '#f87171',
+        fillOpacity: 0.35,
+        radius: 250
+      }).addTo(this.map).bindPopup('想定洪水浸水エリア (最大 3.5m)');
 
-    this.renderMapMarkers();
+      this.renderMapMarkers();
+      return true;
+    } catch (e) {
+      console.error('Leaflet初期化エラー:', e);
+      return false;
+    }
   }
 
   renderMapMarkers() {
@@ -150,8 +164,8 @@ class ARRegionalApp {
 
       const icon = L.divIcon({
         className: 'custom-spot-pin',
-        html: `<div style="background:${color}; padding:4px 8px; border-radius:12px; color:#fff; font-weight:bold; font-size:11px; border:1.5px solid #fff; box-shadow:0 4px 12px rgba(0,0,0,0.4); white-space:nowrap;">${spot.name.substring(0, 10)}</div>`,
-        iconSize: [100, 24]
+        html: `<div style="background:${color}; padding:5px 10px; border-radius:14px; color:#fff; font-weight:bold; font-size:12px; border:2px solid #fff; box-shadow:0 4px 14px rgba(0,0,0,0.5); white-space:nowrap; cursor:pointer;">${spot.name.substring(0, 10)}</div>`,
+        iconSize: [110, 26]
       });
 
       const marker = L.marker([spot.coordinate.latitude, spot.coordinate.longitude], { icon })
@@ -168,8 +182,8 @@ class ARRegionalApp {
       this.shelters.forEach(shelter => {
         const icon = L.divIcon({
           className: 'custom-shelter-pin',
-          html: `<div style="background:#10b981; padding:4px 8px; border-radius:12px; color:#fff; font-size:11px; font-weight:bold; border:2px solid #fff;">避難所: ${shelter.name.substring(0, 6)}</div>`,
-          iconSize: [110, 24]
+          html: `<div style="background:#10b981; padding:5px 10px; border-radius:14px; color:#fff; font-size:11px; font-weight:bold; border:2px solid #fff; cursor:pointer;">避難所: ${shelter.name.substring(0, 6)}</div>`,
+          iconSize: [115, 26]
         });
 
         const marker = L.marker([shelter.coordinate.latitude, shelter.coordinate.longitude], { icon })
@@ -186,10 +200,16 @@ class ARRegionalApp {
     // 視点切替 (AR ↔ 地図)
     this.btnModeAr.addEventListener('click', () => this.switchViewMode('ar'));
     this.btnModeMap.addEventListener('click', () => this.switchViewMode('map'));
-    document.getElementById('btn-switch-to-map-prompt').addEventListener('click', () => {
-      this.cameraPlaceholder.classList.add('hidden');
-      this.switchViewMode('map');
-    });
+
+    // プロンプト内「部屋の中で地図から体験する」ボタン
+    const mapPromptBtn = document.getElementById('btn-switch-to-map-prompt');
+    if (mapPromptBtn) {
+      mapPromptBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.cameraPlaceholder.classList.add('hidden');
+        this.switchViewMode('map');
+      });
+    }
 
     // カメラ起動プロンプト
     const startCamBtn = document.getElementById('btn-start-camera');
@@ -292,26 +312,47 @@ class ARRegionalApp {
   // モード切り替え (AR ↔ 地図)
   switchViewMode(mode) {
     this.viewMode = mode;
+
     if (mode === 'map') {
       this.btnModeAr.classList.remove('active');
       this.btnModeMap.classList.add('active');
       this.mapViewEl.classList.remove('hidden');
       this.canvas.classList.add('hidden');
+
+      if (this.guideHintText) {
+        this.guideHintText.textContent = '地図上のピンをタップすると古写真・ハザード情報を閲覧できます';
+      }
+
+      // シミュレーターを閉じて地図を広げる
+      const simPanel = document.getElementById('simulator-panel');
+      if (simPanel) simPanel.classList.add('hidden');
+
+      // 地図の初期化・表示更新
+      if (!this.map) {
+        this.initLeafletMap();
+      }
+
       if (this.map) {
-        this.map.invalidateSize();
-        this.renderMapMarkers();
+        setTimeout(() => {
+          this.map.invalidateSize();
+          this.map.panTo([this.userPos.latitude, this.userPos.longitude]);
+          this.renderMapMarkers();
+        }, 50);
       }
     } else {
       this.btnModeAr.classList.add('active');
       this.btnModeMap.classList.remove('active');
       this.mapViewEl.classList.add('hidden');
       this.canvas.classList.remove('hidden');
+
+      if (this.guideHintText) {
+        this.guideHintText.textContent = '画面を左右にドラッグして全方位 (360°) 見回せます';
+      }
     }
   }
 
   // --- 古写真リアルAR重ね合わせ インタラクティブ操作機能 ---
   setupOverlayControls() {
-    // 1. スライダーコントロール
     this.opacitySlider.addEventListener('input', (e) => {
       this.overlayState.opacity = e.target.value / 100;
       document.getElementById('opacity-val').textContent = `${e.target.value}%`;
@@ -335,7 +376,6 @@ class ARRegionalApp {
       this.applyOverlayTransform();
     });
 
-    // 2. 指・マウスドラッグ位置変更
     const wrapper = this.overlayImgWrapper;
 
     const onPointerDown = (e) => {
@@ -391,13 +431,11 @@ class ARRegionalApp {
   applyOverlayTransform() {
     if (!this.overlayImgWrapper) return;
 
-    // 方角追従オフセット計算 (視点回転連動)
     let headingOffset = 0;
     if (this.overlayState.syncHeading) {
       let diff = this.heading - this.overlayState.initialHeading;
       while (diff < -180) diff += 360;
       while (diff > 180) diff -= 360;
-      // ピクセル移動に同期
       headingOffset = -diff * (window.innerWidth / 60);
     }
 
@@ -456,7 +494,6 @@ class ARRegionalApp {
       headingValText.textContent = `${Math.round(deg)}° (${this.getHeadingDirectionName(deg)})`;
     }
 
-    // 古写真が視点連動モードの場合はトランスフォーム再適用
     this.applyOverlayTransform();
   }
 
@@ -475,8 +512,9 @@ class ARRegionalApp {
       this.toggleCameraBtn.classList.add('active-highlight');
     } catch (err) {
       console.warn('カメラアクセスエラー:', err);
-      alert('カメラアクセスの許可が必要です。\n※スマートフォン実機やHTTPS環境でお使いいただくか、このまま「地図表示」またはシミュレーターでお試しください。');
+      alert('カメラアクセスの許可が必要です。\n※スマートフォン実機やHTTPS環境でお使いいただくか、このまま「地図表示」でお試しください。');
       this.cameraPlaceholder.classList.add('hidden');
+      this.switchViewMode('map');
     }
   }
 
@@ -581,7 +619,6 @@ class ARRegionalApp {
     if (window.lucide) lucide.createIcons();
   }
 
-  // --- AR レンダリングメインループ ---
   renderLoop() {
     if (this.viewMode === 'ar') {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
