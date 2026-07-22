@@ -24,7 +24,7 @@
       <div id="overlay-image-wrapper">
         <img id="historical-overlay-img" src="" alt="古写真">
         <div id="overlay-transform-handles" class="transform-guide">
-          <span class="guide-text"><i data-lucide="move"></i> ドラッグで位置移動 / つまんで拡大・回転</span>
+          <span class="guide-text"><i data-lucide="move"></i> ドラッグで位置移動 / 下で拡大・回転</span>
         </div>
       </div>
 
@@ -113,7 +113,7 @@
       <!-- カメラ未起動時のプロンプト案内 -->
       <div id="camera-placeholder">
         <i data-lucide="camera"></i>
-        <p>実機のカメラ映像にARを重ね合わせます。<br>部屋の中や現地以外では<strong>「地図表示」</strong>や下記Sim機能で体験できます！</p>
+        <p>実際の街にスマホをかざして体験します。<br>部屋の中や現地以外では<strong>「地図表示」</strong>で体験いただけます！</p>
         <div class="placeholder-actions">
           <button id="btn-start-camera" class="btn-primary">
             <i data-lucide="video"></i>
@@ -154,10 +154,10 @@
         </div>
       </div>
 
-      <!-- 画面ドラッグ操作ガイドヒント -->
+      <!-- 操作ガイドヒント -->
       <div id="drag-guide-hint" class="drag-hint-badge">
         <i data-lucide="move-horizontal" class="pulse-icon"></i>
-        <span>画面を左右にドラッグして全方位 (360°) 見回せます</span>
+        <span id="guide-hint-text">画面を左右にドラッグして全方位 (360°) 見回せます</span>
       </div>
 
       <!-- シミュレーター操作パネル -->
@@ -170,7 +170,7 @@
         <div class="sim-guide-box">
           <div class="sim-guide-step">
             <span class="step-num">1</span>
-            <span>「地図表示」に切り替えると部屋の中から全スポットを探索できます</span>
+            <span>「地図表示」に切り替えると部屋の中から全スポットを移動・探索できます</span>
           </div>
           <div class="sim-guide-step">
             <span class="step-num">2</span>

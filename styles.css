@@ -58,8 +58,9 @@ body, html {
 }
 
 #map-view {
-  z-index: 2;
+  z-index: 5;
   background: #1e293b;
+  pointer-events: auto;
 }
 
 #ar-canvas {
@@ -91,7 +92,7 @@ body, html {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 4;
+  z-index: 8;
   pointer-events: auto;
   overflow: hidden;
 }
@@ -148,7 +149,7 @@ body, html {
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
   padding: 12px 16px;
-  z-index: 6;
+  z-index: 9;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
@@ -273,7 +274,7 @@ body, html {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   border: 1px solid var(--border-glass);
   color: var(--text-main);
   padding: 10px;
@@ -285,6 +286,11 @@ body, html {
   justify-content: center;
   gap: 6px;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-secondary:active {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* UIオーバレイ層 */
@@ -539,7 +545,7 @@ body, html {
   opacity: 0.95;
 }
 
-/* 画面ドラッグガイドヒント */
+/* 操作ガイドヒント */
 .drag-hint-badge {
   align-self: center;
   background: rgba(15, 23, 42, 0.85);
