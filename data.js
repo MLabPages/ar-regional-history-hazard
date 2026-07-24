@@ -347,6 +347,11 @@ const placeholderMedia = {
 
 const ndl八軒家 = HISTORICAL_REFERENCE_MATERIALS[0];
 const ndl大坂図 = HISTORICAL_REFERENCE_MATERIALS[2];
+const 大坂城跡整備計画 = {
+  sourceName: '大阪市「特別史跡大坂城跡整備計画」',
+  sourceUrl: 'https://www.city.osaka.lg.jp/keizaisenryaku/cmsfiles/contents/0000626/626611/9-4-2_seibikeikaku1-3_ann.pdf',
+  claimStatus: 'verified'
+};
 
 export const SPOT_DATA = [
   {
@@ -386,6 +391,118 @@ export const SPOT_DATA = [
     verificationNote: '江戸期の絵図は参考資料であり、現代地図との位置一致は保証されません。'
   },
   {
+    id: 'hist-4', name: '大阪城 大手門', category: 'history',
+    coordinate: { latitude: 34.6850797, longitude: 135.5230501, elevationMeter: 16 }, era: 'edo', eraLabel: '江戸期〜現在',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '大阪城の大手口に建つ正門で、城内へ入る防御の要所です。',
+    description: '城の正面を「大手」と呼び、その入口に設けられた門が大手門です。現在の門は大阪城に残る重要文化財の一つで、多聞櫓・千貫櫓と一体になった大手口の守りを現地で観察できます。',
+    mediaAssets: [], historicalMaterials: [ndl大坂図],
+    source: '大阪城観光ガイド（大手門）', license: '説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      大坂城跡整備計画,
+      { sourceName: '大阪城観光ガイド（大手門）', sourceUrl: 'https://osaka-castle.jp/osakajo/otemon.html', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンはOpenStreetMapの地物中心を用いた概略位置です。門の通行を妨げない場所から確認してください。'
+  },
+  {
+    id: 'hist-5', name: '大阪城 千貫櫓', category: 'history',
+    coordinate: { latitude: 34.6856576, longitude: 135.5228967, elevationMeter: 17 }, era: 'edo', eraLabel: '元和6年（1620年）',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '大手口を守る隅櫓で、乾櫓と並ぶ大阪城最古級の建造物です。',
+    description: '千貫櫓は大手門の西側にあり、大手口へ近づく人を監視・防御する位置に建っています。徳川幕府による大坂城再築初期の1620年に建てられた重要文化財です。大手門との位置関係に注目してみましょう。',
+    mediaAssets: [], historicalMaterials: [ndl大坂図],
+    source: '大阪城観光ガイド（千貫櫓）', license: '説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      大坂城跡整備計画,
+      { sourceName: '大阪城観光ガイド（千貫櫓）', sourceUrl: 'https://osaka-castle.jp/osakajo/senganyagura.html', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。内部公開は開催時期が限られます。'
+  },
+  {
+    id: 'hist-6', name: '大阪城 桜門', category: 'history',
+    coordinate: { latitude: 34.6852235, longitude: 135.5256995, elevationMeter: 20 }, era: 'meiji', eraLabel: '明治20年（1887年）再建',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '本丸へ入る南側の正門で、天守を正面に望める地点です。',
+    description: '桜門は本丸の正門にあたり、江戸期の門が焼失した後、1887年に再建されました。門を通る前後で、巨石を組んだ桝形と天守の見え方がどう変わるか観察できます。',
+    mediaAssets: [], historicalMaterials: [ndl大坂図],
+    source: '大阪城観光ガイド（桜門）', license: '説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      大坂城跡整備計画,
+      { sourceName: '大阪城観光ガイド（桜門）', sourceUrl: 'https://osaka-castle.jp/osakajo/sakuramon.html', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。混雑時は立ち止まらず安全な場所から確認してください。'
+  },
+  {
+    id: 'hist-7', name: '大阪城 乾櫓', category: 'history',
+    coordinate: { latitude: 34.6879488, longitude: 135.5215032, elevationMeter: 14 }, era: 'edo', eraLabel: '元和6年（1620年）',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '西の丸北西の角に建つ、L字形の平面を持つ古い隅櫓です。',
+    description: '乾櫓は城の北西、十二支の方角で「乾」にあたる位置にあります。千貫櫓と同じ1620年に建てられた大阪城最古級の重要文化財で、西外堀と北側を同時に見張る配置を現地で確かめられます。',
+    mediaAssets: [], historicalMaterials: [ndl大坂図],
+    source: '大阪城観光ガイド（乾櫓）', license: '説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      大坂城跡整備計画,
+      { sourceName: '大阪城観光ガイド（乾櫓）', sourceUrl: 'https://osaka-castle.jp/osakajo/inuiyagura.html', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。西外堀側など安全な見学場所から確認してください。'
+  },
+  {
+    id: 'hist-8', name: '大阪城 一番櫓', category: 'history',
+    coordinate: { latitude: 34.6843389, longitude: 135.5279989, elevationMeter: 15 }, era: 'edo', eraLabel: '寛永5年（1628年）',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '南外堀東端に残る隅櫓で、七棟あった櫓のうち現存する一つです。',
+    description: '二ノ丸南側には一番から七番までの隅櫓が並んでいました。現在残るのは一番櫓と六番櫓です。南外堀に沿って歩き、東西に離れた二つの櫓を見比べる周遊が楽しめます。',
+    mediaAssets: [], historicalMaterials: [ndl大坂図],
+    source: '大阪城観光ガイド（一番櫓）', license: '説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      大坂城跡整備計画,
+      { sourceName: '大阪城観光ガイド（一番櫓）', sourceUrl: 'https://osaka-castle.jp/osakajo/ichibanyagura.html', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。堀越しに安全な場所から観察してください。'
+  },
+  {
+    id: 'hist-9', name: '大阪城 六番櫓', category: 'history',
+    coordinate: { latitude: 34.6841327, longitude: 135.5241608, elevationMeter: 15 }, era: 'edo', eraLabel: '寛永5年（1628年）',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '南外堀西側に残る隅櫓で、一番櫓と対になる現存建造物です。',
+    description: '六番櫓は二ノ丸南側に並んでいた七棟のうち、西から六番目に位置した櫓です。外側に石落としや狭間を備えた防御建築で、一番櫓との距離からかつての城郭規模を感じられます。',
+    mediaAssets: [], historicalMaterials: [ndl大坂図],
+    source: '大阪城観光ガイド（六番櫓）', license: '説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      大坂城跡整備計画,
+      { sourceName: '大阪城観光ガイド（六番櫓）', sourceUrl: 'https://osaka-castle.jp/osakajo/rokubanyagura.html', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。南外堀沿いの歩道から確認してください。'
+  },
+  {
+    id: 'hist-10', name: '大阪城 金蔵', category: 'history',
+    coordinate: { latitude: 34.6865438, longitude: 135.5264761, elevationMeter: 23 }, era: 'edo', eraLabel: '江戸期',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '幕府の金銀を保管した、本丸に残る重要文化財の土蔵です。',
+    description: '金蔵は天守閣の東側にある、徳川幕府の金銀を保管した建物です。城の防御施設だけでなく、政治と財政を支える保管施設も本丸に置かれていたことが分かります。',
+    mediaAssets: [], historicalMaterials: [ndl大坂図],
+    source: '大阪城観光ガイド（金蔵）', license: '説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      大坂城跡整備計画,
+      { sourceName: '大阪城観光ガイド（金蔵）', sourceUrl: 'https://osaka-castle.jp/osakajo/kinzo.html', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。建物内部へは入らず、公開範囲から観察してください。'
+  },
+  {
     id: 'comm-1', name: '旧京街道起点・八軒家浜', category: 'community',
     coordinate: { latitude: 34.6895, longitude: 135.5212, elevationMeter: 5.5 }, era: 'edo', eraLabel: '江戸後期',
     verificationStatus: 'partially_verified',
@@ -414,15 +531,90 @@ export const SPOT_DATA = [
   },
   {
     id: 'comm-3', name: '難波宮跡（飛鳥・奈良時代）', category: 'community',
-    coordinate: { latitude: 34.6800, longitude: 135.5250, elevationMeter: 10 }, era: 'asuka', eraLabel: '飛鳥〜奈良時代',
-    verificationStatus: 'unverified',
-    verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
-    summary: '古代の難波宮跡を地域理解の入口として紹介します。',
-    description: '難波宮跡に関する詳しい年代・建物復元は、公式文化財資料を確認してから確定します。表示画像はイメージ画像です。',
-    mediaAssets: [placeholderMedia], historicalMaterials: [],
-    source: '未確認（要一次資料確認）', license: '未確認',
-    sources: [{ sourceName: '未確認（要一次資料確認）', sourceUrl: null, claimStatus: 'unverified' }],
-    verificationNote: '歴史記述・画像とも未確認です。'
+    coordinate: { latitude: 34.6808, longitude: 135.5198, elevationMeter: 12 }, era: 'asuka', eraLabel: '飛鳥〜奈良時代',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '前期・後期の宮殿跡が発掘された、古代大阪の政治の中心地です。',
+    description: '難波宮は孝徳天皇の時代に都が置かれ、その後も副都として機能しました。現地では後期難波宮の大極殿基壇などが地表に示され、大阪城よりさらに古い時代の都市軸を体感できます。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '大阪市中央区（難波宮跡）', license: '大阪市公式説明参照・座標は公園内の概略位置',
+    sources: [{ sourceName: '大阪市中央区（難波宮跡）', sourceUrl: 'https://www.city.osaka.lg.jp/chuo/page/0000637375.html', claimStatus: 'verified' }],
+    verificationNote: 'ARピンは公式所在地を基にした公園内の概略位置です。復元表示ではなく、現地の遺構表示を案内します。'
+  },
+  {
+    id: 'comm-4', name: '大阪歴史博物館', category: 'community',
+    coordinate: { latitude: 34.6826183, longitude: 135.5208131, elevationMeter: 16 }, era: 'present', eraLabel: '古代〜現代',
+    verificationStatus: 'verified',
+    verification: { content: 'verified', coordinate: 'verified', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '難波宮から近現代まで、大阪の都市史を実物資料と復元展示でたどれる博物館です。',
+    description: '大阪歴史博物館は難波宮跡のサイトミュージアムとしての役割を担い、古代から近現代までの大阪を紹介しています。ARで周辺を歩いた後、現地で見えない地下遺構や都市の変化を展示で深める到達地点にできます。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '大阪歴史博物館公式サイト', license: '公式説明参照・座標はOpenStreetMap地物位置',
+    sources: [
+      { sourceName: '大阪歴史博物館（館の概要）', sourceUrl: 'https://www.osakamushis.jp/about/brief.html', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: '開館日・料金・展示内容は変更されるため、来館前に公式サイトで最新情報を確認してください。'
+  },
+  {
+    id: 'hist-11', name: '四天王寺', category: 'history',
+    coordinate: { latitude: 34.6537001, longitude: 135.5137442, elevationMeter: 18 }, era: 'asuka', eraLabel: '推古元年（593年）創建',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '聖徳太子が建立した日本最古の官寺の一つで、上町台地南部の起点です。',
+    description: '四天王寺は593年に聖徳太子により建立されたと伝わり、日本仏教史の出発点に位置づけられるお寺です。中門・五重塔・金堂・講堂が南北一直線に並ぶ「四天王寺式伽藍配置」は、大阪の都市軸の原型としても知られます。境内は無料で歩けます（一部拝観有料）。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '和宗総本山 四天王寺 公式サイト', license: '公式説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      { sourceName: '和宗総本山 四天王寺 公式サイト', sourceUrl: 'https://www.shitennoji.or.jp/', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンは境内周辺の概略位置です。伽藍への立ち入り区分・拝観時間は公式サイトで確認してください。'
+  },
+  {
+    id: 'hist-12', name: '生國魂神社（いくくにたま）', category: 'history',
+    coordinate: { latitude: 34.665303, longitude: 135.5126698, elevationMeter: 20 }, era: 'ancient', eraLabel: '神武天皇東征伝承・上町台地の総鎮守',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '「大坂」の地名を生んだと伝わる、上町台地の総鎮守です。',
+    description: '生國魂神社は、神武天皇が難波碕に生島神・足島神をお祀りしたことに始まると伝わる古社です。もとは大坂城の場所にありましたが、豊臣秀吉の築城に伴い現在地（天王寺区生玉町）へ遷座しました。井原西鶴の像や上方落語の寄席「生玉さん」でも親しまれています。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '難波大社 生國魂神社 公式サイト', license: '公式説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      { sourceName: '難波大社 生國魂神社 公式サイト', sourceUrl: 'https://ikutamajinja.jp/', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンは社殿周辺の概略位置です。祭事・境内立入時間は公式サイトで確認してください。'
+  },
+  {
+    id: 'hist-13', name: '高津宮（こうづぐう）', category: 'history',
+    coordinate: { latitude: 34.6688534, longitude: 135.5139029, elevationMeter: 22 }, era: 'ancient', eraLabel: '仁徳天皇・高津宮伝承地',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '仁徳天皇の「高津宮」ゆかりの神社で、上方落語「高津の富」でも知られます。',
+    description: '高津宮は、仁徳天皇が難波高津宮を営まれた故事にちなんで祀られた古社です。境内の高台からは、かつて大阪湾を望んだと伝わる「絵馬堂」からの眺めが名所として知られます。落語「高津の富」の舞台でもあり、上町台地の文化と芸能が交わる場所です。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '高津宮 公式サイト', license: '公式説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      { sourceName: '高津宮 公式サイト', sourceUrl: 'https://www.kouzu.or.jp/', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンは社殿周辺の概略位置です。境内立入時間・行事は公式サイトで確認してください。'
+  },
+  {
+    id: 'hist-14', name: '大阪天満宮', category: 'history',
+    coordinate: { latitude: 34.6960904, longitude: 135.5127654, elevationMeter: 6 }, era: 'heian', eraLabel: '天暦3年（949年）創建',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '菅原道真公を祀る「天満の天神さん」。日本三大祭・天神祭の中心地です。',
+    description: '大阪天満宮は、大将軍社の跡地に菅原道真公を祀って949年に創建されたと伝わります。毎年7月24・25日の天神祭は日本三大祭の一つで、大川を舞台にした船渡御と奉納花火で知られます。北区の南端にあり、大阪城・上町台地の北にもう一本の歴史軸を作っています。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '大阪天満宮 公式サイト', license: '公式説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      { sourceName: '大阪天満宮 公式サイト', sourceUrl: 'https://osakatemmangu.or.jp/', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンは社殿周辺の概略位置です。天神祭の交通規制や境内立入時間は公式サイトで確認してください。'
   },
   {
     id: 'disaster-1', name: '寝屋川・大川周辺の洪水浸水想定', category: 'disaster',

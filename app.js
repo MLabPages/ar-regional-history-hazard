@@ -24,8 +24,11 @@ class ARRegionalApp {
     this.headingSource = 'simulation'; // 'sensor' | 'simulation' | 'manual'
     this.orientationPermission = 'unknown'; // 'unknown' | 'granted' | 'denied' | 'not-required'
     this.orientationListenerAttached = false;
+    this.geolocationWatchId = null;
     this.cameraActive = false;
     this.mediaStream = null;
+    this.demoArActive = false;
+    this.lastArHudUpdate = 0;
     // 防災AR: 洪水の概念イメージ（水面）は明示的にONにした場合のみ描画
     this.showFloodConceptImage = false;
 
@@ -61,8 +64,15 @@ class ARRegionalApp {
     this.mapSearchInput = document.getElementById('map-search-input');
     this.mapSearchResults = document.getElementById('map-search-results');
     this.mapNavigationStatus = document.getElementById('map-navigation-status');
+    this.mapSearchCancelButton = document.getElementById('btn-cancel-map-search');
     this.mapCurrentLocationButton = document.getElementById('btn-map-current-location');
+    this.mapSearchController = null;
+    this.recentMapSearchResults = [];
     this.cameraPlaceholder = document.getElementById('camera-placeholder');
+    this.arHud = document.getElementById('ar-hud');
+    this.arHeadingText = document.getElementById('ar-heading-text');
+    this.arDirectionCue = document.getElementById('ar-direction-cue');
+    this.arNearbyCount = document.getElementById('ar-nearby-count');
     this.locationText = document.getElementById('location-text');
     this.guideHintText = document.getElementById('guide-hint-text');
     this.guideHint = document.getElementById('drag-guide-hint');
@@ -458,12 +468,14 @@ class ARRegionalApp {
         this.startCamera();
       });
     }
+    document.getElementById('btn-start-demo-ar')?.addEventListener('click', () => this.startDemoAR());
 
     // 地図上の場所検索・現在地移動
     this.mapSearchForm?.addEventListener('submit', (event) => {
       event.preventDefault();
       this.searchMapLocation();
     });
+    this.mapSearchCancelButton?.addEventListener('click', () => this.cancelMapLocationSearch());
     this.mapCurrentLocationButton?.addEventListener('click', () => this.moveMapToCurrentLocation());
 
     // ヘッダー カメラON/OFFボタン
@@ -681,6 +693,7 @@ class ARRegionalApp {
     const spotsPanel = this.getMapSpotsPanel();
 
     if (mode === 'map') {
+      this.arHud?.classList.add('hidden');
       this.mapNavigationTools?.classList.remove('hidden');
       this.btnModeAr.classList.remove('active');
       this.btnModeMap.classList.add('active');
@@ -731,6 +744,7 @@ class ARRegionalApp {
       if (this.guideHintText) {
         this.guideHintText.textContent = '画面を左右にドラッグして見回します';
       }
+      this.updateARExperienceVisibility();
     }
   }
 
@@ -882,26 +896,70 @@ class ARRegionalApp {
   }
 
   async startCamera() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      this.showCameraError('このブラウザではカメラを利用できません。HTTPSの公開ページを開くか、カメラなしARをお試しください。');
+      return;
+    }
     try {
+      // iOSの方位許可は、ボタン操作直後のユーザー操作中に要求する必要がある。
+      await this.enableOnsiteMode();
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
       });
       this.video.srcObject = this.mediaStream;
+      await this.video.play().catch(() => {});
       this.cameraActive = true;
+      this.demoArActive = false;
+      document.getElementById('app-container')?.classList.remove('demo-ar');
       this.cameraPlaceholder.classList.add('hidden');
 
       this.cameraIconOn.classList.add('hidden');
       this.cameraIconOff.classList.remove('hidden');
       this.cameraBtnText.textContent = 'カメラOFF';
       this.toggleCameraBtn.classList.add('active-highlight');
-      // カメラ起動は「現地で体験」意図とみなし、GPS/センサーを許可要求して現地モードへ
-      await this.enableOnsiteMode();
+      this.updateARExperienceVisibility();
+      if (this.orientationPermission === 'denied') {
+        this.showARHint('方位センサーが使えないため、画面を左右にドラッグして見回せます。');
+      } else {
+        this.showARHint('スマートフォンをゆっくり動かして、周辺の歴史スポットを探してみましょう。');
+      }
     } catch (err) {
       console.warn('カメラアクセスエラー:', err);
-      alert('カメラアクセスの許可が必要です。\n※スマートフォン実機やHTTPS環境でお使いいただくか、このまま「地図表示」でお試しください。');
-      this.cameraPlaceholder.classList.add('hidden');
-      this.switchViewMode('map');
+      this.enableExploreMode();
+      const message = err?.name === 'NotAllowedError'
+        ? 'カメラが許可されていません。ブラウザの設定から許可するか、カメラなしARをお試しください。'
+        : 'カメラを起動できませんでした。別のカメラを閉じて再試行するか、カメラなしARをお試しください。';
+      this.showCameraError(message);
     }
+  }
+
+  startDemoAR() {
+    this.demoArActive = true;
+    this.cameraActive = false;
+    this.cameraPlaceholder.classList.add('hidden');
+    document.getElementById('app-container')?.classList.add('demo-ar');
+    this.enableExploreMode();
+    this.setHeading(0, 'simulation');
+    this.updateARExperienceVisibility();
+    this.showARHint('カメラなし体験です。画面を左右にドラッグしてピンを探し、タップしてみましょう。');
+  }
+
+  showCameraError(message) {
+    this.cameraPlaceholder.classList.remove('hidden');
+    this.arHud?.classList.add('hidden');
+    const messageEl = this.cameraPlaceholder.querySelector('p');
+    if (messageEl) messageEl.innerHTML = `<strong>カメラを開始できませんでした。</strong><br>${message}`;
+  }
+
+  showARHint(message) {
+    if (this.guideHintText) this.guideHintText.textContent = message;
+    this.guideHint?.classList.remove('hidden');
+  }
+
+  updateARExperienceVisibility() {
+    const isRunning = this.viewMode === 'ar' && (this.cameraActive || this.demoArActive);
+    this.arHud?.classList.toggle('hidden', !isRunning);
   }
 
   stopCamera() {
@@ -911,12 +969,15 @@ class ARRegionalApp {
     }
     this.video.srcObject = null;
     this.cameraActive = false;
+    this.demoArActive = false;
+    document.getElementById('app-container')?.classList.remove('demo-ar');
     this.cameraPlaceholder.classList.remove('hidden');
 
     this.cameraIconOn.classList.remove('hidden');
     this.cameraIconOff.classList.add('hidden');
     this.cameraBtnText.textContent = 'カメラON';
     this.toggleCameraBtn.classList.remove('active-highlight');
+    this.arHud?.classList.add('hidden');
     // カメラを切ったら探索モードへ戻す
     this.enableExploreMode();
   }
@@ -969,6 +1030,9 @@ class ARRegionalApp {
       return;
     }
 
+    // 新しい検索を始める前に、前の通信だけを中断する。
+    this.cancelMapLocationSearch({ announce: false });
+
     // 収録済みスポットは外部通信を待たずに検索できるようにする。
     const localResults = this.getLocalMapSearchResults(query);
     if (localResults.length) {
@@ -978,15 +1042,19 @@ class ARRegionalApp {
     }
 
     const endpoint = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`;
-    this.setMapNavigationStatus('地名を検索しています…', 'info');
-    this.mapSearchResults?.classList.add('hidden');
+    this.setMapNavigationStatus('地名を検索しています… 候補は待たずに選べます。', 'info');
+    if (!this.recentMapSearchResults.length) {
+      this.renderMapSearchResults(this.getRegisteredMapSearchResults(), '登録済みスポット');
+    }
 
     let timeoutId;
     try {
       const controller = new AbortController();
+      this.mapSearchController = controller;
+      this.setMapSearchBusy(true);
       // 町名検索は候補の照合に時間がかかることがあるため、
       // 短すぎるタイムアウトで「見つからない」と誤認させない。
-      timeoutId = window.setTimeout(() => controller.abort(), 20000);
+      timeoutId = window.setTimeout(() => controller.abort('timeout'), 20000);
       const response = await fetch(endpoint, {
         headers: { Accept: 'application/json' },
         signal: controller.signal
@@ -1058,9 +1126,13 @@ class ARRegionalApp {
       this.renderMapSearchResults(normalized);
       this.setMapNavigationStatus(`${normalized.length}件の候補が見つかりました。`, 'success');
     } catch (error) {
-      console.warn('地名検索エラー:', error);
+      // 表示中の候補を選んだ場合は、移動完了メッセージを後続の中断処理で上書きしない。
+      if (error?.name === 'AbortError' && controller.signal.reason === 'selection') return;
+      if (error?.name !== 'AbortError') console.warn('地名検索エラー:', error);
       const message = error?.name === 'AbortError'
-        ? '検索に時間がかかっています。地名を短くするか、しばらくして再試行してください。'
+        ? (this.mapSearchController?.signal.reason === 'user'
+          ? '検索を中断しました。表示中の候補はそのまま選べます。'
+          : '検索に時間がかかっています。地名を短くするか、しばらくして再試行してください。')
         : '検索できませんでした。通信状態を確認して再試行してください。';
       const localResults = this.getLocalMapSearchResults(query);
       if (localResults.length) {
@@ -1072,7 +1144,35 @@ class ARRegionalApp {
     } finally {
       // 成功・失敗・タイムアウトのいずれでもタイマーを残さない。
       window.clearTimeout(timeoutId);
+      if (this.mapSearchController === controller) {
+        this.mapSearchController = null;
+        this.setMapSearchBusy(false);
+      }
     }
+  }
+
+  cancelMapLocationSearch({ announce = true, reason = 'user' } = {}) {
+    if (!this.mapSearchController) return;
+    this.mapSearchController.abort(reason);
+    this.setMapSearchBusy(false);
+    if (announce) this.setMapNavigationStatus('検索を中断しました。表示中の候補はそのまま選べます。', 'info');
+  }
+
+  setMapSearchBusy(isBusy) {
+    this.mapSearchForm?.toggleAttribute('aria-busy', isBusy);
+    this.mapSearchCancelButton?.classList.toggle('hidden', !isBusy);
+    this.mapSearchForm?.classList.toggle('is-searching', isBusy);
+  }
+
+  getRegisteredMapSearchResults() {
+    return this.getPointSpots()
+      .map((spot) => ({
+        name: `${spot.name}（登録スポット）`,
+        latitude: Number(spot.coordinate?.latitude),
+        longitude: Number(spot.coordinate?.longitude)
+      }))
+      .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
+      .slice(0, 5);
   }
 
   getLocalMapSearchResults(query) {
@@ -1094,9 +1194,14 @@ class ARRegionalApp {
       .slice(0, 5);
   }
 
-  renderMapSearchResults(results) {
+  renderMapSearchResults(results, label = '検索候補') {
     if (!this.mapSearchResults) return;
+    this.recentMapSearchResults = results.map((result) => ({ ...result }));
     this.mapSearchResults.replaceChildren();
+    const heading = document.createElement('div');
+    heading.className = 'map-search-results-label';
+    heading.textContent = label;
+    this.mapSearchResults.appendChild(heading);
     results.forEach((result) => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -1104,6 +1209,7 @@ class ARRegionalApp {
       button.setAttribute('role', 'option');
       button.textContent = result.name;
       button.addEventListener('click', () => {
+        this.cancelMapLocationSearch({ announce: false, reason: 'selection' });
         this.locationMode = 'explore';
         this.userPos.latitude = result.latitude;
         this.userPos.longitude = result.longitude;
@@ -1119,36 +1225,18 @@ class ARRegionalApp {
   }
 
   setupGeolocationAndSensors() {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.watchPosition(
-        (pos) => {
-          if (this.locationMode === 'onsite') {
-            this.userPos.latitude = pos.coords.latitude;
-            this.userPos.longitude = pos.coords.longitude;
-            this.updateLocationStatus();
-          }
-        },
-        (err) => console.log('位置情報通知:', err.message),
-        { enableHighAccuracy: true }
-      );
-    }
-
     this.handleOrientation = (e) => {
       if (this.locationMode !== 'onsite') return;
-      // iOS Safari: webkitCompassHeading は「真北からの時計回り角度（0=北, 90=東）」。
-      //   画面上の方位に合わせるため 360 - heading で反時計回りへ変換して扱う。
-      // Android Chrome: absolute な deviceorientation の alpha は「反時計回り（0=北, 90=西）」。
-      //   端末・ブラウザ差が大きく、要実機確認。ここでは iOS と同様の式で暫定処理する。
+      // calculateBearing と同じ「真北=0、東=90」の時計回り角度にそろえる。
       let heading = null;
       if (typeof e.webkitCompassHeading === 'number') {
-        heading = e.webkitCompassHeading; // iOS
-      } else if (e.absolute === true && typeof e.alpha === 'number') {
-        heading = e.alpha; // Android(absolute)
+        heading = e.webkitCompassHeading; // iOSはすでに時計回りの方位
       } else if (typeof e.alpha === 'number') {
-        heading = e.alpha; // フォールバック（要実機確認）
+        const screenAngle = Number(screen.orientation?.angle ?? window.orientation ?? 0);
+        heading = (360 - e.alpha + screenAngle + 360) % 360;
       }
       if (heading !== null && heading !== undefined && !Number.isNaN(heading)) {
-        this.setHeading((360 - heading) % 360, 'sensor');
+        this.setHeading(this.smoothHeading(heading), 'sensor');
       }
     };
 
@@ -1182,14 +1270,48 @@ class ARRegionalApp {
       }
     }
     this.locationMode = 'onsite';
+    this.startGeolocationWatch();
     this.updateLocationStatus();
     this.updateLocationModeUI();
   }
 
   enableExploreMode() {
     this.locationMode = 'explore';
+    this.stopGeolocationWatch();
     this.updateLocationStatus();
     this.updateLocationModeUI();
+  }
+
+  startGeolocationWatch() {
+    if (!navigator.geolocation || this.geolocationWatchId !== null) return;
+    this.geolocationWatchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (this.locationMode !== 'onsite') return;
+        this.userPos.latitude = pos.coords.latitude;
+        this.userPos.longitude = pos.coords.longitude;
+        this.updateLocationStatus();
+      },
+      (err) => {
+        console.info('位置情報を利用できません:', err.message);
+        this.showARHint('現在地を取得できません。画面をドラッグして体験するか、位置情報の許可を確認してください。');
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+    );
+  }
+
+  stopGeolocationWatch() {
+    if (this.geolocationWatchId === null || !navigator.geolocation) return;
+    navigator.geolocation.clearWatch(this.geolocationWatchId);
+    this.geolocationWatchId = null;
+  }
+
+  smoothHeading(nextHeading) {
+    if (this.headingSource !== 'sensor') return nextHeading;
+    const currentRad = this.deg2rad(this.heading);
+    const nextRad = this.deg2rad(nextHeading);
+    const x = Math.cos(currentRad) * 0.72 + Math.cos(nextRad) * 0.28;
+    const y = Math.sin(currentRad) * 0.72 + Math.sin(nextRad) * 0.28;
+    return (this.rad2deg(Math.atan2(y, x)) + 360) % 360;
   }
 
   updateLocationModeUI() {
@@ -1277,13 +1399,54 @@ class ARRegionalApp {
         this.drawARFloodWaterline();
       }
 
-      const filteredSpots = this.getPointSpots().filter(s => s.category === this.currentLayer);
+      const filteredSpots = this.getPointSpots()
+        .filter(s => s.category === this.currentLayer)
+        .sort((a, b) => this.calculateDistance(this.userPos.latitude, this.userPos.longitude, a.coordinate.latitude, a.coordinate.longitude)
+          - this.calculateDistance(this.userPos.latitude, this.userPos.longitude, b.coordinate.latitude, b.coordinate.longitude));
       filteredSpots.forEach(spot => {
         this.drawARSpotMarker(spot);
       });
+      const now = Date.now();
+      if (now - this.lastArHudUpdate > 150) {
+        this.updateARHud(filteredSpots);
+        this.lastArHudUpdate = now;
+      }
     }
 
     requestAnimationFrame(() => this.renderLoop());
+  }
+
+  updateARHud(spots) {
+    if (!this.arHud || this.arHud.classList.contains('hidden')) return;
+    if (this.arHeadingText) {
+      this.arHeadingText.textContent = `${this.getHeadingDirectionName(this.heading)} ${Math.round(this.heading)}°`;
+    }
+    const ranked = spots.map((spot) => {
+      const distance = this.calculateDistance(this.userPos.latitude, this.userPos.longitude, spot.coordinate.latitude, spot.coordinate.longitude);
+      const bearing = this.calculateBearing(this.userPos.latitude, this.userPos.longitude, spot.coordinate.latitude, spot.coordinate.longitude);
+      let angle = bearing - this.heading;
+      while (angle < -180) angle += 360;
+      while (angle > 180) angle -= 360;
+      return { spot, distance, angle };
+    }).sort((a, b) => a.distance - b.distance);
+
+    if (this.arNearbyCount) this.arNearbyCount.textContent = `このレイヤーのスポット ${ranked.length}件`;
+    if (!this.arDirectionCue) return;
+    if (!ranked.length) {
+      this.arDirectionCue.textContent = 'このレイヤーには表示できる地点がありません';
+      this.arDirectionCue.dataset.direction = 'none';
+      return;
+    }
+    const nearest = ranked[0];
+    const inView = Math.abs(nearest.angle) <= 42.5;
+    const direction = inView ? '正面' : nearest.angle < 0 ? '左' : '右';
+    const arrow = inView ? '◎' : nearest.angle < 0 ? '←' : '→';
+    this.arDirectionCue.textContent = `${arrow} ${direction}：${nearest.spot.name}（約${this.formatDistance(nearest.distance)}）`;
+    this.arDirectionCue.dataset.direction = inView ? 'front' : nearest.angle < 0 ? 'left' : 'right';
+  }
+
+  formatDistance(distance) {
+    return distance >= 1000 ? `${(distance / 1000).toFixed(1)}km` : `${Math.max(1, Math.round(distance))}m`;
   }
 
   drawARFloodWaterline() {
@@ -1339,7 +1502,26 @@ class ARRegionalApp {
     if (Math.abs(angleDiff) > fov / 2 + 10) return;
 
     const screenX = (this.canvas.width / 2) + (angleDiff / (fov / 2)) * (this.canvas.width / 2);
-    const screenY = (this.canvas.height * 0.45) - Math.min(distanceMeters * 0.8, 120);
+    const baseScreenY = (this.canvas.height * 0.45) - Math.min(distanceMeters * 0.8, 120);
+    let screenY = baseScreenY;
+    const cardW = 180;
+    const cardH = 58;
+    const cardX = -cardW / 2;
+    const cardY = -cardH;
+
+    // 近接スポットのカードが重ならないよう、表示済みカードを避けて上下にずらす。
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = { x: screenX + cardX, y: screenY + cardY, width: cardW, height: cardH + 40 };
+      const overlaps = this.renderedPins.some(({ bounds }) => (
+        candidate.x < bounds.x + bounds.width
+        && candidate.x + candidate.width > bounds.x
+        && candidate.y < bounds.y + bounds.height
+        && candidate.y + candidate.height > bounds.y
+      ));
+      if (!overlaps) break;
+      screenY = baseScreenY + (attempt + 1) * 70;
+      if (screenY > this.canvas.height - 150) screenY = Math.max(190, baseScreenY - (attempt + 1) * 70);
+    }
 
     const ctx = this.ctx;
 
@@ -1361,11 +1543,6 @@ class ARRegionalApp {
     ctx.arc(0, 40, 6, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
-
-    const cardW = 180;
-    const cardH = 58;
-    const cardX = -cardW / 2;
-    const cardY = -cardH;
 
     ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
     ctx.strokeStyle = color;
@@ -1498,17 +1675,26 @@ class ARRegionalApp {
 
     const mediaStatus = document.getElementById('modal-media-status');
     if (mediaStatus) {
-      mediaStatus.textContent = media?.isHistorical && !hasVerifiedImage
+      mediaStatus.textContent = !media
+        ? '表示画像: なし（現地の建造物・遺構を観察するスポットです）'
+        : media?.isHistorical && !hasVerifiedImage
         ? `表示画像: 個別画像URL未検証（${media.sourceName}の資料ページで閲覧）`
         : media?.isHistorical
         ? `表示画像: ${MATERIAL_TYPE_LABELS[media.materialType] || media.materialType}（確認済み資料）`
         : '表示画像: イメージ画像（開発用プレースホルダー。史料ではありません）';
-      mediaStatus.className = `media-status ${media?.isHistorical && hasVerifiedImage ? 'verified' : 'unverified'}`;
+      mediaStatus.className = `media-status ${!media || (media?.isHistorical && hasVerifiedImage) ? 'verified' : 'unverified'}`;
     }
     const materialType = document.getElementById('modal-material-type');
     if (materialType) materialType.textContent = `資料種別: ${media ? (media.displayType || MATERIAL_TYPE_LABELS[media.materialType] || media.materialType) : '資料画像なし'}`;
     const positionAccuracy = document.getElementById('modal-position-accuracy');
-    if (positionAccuracy) positionAccuracy.textContent = `位置精度: ${media?.positionAccuracy === 'reference_only' ? '参考資料（現代地図との一致は保証されません）' : (media?.positionAccuracy || '不明')}`;
+    if (positionAccuracy) {
+      const accuracy = !media
+        ? (spot.verification?.coordinate === 'verified' ? '確認済み座標' : '概略位置（現地で位置を確認してください）')
+        : media.positionAccuracy === 'reference_only'
+          ? '参考資料（現代地図との一致は保証されません）'
+          : (media.positionAccuracy || '不明');
+      positionAccuracy.textContent = `位置精度: ${accuracy}`;
+    }
 
     const compareButton = document.getElementById('btn-compare-ar');
     compareButton.classList.toggle('hidden', !media?.isHistorical || !hasVerifiedImage);

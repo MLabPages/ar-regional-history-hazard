@@ -66,6 +66,7 @@ body, html {
 #ar-canvas {
   z-index: 3;
   pointer-events: auto;
+  touch-action: none;
   cursor: grab;
 }
 
@@ -292,6 +293,106 @@ body, html {
 .btn-secondary:active {
   background: rgba(255, 255, 255, 0.25);
 }
+
+.btn-tertiary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  border-radius: var(--radius-md);
+  color: #ddd6fe;
+  background: rgba(91, 33, 182, 0.24);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.demo-ar #camera-feed {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(59, 130, 246, 0.24), transparent 34%),
+    linear-gradient(160deg, #172554 0%, #0f172a 48%, #052e2b 100%);
+}
+
+.ar-hud {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none !important;
+}
+
+.ar-compass,
+.ar-direction-cue,
+.ar-nearby-count {
+  position: absolute;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.ar-compass {
+  top: 82px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+}
+
+.ar-compass svg { width: 16px; height: 16px; color: #60a5fa; }
+
+.ar-direction-cue {
+  top: 122px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(360px, calc(100vw - 28px));
+  padding: 8px 12px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.ar-direction-cue[data-direction="front"] { border-color: rgba(74, 222, 128, 0.65); color: #bbf7d0; }
+
+.ar-nearby-count {
+  right: 12px;
+  bottom: 86px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 0.66rem;
+}
+
+.ar-reticle {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.5);
+}
+
+.ar-reticle::before,
+.ar-reticle::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.ar-reticle::before { left: 13px; top: -7px; width: 1px; height: 42px; }
+.ar-reticle::after { top: 13px; left: -7px; width: 42px; height: 1px; }
 
 /* UIオーバレイ層 */
 .ui-layer {
@@ -2169,11 +2270,16 @@ body, html {
   }
 
   #camera-placeholder.start-card .btn-primary,
-  #camera-placeholder.start-card .btn-secondary {
+  #camera-placeholder.start-card .btn-secondary,
+  #camera-placeholder.start-card .btn-tertiary {
     min-height: 44px;
     padding: 8px 12px;
     font-size: 0.84rem;
   }
+
+  .ar-compass { top: 124px; }
+  .ar-direction-cue { top: 160px; }
+  .ar-nearby-count { bottom: 84px; }
 }
 
 /* 地図の場所検索・現在地移動 */
@@ -2199,6 +2305,10 @@ body, html {
   -webkit-backdrop-filter: blur(14px);
 }
 
+.map-search-form.is-searching {
+  grid-template-columns: minmax(0, 1fr) 58px 42px 42px;
+}
+
 .map-search-form input {
   min-width: 0;
   height: 40px;
@@ -2215,6 +2325,7 @@ body, html {
 }
 
 .map-search-submit,
+.map-search-cancel,
 .map-current-location {
   display: grid;
   place-items: center;
@@ -2225,6 +2336,18 @@ body, html {
   border-radius: 10px;
   color: var(--text-main);
   background: rgba(59, 130, 246, 0.28);
+  cursor: pointer;
+}
+
+.map-search-cancel {
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  border-radius: 10px;
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.72);
+  font-size: 0.72rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -2259,6 +2382,13 @@ body, html {
   text-align: left;
   font-size: 0.78rem;
   cursor: pointer;
+}
+
+.map-search-results-label {
+  padding: 2px 6px 4px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 .map-search-result:hover,
@@ -2301,8 +2431,13 @@ body, html {
     padding: 5px;
   }
 
+  .map-search-form.is-searching {
+    grid-template-columns: minmax(0, 1fr) 52px 38px 38px;
+  }
+
   .map-search-form input,
   .map-search-submit,
+  .map-search-cancel,
   .map-current-location {
     height: 36px;
   }

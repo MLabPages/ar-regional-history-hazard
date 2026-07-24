@@ -18,6 +18,7 @@
         <label class="sr-only" for="map-search-input">地名・住所を検索</label>
     <input id="map-search-input" type="search" placeholder="地名・住所・登録スポットを検索" autocomplete="off">
         <button type="submit" class="map-search-submit" aria-label="検索"><i data-lucide="search"></i></button>
+        <button id="btn-cancel-map-search" type="button" class="map-search-cancel hidden" aria-label="検索を中断">中断</button>
         <button id="btn-map-current-location" type="button" class="map-current-location" aria-label="現在地へ移動" title="現在地へ移動"><i data-lucide="crosshair"></i></button>
       </form>
       <div id="map-search-results" class="map-search-results hidden" role="listbox" aria-label="検索結果"></div>
@@ -111,8 +112,18 @@
           <button id="btn-start-camera" class="btn-secondary" type="button">
             <i data-lucide="video"></i><span>カメラを起動</span>
           </button>
+          <button id="btn-start-demo-ar" class="btn-tertiary" type="button">
+            <i data-lucide="sparkles"></i><span>カメラなしでARを試す</span>
+          </button>
         </div>
       </div>
+
+      <section id="ar-hud" class="ar-hud hidden" aria-label="ARナビゲーション">
+        <div class="ar-compass"><i data-lucide="compass"></i><strong id="ar-heading-text">北 0°</strong></div>
+        <div id="ar-direction-cue" class="ar-direction-cue">スポットを探しています…</div>
+        <div id="ar-nearby-count" class="ar-nearby-count">表示できるスポットを確認中</div>
+        <div class="ar-reticle" aria-hidden="true"></div>
+      </section>
 
       <div id="drag-guide-hint" class="drag-hint-badge hidden">
         <i data-lucide="hand" class="pulse-icon"></i>
