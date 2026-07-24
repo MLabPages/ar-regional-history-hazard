@@ -617,6 +617,51 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは社殿周辺の概略位置です。天神祭の交通規制や境内立入時間は公式サイトで確認してください。'
   },
   {
+    id: 'hist-15', name: '住吉大社', category: 'history',
+    coordinate: { latitude: 34.6130027, longitude: 135.4931012, elevationMeter: 6 }, era: 'ancient', eraLabel: '神功皇后・全国住吉神社の総本社',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '全国約2,300社の住吉神社の総本社で、「住吉造」の本殿で知られます。',
+    description: '住吉大社は、航海の守り神として信仰を集めてきた全国の住吉神社の総本社です。第一〜第四本宮が特徴的な「住吉造」で並び、境内の反橋（太鼓橋）も名所として親しまれています。大阪城・上町台地の南の玄関口として、街の広がりを実感できるスポットです。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '住吉大社 公式サイト', license: '公式説明参照・座標はOpenStreetMap概略位置',
+    sources: [
+      { sourceName: '住吉大社 公式サイト', sourceUrl: 'https://www.sumiyoshitaisha.net/', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンは社殿周辺の概略位置です。参拝時間・祭事は公式サイトで確認してください。'
+  },
+  {
+    id: 'comm-5', name: '適塾（緒方洪庵旧宅及び塾）', category: 'community',
+    coordinate: { latitude: 34.69138, longitude: 135.503159, elevationMeter: 4 }, era: 'edo', eraLabel: '天保9年（1838年）開塾',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '緒方洪庵が開いた蘭学塾で、近代大阪の学問を象徴する史跡です。',
+    description: '適塾は蘭方医・緒方洪庵が1838年に開いた蘭学の私塾で、福澤諭吉や大村益次郎らが学びました。現在の建物は国の重要文化財・史跡に指定され、大阪大学が管理しています。北浜の町家が残るこの一帯は、近代日本の学問と医学の出発点の一つです。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '大阪大学 適塾記念センター', license: '公式説明参照・座標は住所からの概略位置',
+    sources: [
+      { sourceName: '大阪大学 適塾記念センター', sourceUrl: 'https://www.tekijuku.osaka-u.ac.jp/', claimStatus: 'verified' },
+      { sourceName: '国土地理院 住所検索', sourceUrl: DATA_SOURCES.gsiTileList, claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンは所在地（北浜3-3-8）からの概略位置です。開館日・料金は公式サイトで確認してください。'
+  },
+  {
+    id: 'comm-6', name: '大阪市中央公会堂', category: 'community',
+    coordinate: { latitude: 34.6935404, longitude: 135.5040087, elevationMeter: 3 }, era: 'taisho', eraLabel: '大正7年（1918年）竣工',
+    verificationStatus: 'verified',
+    verification: { content: 'verified', coordinate: 'verified', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '中之島に建つ大正期のネオ・ルネサンス建築で、国の重要文化財です。',
+    description: '大阪市中央公会堂は、株式仲買人・岩本栄之助の寄付をもとに1918年に完成した公会堂です。赤レンガと石を組み合わせたネオ・ルネサンス様式の外観が中之島の景観を象徴し、国の重要文化財に指定されています。水都・大阪の近代を体感できる到達点です。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '大阪市中央公会堂 公式サイト', license: '公式説明参照・座標はOpenStreetMap地物位置',
+    sources: [
+      { sourceName: '大阪市中央公会堂 公式サイト', sourceUrl: 'https://osaka-chuokokaido.jp/', claimStatus: 'verified' },
+      { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+    ],
+    verificationNote: '開館日・イベント・見学可否は変更されるため、来館前に公式サイトで最新情報を確認してください。'
+  },
+  {
     id: 'disaster-1', name: '寝屋川・大川周辺の洪水浸水想定', category: 'disaster',
     coordinate: { latitude: 34.6890, longitude: 135.5220, elevationMeter: 3.2 },
     verificationStatus: 'verified',
