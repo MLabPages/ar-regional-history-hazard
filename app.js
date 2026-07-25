@@ -7,7 +7,7 @@ import {
   MATERIAL_TYPE_LABELS,
   PLACEHOLDER_IMAGE_URL,
   TRUST_LABELS
-} from './data.js?v=p2-map-compare';
+} from './data.js?v=__BUILD_ID__';
 
 class ARRegionalApp {
   constructor() {

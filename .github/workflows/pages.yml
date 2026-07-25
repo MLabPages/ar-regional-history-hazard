@@ -23,6 +23,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      # index.html / app.js の __BUILD_ID__ をコミットハッシュへ置換する。
+      # これによりブラウザが「部品が新しくなった」と判断でき、
+      # 公開URL自体は変えずにiPhone等の古いキャッシュを更新できる。
+      - name: Stamp build id for cache busting
+        run: |
+          BUILD_ID="${GITHUB_SHA::12}"
+          echo "Build id: $BUILD_ID"
+          sed -i "s/__BUILD_ID__/${BUILD_ID}/g" index.html app.js
+          echo "--- 置換結果 ---"
+          grep -n "?v=" index.html app.js
+          if grep -q "__BUILD_ID__" index.html app.js; then
+            echo "未置換の __BUILD_ID__ が残っています" >&2
+            exit 1
+          fi
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
