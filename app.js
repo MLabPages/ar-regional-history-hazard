@@ -1519,7 +1519,7 @@ class ARRegionalApp {
 
     const w = this.viewW;
     const h = this.viewH;
-    const screenX = (w / 2) + (angleDiff / (fov / 2)) * (w / 2);
+    let screenX = (w / 2) + (angleDiff / (fov / 2)) * (w / 2);
 
     // 距離に応じた遠近感。近いほど大きく・低く、遠いほど小さく・水平線寄りに描く。
     const near = 30;      // これより近ければ最大サイズ
@@ -1531,24 +1531,64 @@ class ARRegionalApp {
     const baseScreenY = (h * 0.52) - t * (h * 0.16);
     let screenY = baseScreenY;
 
-    const cardW = Math.round(190 * scale);
-    const cardH = Math.round(60 * scale);
     const poleH = Math.round(40 * scale);
+
+    // フォント寸法からカード高さを積み上げて決める。
+    // 固定値だと縮小時に距離テキストが枠外へはみ出すため。
+    const pad = Math.round(10 * scale);
+    const badgeFont = Math.max(8, Math.round(10 * scale));
+    const titleFont = Math.max(10, Math.round(12 * scale));
+    const metaFont = Math.max(9, Math.round(10 * scale));
+    const gap = Math.round(5 * scale);
+    const badgeH = spot.eraLabel ? badgeFont + 6 : 0;
+
+    // カード幅は画面幅も超えないようにする
+    const cardW = Math.min(Math.round(190 * scale), w - 16);
+    const cardH = pad + badgeH + (spot.eraLabel ? gap : 0) + titleFont + gap + metaFont + pad;
     const cardX = -cardW / 2;
     const cardY = -cardH;
 
-    // 近接スポットのカードが重ならないよう、表示済みカードを避けて上下にずらす。
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const candidate = { x: screenX + cardX, y: screenY + cardY, width: cardW, height: cardH + poleH };
-      const overlaps = this.renderedPins.some(({ bounds }) => (
-        candidate.x < bounds.x + bounds.width
-        && candidate.x + candidate.width > bounds.x
-        && candidate.y < bounds.y + bounds.height
-        && candidate.y + candidate.height > bounds.y
-      ));
-      if (!overlaps) break;
-      screenY = baseScreenY + (attempt + 1) * (cardH + 14);
-      if (screenY > h - 150) screenY = Math.max(190, baseScreenY - (attempt + 1) * (cardH + 14));
+    // カードが画面左右で見切れないよう、中心Xを内側へ寄せる
+    const half = cardW / 2;
+    screenX = Math.min(Math.max(screenX, half + 8), w - half - 8);
+
+    // 近接スポットのカードが重ならないよう、上下交互に候補位置をずらして空きを探す。
+    // 候補が尽きた場合は、最も重なりが小さい位置を選ぶ。
+    const step = cardH + 12;
+    const minY = 150;
+    // 方向キュー（h*0.72付近）とフッターを避けつつ、下の空き領域も使えるようにする
+    const maxY = h * 0.68;
+    const overlapAreaAt = (y) => {
+      const cx = screenX + cardX;
+      const cy = y + cardY;
+      const cw = cardW;
+      const ch = cardH + poleH;
+      let area = 0;
+      this.renderedPins.forEach(({ bounds }) => {
+        const ox = Math.min(cx + cw, bounds.x + bounds.width) - Math.max(cx, bounds.x);
+        const oy = Math.min(cy + ch, bounds.y + bounds.height) - Math.max(cy, bounds.y);
+        if (ox > 0 && oy > 0) area += ox * oy;
+      });
+      return area;
+    };
+
+    let best = { y: screenY, area: Infinity };
+    for (let attempt = 0; attempt < 14; attempt++) {
+      // 0, +1, -1, +2, -2 ... の順に上下へ探る
+      const k = Math.ceil(attempt / 2) * (attempt % 2 === 1 ? 1 : -1);
+      const candidateY = baseScreenY + k * step;
+      if (candidateY < minY || candidateY > maxY) continue;
+      const area = overlapAreaAt(candidateY);
+      if (area === 0) { best = { y: candidateY, area: 0 }; break; }
+      if (area < best.area) best = { y: candidateY, area };
+    }
+    screenY = best.y;
+
+    // 空き位置が見つからない場合、カードを重ねて潰さず「点マーカー」に落とす。
+    // 画面が狭いほどカード表示は近いスポットに絞られる。
+    if (best.area > 0) {
+      this.drawARDotMarker(spot, screenX, baseScreenY, scale, t, distanceMeters);
+      return { offscreen: false, collapsed: true };
     }
 
     const ctx = this.ctx;
@@ -1582,34 +1622,29 @@ class ARRegionalApp {
     ctx.stroke();
 
     ctx.textAlign = 'left';
-    const pad = Math.round(10 * scale);
-    let textTop = cardY + Math.round(9 * scale);
+    let textTop = cardY + pad;
 
     // 時代ラベルは実測幅に合わせたバッジにする（機械的な文字切りをやめる）
     if (spot.eraLabel) {
-      const badgeFont = Math.max(8, Math.round(10 * scale));
       ctx.font = `bold ${badgeFont}px sans-serif`;
       const badgeText = this.truncateToWidth(ctx, this.shortEraLabel(spot.eraLabel), cardW - pad * 2 - 6);
       const badgeW = ctx.measureText(badgeText).width + 10;
-      const badgeH = badgeFont + 6;
       ctx.fillStyle = color;
       this.drawRoundedRect(ctx, cardX + pad, textTop, badgeW, badgeH, 3);
       ctx.fill();
       ctx.fillStyle = '#000000';
       ctx.fillText(badgeText, cardX + pad + 5, textTop + badgeFont + 1);
-      textTop += badgeH + Math.round(5 * scale);
+      textTop += badgeH + gap;
     }
 
     // スポット名も実測幅で省略する
     ctx.fillStyle = '#ffffff';
-    const titleFont = Math.max(10, Math.round(12 * scale));
     ctx.font = `bold ${titleFont}px sans-serif`;
     const titleText = this.truncateToWidth(ctx, spot.name, cardW - pad * 2);
     ctx.fillText(titleText, cardX + pad, textTop + titleFont);
-    textTop += titleFont + Math.round(5 * scale);
+    textTop += titleFont + gap;
 
     ctx.fillStyle = '#94a3b8';
-    const metaFont = Math.max(9, Math.round(10 * scale));
     ctx.font = `${metaFont}px sans-serif`;
     ctx.fillText(`約${this.formatDistance(distanceMeters)}・タップで表示`, cardX + pad, textTop + metaFont);
 
@@ -1625,6 +1660,48 @@ class ARRegionalApp {
       }
     });
     return { offscreen: false };
+  }
+
+  // カードを置く空きがないスポットは、小さな点と短い名前だけで示す。
+  // タップ判定は残すので、詳細は開ける。
+  drawARDotMarker(spot, screenX, screenY, scale, t, distanceMeters) {
+    const ctx = this.ctx;
+    let color = '#f59e0b';
+    if (spot.category === 'community') color = '#10b981';
+    if (spot.category === 'disaster') color = '#ef4444';
+
+    const r = Math.max(5, 7 * scale);
+    ctx.save();
+    ctx.globalAlpha = 1 - 0.35 * t;
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const font = Math.max(9, Math.round(10 * scale));
+    ctx.font = `bold ${font}px sans-serif`;
+    ctx.textAlign = 'center';
+    const label = this.truncateToWidth(ctx, spot.name, 110);
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    this.drawRoundedRect(ctx, screenX - tw / 2 - 5, screenY + r + 3, tw + 10, font + 7, 4);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(label, screenX, screenY + r + font + 7);
+    ctx.restore();
+
+    this.renderedPins.push({
+      spot,
+      bounds: {
+        x: screenX - Math.max(r, tw / 2 + 5),
+        y: screenY - r,
+        width: Math.max(r * 2, tw + 10),
+        height: r + font + 12
+      }
+    });
   }
 
   // 指定幅に収まるよう末尾を「…」で省略する（文字数ではなく実測幅で判断）
@@ -1662,7 +1739,8 @@ class ARRegionalApp {
       if (!list.length) return;
       const nearest = list[0];
       const isLeft = side === 'left';
-      const y = h * 0.42;
+      // カード群と重ならないよう、画面のやや下側に固定する
+      const y = h * 0.72;
       const boxH = 40;
       const boxW = 150;
       const x = isLeft ? 10 : w - boxW - 10;
