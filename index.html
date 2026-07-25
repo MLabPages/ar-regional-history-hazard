@@ -33,6 +33,12 @@
           <span class="guide-text"><i data-lucide="move"></i> ドラッグで位置調整</span>
         </div>
       </div>
+      <!-- 出典表示は常時表示。資料の性質上の限界もここで必ず伝える。 -->
+      <div id="overlay-credit" class="overlay-credit">
+        <div class="overlay-credit-title" id="overlay-credit-title"></div>
+        <div class="overlay-credit-source" id="overlay-credit-source"></div>
+        <div class="overlay-credit-caveat" id="overlay-credit-caveat"></div>
+      </div>
       <div class="overlay-control-panel">
         <div class="panel-header">
           <span><i data-lucide="layers"></i> 古写真の重ね合わせ</span>
@@ -66,6 +72,50 @@
     </div>
 
     <canvas id="ar-canvas"></canvas>
+
+    <!-- 年代別航空写真オーバーレイ（位置合わせ済みタイルを使うため重なり精度が高い） -->
+    <div id="aerial-overlay" class="hidden">
+      <div id="aerial-canvas-wrapper">
+        <canvas id="aerial-canvas"></canvas>
+      </div>
+      <div id="aerial-credit" class="overlay-credit">
+        <div class="overlay-credit-title" id="aerial-credit-title"></div>
+        <div class="overlay-credit-source" id="aerial-credit-source"></div>
+        <div class="overlay-credit-caveat" id="aerial-credit-caveat"></div>
+      </div>
+      <div class="overlay-control-panel">
+        <div class="panel-header">
+          <span><i data-lucide="map"></i> 年代別 航空写真</span>
+          <button id="btn-close-aerial" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+        </div>
+        <div class="aerial-era-row" id="aerial-era-row"></div>
+        <div class="panel-sliders">
+          <div class="slider-row">
+            <label>透過</label>
+            <input type="range" id="aerial-opacity-slider" min="0" max="100" value="70">
+            <span id="aerial-opacity-val">70%</span>
+          </div>
+        </div>
+        <p class="aerial-hint" id="aerial-status"></p>
+      </div>
+    </div>
+
+    <!-- 簡易3D: 周辺スポットの位置関係を立体で把握する -->
+    <div id="three-overlay" class="hidden">
+      <div id="three-canvas-holder"></div>
+      <div id="three-credit" class="overlay-credit">
+        <div class="overlay-credit-title">3Dで周辺の位置関係を見る</div>
+        <div class="overlay-credit-source" id="three-credit-source"></div>
+        <div class="overlay-credit-caveat">建物の形は再現していません。実測された緯度・経度・標高をもとに、スポットの位置関係だけを立体で示す模式図です。建物の高さ・形状は史実の復元ではありません。</div>
+      </div>
+      <div class="overlay-control-panel">
+        <div class="panel-header">
+          <span><i data-lucide="box"></i> 3Dビュー</span>
+          <button id="btn-close-three" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+        </div>
+        <p class="aerial-hint">ドラッグで回転、ピンチ／ホイールで拡大縮小できます。</p>
+      </div>
+    </div>
 
     <div class="ui-layer">
       <header class="top-bar">
@@ -299,6 +349,14 @@
             <button id="btn-compare-ar" class="btn-primary" type="button">
               <i data-lucide="layers"></i>
               <span>古写真を重ねて比較</span>
+            </button>
+            <button id="btn-aerial-ar" class="btn-secondary" type="button">
+              <i data-lucide="map"></i>
+              <span>年代別の航空写真で見る</span>
+            </button>
+            <button id="btn-view-3d" class="btn-secondary" type="button">
+              <i data-lucide="box"></i>
+              <span>3Dで周辺の位置関係を見る</span>
             </button>
           </div>
         </div>

@@ -97,6 +97,20 @@ class ARRegionalApp {
     this.timeTravelList = document.getElementById('time-travel-list');
     this.timeTravelLocation = document.getElementById('time-travel-location');
 
+    // 年代別航空写真オーバーレイ（AR）
+    this.aerialOverlay = document.getElementById('aerial-overlay');
+    this.aerialCanvas = document.getElementById('aerial-canvas');
+    this.aerialEraRow = document.getElementById('aerial-era-row');
+    this.aerialOpacitySlider = document.getElementById('aerial-opacity-slider');
+    this.aerialStatus = document.getElementById('aerial-status');
+    this.aerialEraKey = 'showa50';
+    this.aerialOpacity = 0.7;
+
+    // 簡易3Dビュー
+    this.threeOverlay = document.getElementById('three-overlay');
+    this.threeHolder = document.getElementById('three-canvas-holder');
+    this.threeState = null;
+
     try {
       if (window.localStorage?.getItem('ar-guide-dismissed') === '1') {
         this.guideHint?.classList.add('hidden');
@@ -681,13 +695,39 @@ class ARRegionalApp {
       if (this.selectedSpot && media?.isHistorical && media.imageUrl && media.imageUrlVerified !== false) {
         document.getElementById('spot-modal').classList.add('hidden');
         this.overlayImg.src = media.imageUrl;
+        this.overlayImg.alt = `${media.title}（${media.sourceName}）`;
+        this.renderOverlayCredit(media);
         this.historicalOverlay.classList.remove('hidden');
+        document.body.classList.add('comparing');
         this.resetOverlayTransform();
       }
     });
 
     document.getElementById('btn-close-overlay').addEventListener('click', () => {
       this.historicalOverlay.classList.add('hidden');
+      document.body.classList.remove('comparing');
+    });
+
+    // 年代別航空写真をARで見る
+    document.getElementById('btn-aerial-ar')?.addEventListener('click', () => {
+      this.openAerialOverlay(this.selectedSpot);
+    });
+    document.getElementById('btn-close-aerial')?.addEventListener('click', () => {
+      this.aerialOverlay?.classList.add('hidden');
+    });
+    this.aerialOpacitySlider?.addEventListener('input', (e) => {
+      this.aerialOpacity = Number(e.target.value) / 100;
+      const label = document.getElementById('aerial-opacity-val');
+      if (label) label.textContent = `${e.target.value}%`;
+      if (this.aerialCanvas) this.aerialCanvas.style.opacity = String(this.aerialOpacity);
+    });
+
+    // 簡易3Dビュー
+    document.getElementById('btn-view-3d')?.addEventListener('click', () => {
+      this.openThreeView(this.selectedSpot);
+    });
+    document.getElementById('btn-close-three')?.addEventListener('click', () => {
+      this.closeThreeView();
     });
 
     document.getElementById('btn-reset-overlay').addEventListener('click', () => {
@@ -1704,6 +1744,340 @@ class ARRegionalApp {
     });
   }
 
+  // ---- 簡易3Dビュー ----
+  // 建物形状は復元せず、実測座標にもとづく「位置関係の模式図」に徹する。
+  // 高さは標高（elevationMeter）のみを反映し、建物高さは表現しない。
+  async openThreeView(spot) {
+    const THREE = await this.loadThree();
+    if (!THREE) {
+      this.setMapNavigationStatus?.('3D表示の読み込みに失敗しました', 'error');
+      return;
+    }
+    document.getElementById('spot-modal')?.classList.add('hidden');
+    this.threeOverlay.classList.remove('hidden');
+
+    const center = spot || this.selectedSpot || { coordinate: this.userPos, name: '現在地' };
+    const holder = this.threeHolder;
+    holder.innerHTML = '';
+
+    const width = holder.clientWidth || window.innerWidth;
+    const height = holder.clientHeight || Math.round(window.innerHeight * 0.55);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b1220);
+    const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 20000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(width, height);
+    holder.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(200, 400, 200);
+    scene.add(dir);
+
+    // 地面グリッド（1マス=100m相当）
+    const grid = new THREE.GridHelper(2000, 20, 0x334155, 0x1e293b);
+    scene.add(grid);
+
+    const cLat = center.coordinate.latitude;
+    const cLon = center.coordinate.longitude;
+    const mPerDegLat = 111320;
+    const mPerDegLon = 111320 * Math.cos(this.deg2rad(cLat));
+
+    const colorFor = (cat) => cat === 'community' ? 0x10b981 : cat === 'disaster' ? 0xef4444 : 0xf59e0b;
+    const labels = [];
+
+    this.getPointSpots().forEach(s => {
+      const dx = (s.coordinate.longitude - cLon) * mPerDegLon;
+      const dz = -(s.coordinate.latitude - cLat) * mPerDegLat;
+      if (Math.abs(dx) > 3000 || Math.abs(dz) > 3000) return;
+
+      const elev = s.coordinate.elevationMeter ?? 0;
+      const isCenter = s.id === center.id;
+      const h = Math.max(20, elev * 2);
+      const geo = new THREE.CylinderGeometry(isCenter ? 12 : 7, isCenter ? 12 : 7, h, 16);
+      const mat = new THREE.MeshStandardMaterial({
+        color: colorFor(s.category),
+        emissive: isCenter ? 0x553300 : 0x000000,
+        roughness: 0.55
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(dx, h / 2, dz);
+      scene.add(mesh);
+
+      // 名前をスプライトで表示
+      const cv = document.createElement('canvas');
+      const g = cv.getContext('2d');
+      g.font = 'bold 28px sans-serif';
+      const tw = g.measureText(s.name).width;
+      cv.width = tw + 24; cv.height = 44;
+      const g2 = cv.getContext('2d');
+      g2.fillStyle = 'rgba(15,23,42,0.85)';
+      g2.fillRect(0, 0, cv.width, cv.height);
+      g2.font = 'bold 28px sans-serif';
+      g2.fillStyle = '#ffffff';
+      g2.fillText(s.name, 12, 32);
+      const tex = new THREE.CanvasTexture(cv);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+      sprite.position.set(dx, h + 40, dz);
+      sprite.scale.set(cv.width * 0.55, cv.height * 0.55, 1);
+      scene.add(sprite);
+      labels.push(sprite);
+    });
+
+    // カメラ操作（ドラッグ回転・ホイールズーム）
+    const state = { theta: Math.PI / 4, phi: Math.PI / 3.2, radius: 1200, running: true };
+    const applyCamera = () => {
+      camera.position.set(
+        state.radius * Math.sin(state.phi) * Math.cos(state.theta),
+        state.radius * Math.cos(state.phi),
+        state.radius * Math.sin(state.phi) * Math.sin(state.theta)
+      );
+      camera.lookAt(0, 0, 0);
+    };
+    applyCamera();
+
+    let dragging = false; let lastX = 0; let lastY = 0;
+    const el = renderer.domElement;
+    el.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('pointerup', () => { dragging = false; });
+    window.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      state.theta += (e.clientX - lastX) * 0.008;
+      state.phi = Math.min(Math.PI / 2.05, Math.max(0.25, state.phi - (e.clientY - lastY) * 0.006));
+      lastX = e.clientX; lastY = e.clientY;
+      applyCamera();
+    });
+    el.addEventListener('wheel', e => {
+      e.preventDefault();
+      state.radius = Math.min(4000, Math.max(250, state.radius + e.deltaY));
+      applyCamera();
+    }, { passive: false });
+
+    const tick = () => {
+      if (!state.running) return;
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    };
+    tick();
+
+    const srcEl = document.getElementById('three-credit-source');
+    if (srcEl) {
+      srcEl.textContent = `中心: ${center.name}｜座標・標高は各スポットの出典（OpenStreetMap・公式サイト等）に基づきます`;
+    }
+
+    this.threeState = { state, renderer, scene };
+  }
+
+  closeThreeView() {
+    if (this.threeState) {
+      this.threeState.state.running = false;
+      this.threeState.renderer.dispose();
+      this.threeState = null;
+    }
+    this.threeOverlay?.classList.add('hidden');
+    if (this.threeHolder) this.threeHolder.innerHTML = '';
+  }
+
+  // Three.js は必要になったときだけ読み込む（初期表示を重くしない）
+  async loadThree() {
+    if (window.__THREE__) return window.__THREE__;
+    try {
+      const mod = await import('https://unpkg.com/three@0.160.0/build/three.module.js');
+      window.__THREE__ = mod;
+      return mod;
+    } catch (e) {
+      console.error('Three.js の読み込みに失敗しました', e);
+      return null;
+    }
+  }
+
+  // ---- 年代別航空写真をARに重ねる ----
+  // 航空写真は位置合わせ済み（georeferenced）なので、名所絵より正確に重なる。
+  // ただし真上から撮った写真なので、地上視点の風景とは見え方が違う点を明示する。
+  openAerialOverlay(spot) {
+    if (!this.aerialOverlay) return;
+    this.aerialSpot = spot || this.selectedSpot;
+    document.getElementById('spot-modal')?.classList.add('hidden');
+    this.aerialOverlay.classList.remove('hidden');
+    this.renderAerialEraButtons();
+    this.drawAerialTiles();
+  }
+
+  renderAerialEraButtons() {
+    if (!this.aerialEraRow) return;
+    const entries = Object.entries(HISTORICAL_MAP_TILES)
+      .filter(([, def]) => def.materialType === 'aerial_photo');
+    this.aerialEraRow.innerHTML = entries.map(([key, def]) => `
+      <button type="button" class="aerial-era-chip${key === this.aerialEraKey ? ' active' : ''}" data-aerial-era="${key}">
+        ${def.year}
+      </button>`).join('');
+    this.aerialEraRow.querySelectorAll('[data-aerial-era]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.aerialEraKey = btn.dataset.aerialEra;
+        this.renderAerialEraButtons();
+        this.drawAerialTiles();
+      });
+    });
+  }
+
+  // 緯度経度からWebメルカトルのタイル座標を求める
+  latLonToTile(lat, lon, z) {
+    const latRad = this.deg2rad(lat);
+    const n = Math.pow(2, z);
+    return {
+      x: ((lon + 180) / 360) * n,
+      y: ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n
+    };
+  }
+
+  async drawAerialTiles() {
+    const def = HISTORICAL_MAP_TILES[this.aerialEraKey];
+    const canvas = this.aerialCanvas;
+    if (!def || !canvas) return;
+
+    const spot = this.aerialSpot || this.selectedSpot;
+    const lat = spot?.coordinate?.latitude ?? this.userPos.latitude;
+    const lon = spot?.coordinate?.longitude ?? this.userPos.longitude;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const cssW = Math.min(window.innerWidth - 24, 520);
+    const cssH = Math.round(cssW * 0.75);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = `${cssW}px`;
+    canvas.style.height = `${cssH}px`;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    // 年代別の航空写真は、場所やズームによって提供がまばら。
+    // 高いズームから順に下げて、実際に取得できた段階で描画する。
+    this.setAerialCredit(def, '読み込み中…');
+    const tileSize = 256;
+    const maxZ = Math.min(def.maxNativeZoom ?? 17, 17);
+    const minZ = Math.max(def.minZoom ?? 10, 10);
+
+    let loaded = 0;
+    let failed = 0;
+    let usedZoom = null;
+
+    for (let z = maxZ; z >= minZ; z--) {
+      const t = this.latLonToTile(lat, lon, z);
+      const centerPx = { x: t.x * tileSize, y: t.y * tileSize };
+      const originPx = { x: centerPx.x - cssW / 2, y: centerPx.y - cssH / 2 };
+      const x0 = Math.floor(originPx.x / tileSize);
+      const y0 = Math.floor(originPx.y / tileSize);
+      const x1 = Math.floor((originPx.x + cssW) / tileSize);
+      const y1 = Math.floor((originPx.y + cssH) / tileSize);
+
+      let zLoaded = 0;
+      let zFailed = 0;
+      const drawOps = [];
+
+      await Promise.all((() => {
+        const jobs = [];
+        for (let tx = x0; tx <= x1; tx++) {
+          for (let ty = y0; ty <= y1; ty++) {
+            const url = def.url
+              .replace('{z}', z).replace('{x}', tx).replace('{y}', ty)
+              .replace('{s}', 'a');
+            jobs.push(new Promise(resolve => {
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              img.onload = () => {
+                drawOps.push([img, tx * tileSize - originPx.x, ty * tileSize - originPx.y]);
+                zLoaded++;
+                resolve();
+              };
+              img.onerror = () => { zFailed++; resolve(); };
+              img.src = url;
+            }));
+          }
+        }
+        return jobs;
+      })());
+
+      if (zLoaded > 0) {
+        drawOps.forEach(([img, dx, dy]) => ctx.drawImage(img, dx, dy, tileSize, tileSize));
+        loaded = zLoaded;
+        failed = zFailed;
+        usedZoom = z;
+        break;
+      }
+    }
+
+    if (loaded === 0) {
+      ctx.fillStyle = 'rgba(15,23,42,0.9)';
+      ctx.fillRect(0, 0, cssW, cssH);
+      ctx.fillStyle = '#fca5a5';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('この年代・この場所の航空写真はありません', cssW / 2, cssH / 2);
+      this.setAerialCredit(def, 'データなし（別の年代を選んでください）');
+    } else {
+      // 中心（スポット位置）を示す十字
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.95)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cssW / 2 - 14, cssH / 2); ctx.lineTo(cssW / 2 + 14, cssH / 2);
+      ctx.moveTo(cssW / 2, cssH / 2 - 14); ctx.lineTo(cssW / 2, cssH / 2 + 14);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cssW / 2, cssH / 2, 20, 0, Math.PI * 2);
+      ctx.stroke();
+      // どの縮尺で取得できたかを正直に伝える（年代により精細さが違うため）
+      const zoomNote = usedZoom !== null ? `ズーム${usedZoom}` : '';
+      this.setAerialCredit(def, failed > 0
+        ? `${loaded}枚表示（${zoomNote}・一部のタイルは提供範囲外）`
+        : `${loaded}枚のタイルを表示（${zoomNote}）`);
+    }
+
+    canvas.style.opacity = String(this.aerialOpacity);
+  }
+
+  setAerialCredit(def, statusText) {
+    const titleEl = document.getElementById('aerial-credit-title');
+    const sourceEl = document.getElementById('aerial-credit-source');
+    const caveatEl = document.getElementById('aerial-credit-caveat');
+    if (titleEl) titleEl.textContent = `${def.name}（${def.year}）`;
+    if (sourceEl) {
+      sourceEl.innerHTML = `${def.attribution}｜出典: <a href="${def.sourceUrl}" target="_blank" rel="noopener noreferrer">${def.sourceName}</a>`;
+    }
+    if (caveatEl) {
+      caveatEl.textContent = '航空写真は位置合わせ済みですが、真上から撮影したものです。地上から見た景色とは見え方が異なります。また撮影年に幅があるため、写っている状態がその年代の一時点を正確に示すとは限りません。';
+    }
+    if (this.aerialStatus) this.aerialStatus.textContent = statusText || '';
+  }
+
+  // 重ね合わせ中に出典を常時表示し、資料ごとの「重ならない理由」も明示する。
+  // 出典表示はNDLが求めている表記であり、消せないUIとして置く。
+  renderOverlayCredit(media) {
+    const titleEl = document.getElementById('overlay-credit-title');
+    const sourceEl = document.getElementById('overlay-credit-source');
+    const caveatEl = document.getElementById('overlay-credit-caveat');
+    if (!titleEl || !sourceEl || !caveatEl) return;
+
+    titleEl.textContent = media.title || '資料';
+
+    // 機関名・ライセンス・資料ページへのリンクを必ず添える
+    const parts = [];
+    if (media.sourceName) parts.push(media.sourceName);
+    if (media.date) parts.push(media.date);
+    if (media.license) parts.push(media.license);
+    sourceEl.innerHTML = `${parts.join('｜')} <a href="${media.sourceUrl}" target="_blank" rel="noopener noreferrer">資料ページ</a>`;
+
+    // 資料種別ごとに、なぜ現実の景観と一致しないのかを具体的に書く
+    const caveats = {
+      pictorial_map: '名所絵は絵師が構図を整えて描いた作品で、測量図ではありません。建物の位置・大きさ・角度は現実と一致しません。当時の雰囲気を重ねて楽しむための表示です。',
+      historical_map: '江戸期の絵図は現代の測量図とは作図方法が異なります。方角や縮尺が場所ごとにずれるため、現在の風景とはぴったり重なりません。',
+      aerial_photo: '航空写真は位置合わせ済みですが、撮影高度・角度の違いにより、地上から見た景観とは見え方が異なります。'
+    };
+    caveatEl.textContent = caveats[media.materialType]
+      || '資料と現在の風景は正確には一致しません。参考としてご覧ください。';
+  }
+
   // 指定幅に収まるよう末尾を「…」で省略する（文字数ではなく実測幅で判断）
   truncateToWidth(ctx, text, maxWidth) {
     if (!text) return '';
@@ -1893,6 +2267,13 @@ class ARRegionalApp {
 
     const compareButton = document.getElementById('btn-compare-ar');
     compareButton.classList.toggle('hidden', !media?.isHistorical || !hasVerifiedImage);
+
+    // 航空写真は面的なタイルなので、点スポットであれば常に見られる
+    const aerialButton = document.getElementById('btn-aerial-ar');
+    aerialButton?.classList.toggle('hidden', Boolean(spot.isAreaHazard));
+    const threeButton = document.getElementById('btn-view-3d');
+    threeButton?.classList.toggle('hidden', Boolean(spot.isAreaHazard));
+
     this.renderHistoricalMaterials(spot);
 
     modal.classList.remove('hidden');

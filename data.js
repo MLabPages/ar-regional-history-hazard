@@ -133,8 +133,21 @@ export const HISTORICAL_MAP_TILES = {
 };
 
 // ライセンス（PDM）は NDL 資料レコード（PIDページ）で確認したもの。
-// 個別 IIIF 画像リソースIDは未検証のため、画像は本番表示せずリンクのみ提供する。
-const NDL_PDM_LICENSE = 'PDM（NDL資料レコードで確認）';
+// 2026-07-25: IIIFマニフェストと個別画像リソースをHTTP検証済み（全件 200 応答）。
+//
+// 【利用条件の整理】
+// NDLデジタルコレクションの「インターネット公開（保護期間満了）」資料は、
+// 著作権保護期間が満了しているため、複製・送信などの利用手続きは不要で、
+// 商用利用も可能。ただしNDLは出典表示を「お願い」として求めており、
+// 本アプリでは全画像に出典（機関名・資料名・PIDリンク）を必ず併記する。
+// 参照: https://www.ndl.go.jp/jp/use/reproduction/index.html
+const NDL_PDM_LICENSE = 'パブリックドメイン（保護期間満了・インターネット公開）';
+const NDL_ATTRIBUTION = '国立国会図書館デジタルコレクション';
+const IMAGE_VERIFIED_AT = '2026-07-25';
+
+// IIIF Image API から表示用URLを組み立てる。幅指定で帯域を抑える。
+const ndlIiifImage = (ndlPid, width = 1024, resource = 'R0000001') =>
+  `https://dl.ndl.go.jp/api/iiif/${ndlPid}/${resource}/full/${width},/0/default.jpg`;
 
 export const HISTORICAL_REFERENCE_MATERIALS = [
   {
@@ -145,30 +158,32 @@ export const HISTORICAL_REFERENCE_MATERIALS = [
     sourceName: '国立国会図書館デジタルコレクション',
     sourceUrl: 'https://dl.ndl.go.jp/pid/1303484',
     manifestUrl: 'https://dl.ndl.go.jp/api/iiif/1303484/manifest.json',
-    imageUrl: null,
+    imageUrl: ndlIiifImage('1303484'),
+    thumbnailUrl: ndlIiifImage('1303484', 400),
+    attribution: NDL_ATTRIBUTION,
     license: NDL_PDM_LICENSE,
     licenseUrl: DATA_SOURCES.ndlIiifHelp,
     licenseSourceUrl: 'https://dl.ndl.go.jp/pid/1303484',
     usageStatus: 'verified_reusable',
     metadataVerified: true,
-    manifestVerified: false,
-    imageUrlVerified: false,
+    manifestVerified: true,
+    imageUrlVerified: true,
     verificationStatus: 'partially_verified',
     verification: {
       content: 'verified',
       coordinate: 'reference_only',
-      media: 'unverified',
+      media: 'verified',
       license: 'verified',
       source: 'verified'
     },
     verifiedAt: {
       content: VERIFIED_AT,
       coordinate: null,
-      media: null,
+      media: IMAGE_VERIFIED_AT,
       license: VERIFIED_AT,
       source: VERIFIED_AT
     },
-    verificationNote: 'PID・年代・PDMは確認済み。マニフェストと個別画像リソースは本番環境からのHTTP検証後に表示します。現在はNDL資料ページとIIIFマニフェストへのリンクを提供します。',
+    verificationNote: 'PID・年代・パブリックドメイン区分に加え、IIIFマニフェストと画像URLをHTTP検証済み（2026-07-25）。保護期間満了資料のため利用手続きは不要ですが、出典を必ず併記して表示します。',
     materialType: 'pictorial_map',
     displayType: '名所絵・錦絵',
     positionAccuracy: 'reference_only',
@@ -183,30 +198,32 @@ export const HISTORICAL_REFERENCE_MATERIALS = [
     sourceName: '国立国会図書館デジタルコレクション',
     sourceUrl: 'https://dl.ndl.go.jp/pid/1303487',
     manifestUrl: 'https://dl.ndl.go.jp/api/iiif/1303487/manifest.json',
-    imageUrl: null,
+    imageUrl: ndlIiifImage('1303487'),
+    thumbnailUrl: ndlIiifImage('1303487', 400),
+    attribution: NDL_ATTRIBUTION,
     license: NDL_PDM_LICENSE,
     licenseUrl: DATA_SOURCES.ndlIiifHelp,
     licenseSourceUrl: 'https://dl.ndl.go.jp/pid/1303487',
     usageStatus: 'verified_reusable',
     metadataVerified: true,
-    manifestVerified: false,
-    imageUrlVerified: false,
+    manifestVerified: true,
+    imageUrlVerified: true,
     verificationStatus: 'partially_verified',
     verification: {
       content: 'verified',
       coordinate: 'reference_only',
-      media: 'unverified',
+      media: 'verified',
       license: 'verified',
       source: 'verified'
     },
     verifiedAt: {
       content: VERIFIED_AT,
       coordinate: null,
-      media: null,
+      media: IMAGE_VERIFIED_AT,
       license: VERIFIED_AT,
       source: VERIFIED_AT
     },
-    verificationNote: 'PID・年代・PDMは確認済み。マニフェストと個別画像リソースは本番環境からのHTTP検証後に表示します。現在はNDL資料ページとIIIFマニフェストへのリンクを提供します。',
+    verificationNote: 'PID・年代・パブリックドメイン区分に加え、IIIFマニフェストと画像URLをHTTP検証済み（2026-07-25）。保護期間満了資料のため利用手続きは不要ですが、出典を必ず併記して表示します。',
     materialType: 'pictorial_map',
     displayType: '名所絵・錦絵',
     positionAccuracy: 'reference_only',
@@ -221,35 +238,158 @@ export const HISTORICAL_REFERENCE_MATERIALS = [
     sourceName: '国立国会図書館デジタルコレクション',
     sourceUrl: 'https://dl.ndl.go.jp/pid/2542266',
     manifestUrl: 'https://dl.ndl.go.jp/api/iiif/2542266/manifest.json',
-    imageUrl: null,
+    // 6コマ構成のうち、コマ1は表紙。城郭と大川筋が写るコマ3を本体として表示する。
+    imageUrl: ndlIiifImage('2542266', 1024, 'R0000003'),
+    thumbnailUrl: ndlIiifImage('2542266', 400, 'R0000003'),
+    attribution: NDL_ATTRIBUTION,
     license: NDL_PDM_LICENSE,
     licenseUrl: DATA_SOURCES.ndlIiifHelp,
     licenseSourceUrl: 'https://dl.ndl.go.jp/pid/2542266',
     usageStatus: 'verified_reusable',
     metadataVerified: true,
-    manifestVerified: false,
-    imageUrlVerified: false,
+    manifestVerified: true,
+    imageUrlVerified: true,
     verificationStatus: 'partially_verified',
     verification: {
       content: 'verified',
       coordinate: 'reference_only',
-      media: 'unverified',
+      media: 'verified',
       license: 'verified',
       source: 'verified'
     },
     verifiedAt: {
       content: VERIFIED_AT,
       coordinate: null,
-      media: null,
+      media: IMAGE_VERIFIED_AT,
       license: VERIFIED_AT,
       source: VERIFIED_AT
     },
-    verificationNote: 'PID・年代・PDMは確認済み。マニフェストと個別画像リソースは本番環境からのHTTP検証後に表示します。現在はNDL資料ページとIIIFマニフェストへのリンクを提供します。',
+    verificationNote: 'PID・年代・パブリックドメイン区分に加え、IIIFマニフェストと画像URLをHTTP検証済み（2026-07-25）。保護期間満了資料のため利用手続きは不要ですが、出典を必ず併記して表示します。',
     materialType: 'historical_map',
     displayType: '歴史地図・絵図',
     positionAccuracy: 'reference_only',
     isHistorical: true,
     note: '江戸期の絵図です。概略位置の参考資料であり、現代地図との位置一致は保証されません。'
+  },
+  {
+    id: 'ndl-1303485',
+    title: '難波名所図会 住吉御田の祭式田楽之図',
+    date: '江戸後期（年代未詳）',
+    era: '江戸後期',
+    sourceName: '国立国会図書館デジタルコレクション',
+    sourceUrl: 'https://dl.ndl.go.jp/pid/1303485',
+    manifestUrl: 'https://dl.ndl.go.jp/api/iiif/1303485/manifest.json',
+    imageUrl: ndlIiifImage('1303485'),
+    thumbnailUrl: ndlIiifImage('1303485', 400),
+    attribution: NDL_ATTRIBUTION,
+    license: NDL_PDM_LICENSE,
+    licenseUrl: DATA_SOURCES.ndlIiifHelp,
+    licenseSourceUrl: 'https://dl.ndl.go.jp/pid/1303485',
+    usageStatus: 'verified_reusable',
+    metadataVerified: true,
+    manifestVerified: true,
+    imageUrlVerified: true,
+    verificationStatus: 'partially_verified',
+    verification: {
+      content: 'verified',
+      coordinate: 'reference_only',
+      media: 'verified',
+      license: 'verified',
+      source: 'verified'
+    },
+    verifiedAt: {
+      content: IMAGE_VERIFIED_AT,
+      coordinate: null,
+      media: IMAGE_VERIFIED_AT,
+      license: IMAGE_VERIFIED_AT,
+      source: IMAGE_VERIFIED_AT
+    },
+    verificationNote: 'IIIFマニフェストと画像URLをHTTP検証済み（2026-07-25）。保護期間満了のパブリックドメイン資料です。',
+    materialType: 'pictorial_map',
+    displayType: '名所絵・錦絵',
+    positionAccuracy: 'reference_only',
+    isHistorical: true,
+    note: '住吉大社の御田植神事を描いた名所絵です。行事の様子を伝える絵であり、現在の社殿配置を正確に示すものではありません。'
+  },
+  {
+    id: 'ndl-1303490',
+    title: '浪花名所図会 安井天神山花見',
+    date: '江戸後期（年代未詳）',
+    era: '江戸後期',
+    sourceName: '国立国会図書館デジタルコレクション',
+    sourceUrl: 'https://dl.ndl.go.jp/pid/1303490',
+    manifestUrl: 'https://dl.ndl.go.jp/api/iiif/1303490/manifest.json',
+    imageUrl: ndlIiifImage('1303490'),
+    thumbnailUrl: ndlIiifImage('1303490', 400),
+    attribution: NDL_ATTRIBUTION,
+    license: NDL_PDM_LICENSE,
+    licenseUrl: DATA_SOURCES.ndlIiifHelp,
+    licenseSourceUrl: 'https://dl.ndl.go.jp/pid/1303490',
+    usageStatus: 'verified_reusable',
+    metadataVerified: true,
+    manifestVerified: true,
+    imageUrlVerified: true,
+    verificationStatus: 'partially_verified',
+    verification: {
+      content: 'verified',
+      coordinate: 'reference_only',
+      media: 'verified',
+      license: 'verified',
+      source: 'verified'
+    },
+    verifiedAt: {
+      content: IMAGE_VERIFIED_AT,
+      coordinate: null,
+      media: IMAGE_VERIFIED_AT,
+      license: IMAGE_VERIFIED_AT,
+      source: IMAGE_VERIFIED_AT
+    },
+    verificationNote: 'IIIFマニフェストと画像URLをHTTP検証済み（2026-07-25）。保護期間満了のパブリックドメイン資料です。',
+    materialType: 'pictorial_map',
+    displayType: '名所絵・錦絵',
+    positionAccuracy: 'reference_only',
+    isHistorical: true,
+    note: '安居神社周辺（安井天神山）の花見を描いた名所絵です。測量図ではなく、現代地図との位置一致は保証されません。'
+  },
+  {
+    id: 'ndl-1303483',
+    title: '浪花名所図会 堂じま米あきない',
+    date: '江戸後期（年代未詳）',
+    era: '江戸後期',
+    sourceName: '国立国会図書館デジタルコレクション',
+    sourceUrl: 'https://dl.ndl.go.jp/pid/1303483',
+    manifestUrl: 'https://dl.ndl.go.jp/api/iiif/1303483/manifest.json',
+    imageUrl: ndlIiifImage('1303483'),
+    thumbnailUrl: ndlIiifImage('1303483', 400),
+    attribution: NDL_ATTRIBUTION,
+    license: NDL_PDM_LICENSE,
+    licenseUrl: DATA_SOURCES.ndlIiifHelp,
+    licenseSourceUrl: 'https://dl.ndl.go.jp/pid/1303483',
+    usageStatus: 'verified_reusable',
+    metadataVerified: true,
+    manifestVerified: true,
+    imageUrlVerified: true,
+    verificationStatus: 'partially_verified',
+    verification: {
+      content: 'verified',
+      coordinate: 'reference_only',
+      media: 'verified',
+      license: 'verified',
+      source: 'verified'
+    },
+    verifiedAt: {
+      content: IMAGE_VERIFIED_AT,
+      coordinate: null,
+      media: IMAGE_VERIFIED_AT,
+      license: IMAGE_VERIFIED_AT,
+      source: IMAGE_VERIFIED_AT
+    },
+    verificationNote: 'IIIFマニフェストと画像URLをHTTP検証済み（2026-07-25）。保護期間満了のパブリックドメイン資料です。',
+    materialType: 'pictorial_map',
+    displayType: '名所絵・錦絵',
+    positionAccuracy: 'reference_only',
+    isHistorical: true,
+    note: '堂島の米市を描いた名所絵です。中之島周辺の江戸期の賑わいを伝える参考資料です。'
   }
 ];
 
@@ -347,6 +487,10 @@ const placeholderMedia = {
 
 const ndl八軒家 = HISTORICAL_REFERENCE_MATERIALS[0];
 const ndl大坂図 = HISTORICAL_REFERENCE_MATERIALS[2];
+const ndl道頓堀 = HISTORICAL_REFERENCE_MATERIALS[1];
+const ndl住吉 = HISTORICAL_REFERENCE_MATERIALS[3];
+const ndl安井天神山 = HISTORICAL_REFERENCE_MATERIALS[4];
+const ndl堂島 = HISTORICAL_REFERENCE_MATERIALS[5];
 const 大坂城跡整備計画 = {
   sourceName: '大阪市「特別史跡大坂城跡整備計画」',
   sourceUrl: 'https://www.city.osaka.lg.jp/keizaisenryaku/cmsfiles/contents/0000626/626611/9-4-2_seibikeikaku1-3_ann.pdf',
@@ -361,7 +505,7 @@ export const SPOT_DATA = [
     verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
     summary: '現在の天守閣は1931年に再建されたものです。',
     description: '昭和6年（1931年）に再建された大阪城天守閣についての説明です。建築の経緯・復元の詳細は、下記の公式資料を確認してから確定表示します。',
-    mediaAssets: [placeholderMedia], historicalMaterials: [ndl大坂図],
+    mediaAssets: [ndl大坂図], historicalMaterials: [ndl大坂図],
     source: '大阪城公式サイト（要追加確認）', license: '歴史記述・表示画像は要確認',
     sources: [{ sourceName: '未確認（要一次資料確認）', sourceUrl: null, claimStatus: 'unverified' }],
     verificationNote: '本文は要一次資料確認。表示画像は史料ではありません。'
@@ -373,7 +517,7 @@ export const SPOT_DATA = [
     verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
     summary: '大阪城公園内に残る近代建築です。',
     description: '旧陸軍第四師団司令部庁舎に関する歴史記述は、一次資料の確認後に確定します。現在の表示画像はイメージ画像です。',
-    mediaAssets: [placeholderMedia], historicalMaterials: [],
+    mediaAssets: [], historicalMaterials: [],
     source: '未確認（要一次資料確認）', license: '未確認',
     sources: [{ sourceName: '未確認（要一次資料確認）', sourceUrl: null, claimStatus: 'unverified' }],
     verificationNote: '歴史記述・画像とも未確認です。'
@@ -385,7 +529,7 @@ export const SPOT_DATA = [
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'verified' },
     summary: '大阪城北側の橋と周辺の変遷を学ぶスポットです。',
     description: '現在の極楽橋は平成12年（2000年）に架け替えられました。過去の建設・焼失については、公式資料の記載範囲を確認しながら表示します。',
-    mediaAssets: [placeholderMedia], historicalMaterials: [ndl大坂図],
+    mediaAssets: [ndl大坂図], historicalMaterials: [ndl大坂図],
     source: '大阪城公式サイト（極楽橋）', license: '表示画像は開発用プレースホルダー',
     sources: [{ sourceName: '大阪城公式サイト', sourceUrl: 'https://osaka-castle.jp/osakajo/gokurakubashi.html', claimStatus: 'verified' }],
     verificationNote: '江戸期の絵図は参考資料であり、現代地図との位置一致は保証されません。'
@@ -524,7 +668,7 @@ export const SPOT_DATA = [
     verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
     summary: '大阪城東部の土地利用の変化を調べる地域理解スポットです。',
     description: '旧大阪砲兵工廠に関する記述は、一次資料を確認してから確定します。明治期の位置精度を持つ大阪向けXYZタイルは未収録です。',
-    mediaAssets: [placeholderMedia], historicalMaterials: [],
+    mediaAssets: [], historicalMaterials: [],
     source: '未確認（要一次資料確認）', license: '未確認',
     sources: [{ sourceName: '未確認（要一次資料確認）', sourceUrl: null, claimStatus: 'unverified' }],
     verificationNote: '表示画像は史料ではありません。'
@@ -623,7 +767,7 @@ export const SPOT_DATA = [
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
     summary: '全国約2,300社の住吉神社の総本社で、「住吉造」の本殿で知られます。',
     description: '住吉大社は、航海の守り神として信仰を集めてきた全国の住吉神社の総本社です。第一〜第四本宮が特徴的な「住吉造」で並び、境内の反橋（太鼓橋）も名所として親しまれています。大阪城・上町台地の南の玄関口として、街の広がりを実感できるスポットです。',
-    mediaAssets: [], historicalMaterials: [],
+    mediaAssets: [ndl住吉], historicalMaterials: [ndl住吉],
     source: '住吉大社 公式サイト', license: '公式説明参照・座標はOpenStreetMap概略位置',
     sources: [
       { sourceName: '住吉大社 公式サイト', sourceUrl: 'https://www.sumiyoshitaisha.net/', claimStatus: 'verified' },
@@ -653,7 +797,7 @@ export const SPOT_DATA = [
     verification: { content: 'verified', coordinate: 'verified', media: 'not_applicable', license: 'verified', source: 'verified' },
     summary: '中之島に建つ大正期のネオ・ルネサンス建築で、国の重要文化財です。',
     description: '大阪市中央公会堂は、株式仲買人・岩本栄之助の寄付をもとに1918年に完成した公会堂です。赤レンガと石を組み合わせたネオ・ルネサンス様式の外観が中之島の景観を象徴し、国の重要文化財に指定されています。水都・大阪の近代を体感できる到達点です。',
-    mediaAssets: [], historicalMaterials: [],
+    mediaAssets: [ndl堂島], historicalMaterials: [ndl堂島],
     source: '大阪市中央公会堂 公式サイト', license: '公式説明参照・座標はOpenStreetMap地物位置',
     sources: [
       { sourceName: '大阪市中央公会堂 公式サイト', sourceUrl: 'https://osaka-chuokokaido.jp/', claimStatus: 'verified' },
@@ -682,7 +826,7 @@ export const SPOT_DATA = [
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
     summary: '大坂夏の陣で真田幸村が最期を迎えたと伝わる、天王寺の高台の神社です。',
     description: '安居神社は、大坂夏の陣（1615年）の最終局面で真田信繁（幸村）が戦い疲れて休んでいたところを討たれたと伝わる場所です。境内には「真田幸村戦死跡之碑」と像が建てられています。三光神社（真田丸跡）から一心寺・茶臼山へと続く上町台地の南端は、大坂の陣の激戦地をたどる道筋にあたります。',
-    mediaAssets: [], historicalMaterials: [],
+    mediaAssets: [ndl安井天神山], historicalMaterials: [ndl安井天神山],
     source: '大阪市公式サイト（真田幸村戦死跡之碑）', license: '公式説明参照・座標は住所からの概略位置',
     sources: [
       { sourceName: '大阪市（真田幸村戦死跡之碑）', sourceUrl: 'https://www.city.osaka.lg.jp/kensetsu/page/0000009754.html', claimStatus: 'verified' }
