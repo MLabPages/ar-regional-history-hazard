@@ -125,6 +125,49 @@ try {
       fs.mkdirSync(path.join(root, 'qa', 'shots'), { recursive: true });
       await page.screenshot({ path: path.join(root, 'qa', 'shots', 'ar-view.png') });
       notes.push('  スクリーンショット: qa/shots/ar-view.png');
+
+      // 地図モードでモーダルを開いたとき、地図パネルがかぶさらないこと。
+      // 実際に「モーダル中央の点」を拾う要素がモーダル内かどうかで判定する。
+      await page.evaluate(() => document.getElementById('btn-mode-map')?.click());
+      await page.waitForTimeout(900);
+      await page.evaluate(() => {
+        const app = window.arApp;
+        const spot = app?.getPointSpots?.().find(s => s.category === app.currentLayer);
+        if (spot) app.openSpotModal(spot);
+      });
+      await page.waitForTimeout(500);
+
+      const stack = await page.evaluate(() => {
+        const modal = document.getElementById('spot-modal');
+        if (!modal || modal.classList.contains('hidden')) return { open: false };
+        const card = modal.querySelector('.modal-card');
+        const r = card.getBoundingClientRect();
+        // カード全面を格子状に走査する。中央数点だけだと、検索バーのような
+        // 帯状の要素が貫通していても見逃してしまう。
+        const blockers = new Set();
+        const cols = 9;
+        const rows = 24;
+        for (let i = 1; i < cols; i++) {
+          for (let j = 1; j < rows; j++) {
+            const x = r.left + (r.width * i) / cols;
+            const y = r.top + (r.height * j) / rows;
+            if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue;
+            const el = document.elementFromPoint(x, y);
+            if (el && !modal.contains(el)) {
+              blockers.add(el.id || (typeof el.className === 'string' ? el.className : el.tagName));
+            }
+          }
+        }
+        return { open: true, blockers: [...blockers] };
+      });
+
+      check('地図モードでモーダルが開く', stack.open === true);
+      if (stack.open) {
+        check('モーダルに地図パネルがかぶさらない', stack.blockers.length === 0,
+          '前面にある要素: ' + stack.blockers.join(', '));
+        await page.screenshot({ path: path.join(root, 'qa', 'shots', 'map-modal.png') });
+        notes.push('  スクリーンショット: qa/shots/map-modal.png');
+      }
     }
 
     await context.close();
