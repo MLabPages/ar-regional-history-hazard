@@ -212,6 +212,174 @@ body, html {
 }
 
 /* 出典クレジット: 重ね合わせ中は常時表示。NDLが求める出典表記を消せないUIとして置く。 */
+/* 現況写真（モーダル内） */
+.present-photo-box {
+  margin: 10px 0 14px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.present-photo-box.hidden { display: none; }
+
+.present-photo-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #cbd5f5;
+}
+
+.present-photo-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  object-fit: cover;
+}
+
+.present-photo-credit {
+  padding: 7px 10px;
+  font-size: 0.66rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.present-photo-credit a {
+  color: #93c5fd;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+/* 表示モード切替（絵として見る / 重ねる） */
+.overlay-mode-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.overlay-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #cbd5f5;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  cursor: pointer;
+}
+
+.overlay-mode-btn.active {
+  background: var(--primary-color, #3b82f6);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.overlay-mode-hint {
+  margin: 0 0 8px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* 「絵として見る」ときは、画面に収まるよう表示し、調整スライダーを隠す */
+body.overlay-artwork #historical-overlay-img {
+  max-width: 94vw;
+  max-height: 62vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+body.overlay-artwork #historical-overlay {
+  background: rgba(2, 6, 23, 0.94);
+}
+
+body.overlay-artwork .panel-sliders,
+body.overlay-artwork .transform-guide {
+  display: none;
+}
+
+/* スワイプ比較のハンドル（左が過去・右が現代） */
+.swipe-handle {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 44px;
+  transform: translateX(-50%);
+  z-index: 760;
+  cursor: ew-resize;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swipe-handle.hidden { display: none; }
+
+.swipe-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+}
+
+.swipe-grip {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.swipe-label {
+  position: absolute;
+  top: 96px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.85);
+  white-space: nowrap;
+}
+
+.swipe-label-left { right: 30px; }
+.swipe-label-right { left: 30px; }
+
+.compare-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.btn-back-present {
+  background: rgba(59, 130, 246, 0.92);
+  color: #ffffff;
+  border-color: transparent;
+}
+
 .overlay-credit {
   position: absolute;
   /* 上部バー（ブランド・モード切替）と重ならない位置に置く */

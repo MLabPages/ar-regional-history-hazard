@@ -151,17 +151,81 @@ try {
       visible: !document.getElementById('three-overlay').classList.contains('hidden'),
       hasCanvas: Boolean(cv),
       w: cv?.width || 0, h: cv?.height || 0,
-      caveat: document.querySelector('#three-credit .overlay-credit-caveat')?.textContent || ''
+      caveat: document.querySelector('#three-credit .overlay-credit-caveat')?.textContent || '',
+      source: document.getElementById('three-credit-source')?.textContent || '',
+      // クレジットに出る「建物N棟」から実際の描画数を読み取る
+      buildings: Number((document.getElementById('three-credit-source')?.textContent || '').match(/建物(\d+)棟/)?.[1] || 0)
     };
   });
   check('3Dビューが開く', three.visible);
   check('3Dキャンバスが生成される', three.hasCanvas && three.w > 0, `${three.w}x${three.h}`);
-  check('3Dの「復元ではない」注釈がある', /復元ではありません|模式図/.test(three.caveat), three.caveat.slice(0, 50));
+  check('3Dの「過去の復元ではない」注釈がある',
+    /復元したものではありません|復元ではありません/.test(three.caveat), three.caveat.slice(0, 50));
+  check('3Dの出典にOpenStreetMapが含まれる',
+    /OpenStreetMap/.test(three.source), (three.source || '').slice(0, 70));
+  check('3Dに建物が描画される', three.buildings > 0, `${three.buildings}棟`);
   await page.screenshot({ path: path.join(root, 'qa', 'shots', 'three-view.png') });
   notes.push('  → qa/shots/three-view.png');
 
   const appErrors = errors.filter(e => !/tile|Failed to load resource|net::ERR/i.test(e));
   check('アプリJSエラーなし', appErrors.length === 0, appErrors.slice(0, 2).join(' | '));
+
+  // 4) 現況写真: 表示と、CC BY系での撮影者表示
+  await page.evaluate(() => document.getElementById('btn-close-three').click());
+  const photo = await page.evaluate(async () => {
+    const app = window.arApp;
+    const spot = app.getPointSpots().find(s => s.presentPhoto?.attributionRequired);
+    if (!spot) return null;
+    app.openSpotModal(spot);
+    await new Promise(r => setTimeout(r, 2500));
+    const img = document.querySelector('#modal-present-photo .present-photo-img');
+    return {
+      name: spot.name,
+      author: spot.presentPhoto.author,
+      shown: !document.getElementById('modal-present-photo').classList.contains('hidden'),
+      loaded: Boolean(img && img.complete && img.naturalWidth > 0),
+      credit: document.querySelector('#modal-present-photo .present-photo-credit')?.textContent || ''
+    };
+  });
+  check('現況写真つきスポットがある', Boolean(photo), photo?.name || '該当なし');
+  if (photo) {
+    check('現況写真が読み込まれる', photo.loaded && photo.shown, photo.name);
+    check('CC BY系で撮影者名が表示される', photo.credit.includes(photo.author),
+      `author=${photo.author} credit=${photo.credit.replace(/\s+/g, ' ').slice(0, 60)}`);
+  }
+
+  // 5) 地図モード: 重ね合わせからの戻り導線とスワイプ比較
+  await page.evaluate(() => {
+    document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+    document.getElementById('btn-mode-map').click();
+  });
+  await page.waitForTimeout(1500);
+  const mapCompare = await page.evaluate(async () => {
+    const app = window.arApp;
+    app.updateMapBaseTile('showa50');
+    await new Promise(r => setTimeout(r, 1200));
+    const backBtn = document.getElementById('btn-back-to-present');
+    const swipeBtn = document.getElementById('btn-swipe-compare');
+    const backVisible = backBtn && !backBtn.classList.contains('hidden');
+    swipeBtn?.click();
+    await new Promise(r => setTimeout(r, 400));
+    const handleVisible = !document.getElementById('swipe-handle').classList.contains('hidden');
+    const clipped = Boolean(app.historicalOverlayTileLayer?.getContainer?.()?.style.clipPath);
+    backBtn?.click();
+    await new Promise(r => setTimeout(r, 800));
+    return {
+      backVisible, handleVisible, clipped,
+      era: app.currentEra,
+      overlayCleared: !app.historicalOverlayTileLayer,
+      defaultOpacity: Number(document.getElementById('map-opacity-slider').value)
+    };
+  });
+  check('重ね合わせ中に「現代地図に戻す」が出る', mapCompare.backVisible);
+  check('スワイプ比較のハンドルが出る', mapCompare.handleVisible);
+  check('スワイプで過去レイヤーが切り取られる', mapCompare.clipped);
+  check('「現代地図に戻す」で重ね合わせが解除される',
+    mapCompare.overlayCleared && mapCompare.era === 'present', `era=${mapCompare.era}`);
+  check('地図の重ね濃さの既定が100%', mapCompare.defaultOpacity === 100, `${mapCompare.defaultOpacity}%`);
 } catch (e) {
   fails.push('FAIL 実行エラー — ' + e.message.split('\n')[0]);
 } finally {

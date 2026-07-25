@@ -8,6 +8,7 @@ import {
   PLACEHOLDER_IMAGE_URL,
   TRUST_LABELS
 } from './data.js?v=__BUILD_ID__';
+import { OSM_BUILDINGS, OSM_BUILDINGS_META } from './buildings.js?v=__BUILD_ID__';
 
 class ARRegionalApp {
   constructor() {
@@ -149,7 +150,11 @@ class ARRegionalApp {
     this.historicalOverlayTileLayer = null;
     this.mapOverlayTileErrors = 0;
     this.mapOverlayTileLoaded = 0;
-    this.mapOverlayOpacity = 0.65;
+    // 既定は不透明。薄いと「何が写っているか分からない」ため、
+    // まずはっきり見せて、必要な人だけスライダーで薄くする。
+    this.mapOverlayOpacity = 1;
+    this.swipeCompareActive = false;
+    this.swipeRatio = 0.5;
     this.officialHazardTileLayer = null;
     this.mapMarkers = [];
     this.userMapMarker = null;
@@ -167,6 +172,7 @@ class ARRegionalApp {
     this.setupEventListeners();
     this.setupDragControls();
     this.setupOverlayControls();
+    this.setupSwipeCompareControls();
     this.setupGeolocationAndSensors();
 
     // Leafletマップ初期化を試行
@@ -278,6 +284,75 @@ class ARRegionalApp {
       this.showComparisonTileStatus(tileDef);
     });
     this.historicalOverlayTileLayer.addTo(this.map);
+    this.updateCompareControlsVisibility();
+    this.applySwipeClip();
+  }
+
+  // 「現代地図に戻す」「スワイプ比較」は、過去の年代を選んでいるときだけ意味がある
+  updateCompareControlsVisibility() {
+    const overlayOn = Boolean(this.historicalOverlayTileLayer);
+    document.getElementById('btn-back-to-present')?.classList.toggle('hidden', !overlayOn);
+    document.getElementById('btn-swipe-compare')?.classList.toggle('hidden', !overlayOn);
+    if (!overlayOn && this.swipeCompareActive) this.setSwipeCompare(false);
+  }
+
+  // 現代地図へ戻す（重ね合わせを解除する明示的な出口）
+  backToPresentMap() {
+    this.currentEra = 'present';
+    this.setSwipeCompare(false);
+    document.querySelectorAll('.era-chip').forEach(chip =>
+      chip.classList.toggle('active', chip.dataset.era === 'present'));
+    this.updateMapBaseTile('present');
+    this.updateCompareControlsVisibility();
+  }
+
+  // 左右スワイプで「過去 / 現代」を見比べる。
+  // 重ねるより、境界を動かすほうが違いが分かりやすい。
+  setSwipeCompare(on) {
+    this.swipeCompareActive = on && Boolean(this.historicalOverlayTileLayer);
+    const handle = document.getElementById('swipe-handle');
+    const btn = document.getElementById('btn-swipe-compare');
+    handle?.classList.toggle('hidden', !this.swipeCompareActive);
+    btn?.setAttribute('aria-pressed', String(this.swipeCompareActive));
+    btn?.classList.toggle('active-highlight', this.swipeCompareActive);
+
+    if (this.swipeCompareActive) {
+      // 比較中は過去側を完全不透明にして、境界の差をはっきりさせる
+      this.historicalOverlayTileLayer?.setOpacity(1);
+    } else if (this.historicalOverlayTileLayer) {
+      this.historicalOverlayTileLayer.setOpacity(this.mapOverlayOpacity);
+    }
+    this.applySwipeClip();
+  }
+
+  // 過去レイヤーを左側だけ表示するようclip-pathで切る
+  applySwipeClip() {
+    const container = this.historicalOverlayTileLayer?.getContainer?.();
+    if (!container) return;
+    if (this.swipeCompareActive) {
+      const pct = Math.round(this.swipeRatio * 100);
+      container.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+      container.style.webkitClipPath = `inset(0 ${100 - pct}% 0 0)`;
+    } else {
+      container.style.clipPath = '';
+      container.style.webkitClipPath = '';
+    }
+  }
+
+  setupSwipeCompareControls() {
+    const handle = document.getElementById('swipe-handle');
+    if (!handle) return;
+    let dragging = false;
+    const moveTo = (clientX) => {
+      const w = window.innerWidth;
+      this.swipeRatio = Math.min(0.95, Math.max(0.05, clientX / w));
+      handle.style.left = `${this.swipeRatio * 100}%`;
+      this.applySwipeClip();
+    };
+    handle.style.left = '50%';
+    handle.addEventListener('pointerdown', (e) => { dragging = true; e.preventDefault(); });
+    window.addEventListener('pointermove', (e) => { if (dragging) moveTo(e.clientX); });
+    window.addEventListener('pointerup', () => { dragging = false; });
   }
 
   showComparisonTileStatus(tileDef) {
@@ -594,6 +669,14 @@ class ARRegionalApp {
       });
     }
 
+    // 現代地図へ戻す / スワイプ比較
+    document.getElementById('btn-back-to-present')?.addEventListener('click', () => {
+      this.backToPresentMap();
+    });
+    document.getElementById('btn-swipe-compare')?.addEventListener('click', () => {
+      this.setSwipeCompare(!this.swipeCompareActive);
+    });
+
     const timeTravelButton = document.getElementById('btn-time-travel');
     if (timeTravelButton) timeTravelButton.addEventListener('click', () => this.openTimeTravel(this.selectedSpot));
     const closeTimeTravel = document.getElementById('btn-close-time-travel');
@@ -700,6 +783,9 @@ class ARRegionalApp {
         this.historicalOverlay.classList.remove('hidden');
         document.body.classList.add('comparing');
         this.resetOverlayTransform();
+        // 名所絵は重ねても位置が合わないため、既定は「絵として鑑賞」。
+        // 測量に近い資料（絵図・航空写真）だけ重ね合わせを既定にする。
+        this.setOverlayViewMode(media.positionAccuracy === 'reference_only' ? 'artwork' : 'blend', media);
       }
     });
 
@@ -732,6 +818,13 @@ class ARRegionalApp {
 
     document.getElementById('btn-reset-overlay').addEventListener('click', () => {
       this.resetOverlayTransform();
+    });
+
+    // 「絵として見る」「重ねる」の切替
+    document.querySelectorAll('[data-overlay-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.setOverlayViewMode(btn.dataset.overlayMode);
+      });
     });
   }
 
@@ -1776,14 +1869,63 @@ class ARRegionalApp {
     dir.position.set(200, 400, 200);
     scene.add(dir);
 
-    // 地面グリッド（1マス=100m相当）
-    const grid = new THREE.GridHelper(2000, 20, 0x334155, 0x1e293b);
-    scene.add(grid);
-
     const cLat = center.coordinate.latitude;
     const cLon = center.coordinate.longitude;
     const mPerDegLat = 111320;
     const mPerDegLon = 111320 * Math.cos(this.deg2rad(cLat));
+
+    // 地面グリッド（1マス=100m相当）
+    const grid = new THREE.GridHelper(2000, 20, 0x334155, 0x1e293b);
+    scene.add(grid);
+
+    // --- 実測の建物輪郭を立体化する ---
+    // OSMの輪郭ポリゴンを押し出し、実際の建物の形を再現する。
+    // 高さは height タグ（実測）を優先し、無い場合は階数から推定する。
+    let builtCount = 0;
+    let measuredCount = 0;
+    const centerName = center.name || '';
+
+    OSM_BUILDINGS.forEach(b => {
+      if (!b.geometry || b.geometry.length < 3) return;
+
+      // 中心からの相対メートル座標へ変換
+      const pts = b.geometry.map(([lat, lon]) => new THREE.Vector2(
+        (lon - cLon) * mPerDegLon,
+        (lat - cLat) * mPerDegLat
+      ));
+      // 範囲外は描かない（描画負荷を抑える）
+      const near = pts.some(p => Math.abs(p.x) < 900 && Math.abs(p.y) < 900);
+      if (!near) return;
+
+      const shape = new THREE.Shape(pts);
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: b.height, bevelEnabled: false });
+      // ExtrudeGeometryはXY平面に作られるので、地面（XZ平面）へ倒す
+      geo.rotateX(-Math.PI / 2);
+
+      // 中心スポットに対応する建物と、歴史的建造物を強調する
+      const isFocus = Boolean(b.name && centerName && (centerName.includes(b.name) || b.name.includes(centerName.replace(/^大阪城\s*/, ''))));
+      const color = isFocus ? 0xfbbf24 : b.historic ? 0xd97706 : 0x64748b;
+
+      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.72,
+        metalness: 0.05,
+        // 高さが推定値の建物は少し透かして「確かではない」ことを示す
+        transparent: b.heightSource !== 'measured',
+        opacity: b.heightSource === 'measured' ? 1 : 0.82
+      }));
+      scene.add(mesh);
+
+      // 輪郭線を足して形を読み取りやすくする
+      const edges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geo),
+        new THREE.LineBasicMaterial({ color: isFocus ? 0xfff7ed : 0x94a3b8, transparent: true, opacity: 0.5 })
+      );
+      scene.add(edges);
+
+      builtCount++;
+      if (b.heightSource === 'measured') measuredCount++;
+    });
 
     const colorFor = (cat) => cat === 'community' ? 0x10b981 : cat === 'disaster' ? 0xef4444 : 0xf59e0b;
     const labels = [];
@@ -1793,41 +1935,49 @@ class ARRegionalApp {
       const dz = -(s.coordinate.latitude - cLat) * mPerDegLat;
       if (Math.abs(dx) > 3000 || Math.abs(dz) > 3000) return;
 
-      const elev = s.coordinate.elevationMeter ?? 0;
       const isCenter = s.id === center.id;
-      const h = Math.max(20, elev * 2);
-      const geo = new THREE.CylinderGeometry(isCenter ? 12 : 7, isCenter ? 12 : 7, h, 16);
+      // 建物を主役にするため、スポット標識は細いピンにとどめる
+      const h = isCenter ? 70 : 45;
+      const geo = new THREE.CylinderGeometry(1.6, 1.6, h, 8);
       const mat = new THREE.MeshStandardMaterial({
         color: colorFor(s.category),
-        emissive: isCenter ? 0x553300 : 0x000000,
-        roughness: 0.55
+        emissive: isCenter ? 0x664400 : 0x000000,
+        roughness: 0.5
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(dx, h / 2, dz);
       scene.add(mesh);
 
-      // 名前をスプライトで表示
+      // 名前をスプライトで表示（建物を隠さない大きさに抑える）
       const cv = document.createElement('canvas');
+      const fontPx = 26;
       const g = cv.getContext('2d');
-      g.font = 'bold 28px sans-serif';
+      g.font = `bold ${fontPx}px sans-serif`;
       const tw = g.measureText(s.name).width;
-      cv.width = tw + 24; cv.height = 44;
+      cv.width = Math.ceil(tw + 20);
+      cv.height = fontPx + 14;
       const g2 = cv.getContext('2d');
-      g2.fillStyle = 'rgba(15,23,42,0.85)';
+      g2.fillStyle = 'rgba(15,23,42,0.8)';
       g2.fillRect(0, 0, cv.width, cv.height);
-      g2.font = 'bold 28px sans-serif';
+      g2.font = `bold ${fontPx}px sans-serif`;
       g2.fillStyle = '#ffffff';
-      g2.fillText(s.name, 12, 32);
+      g2.textBaseline = 'middle';
+      g2.fillText(s.name, 10, cv.height / 2);
       const tex = new THREE.CanvasTexture(cv);
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
-      sprite.position.set(dx, h + 40, dz);
-      sprite.scale.set(cv.width * 0.55, cv.height * 0.55, 1);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: tex, depthTest: false, transparent: true, opacity: isCenter ? 1 : 0.9
+      }));
+      sprite.position.set(dx, h + 14, dz);
+      // ワールド単位に対して控えめなスケール（従来の約1/4）
+      const labelScale = isCenter ? 0.17 : 0.14;
+      sprite.scale.set(cv.width * labelScale, cv.height * labelScale, 1);
       scene.add(sprite);
       labels.push(sprite);
     });
 
     // カメラ操作（ドラッグ回転・ホイールズーム）
-    const state = { theta: Math.PI / 4, phi: Math.PI / 3.2, radius: 1200, running: true };
+    // 建物が見える距離・角度から始める
+    const state = { theta: Math.PI / 4, phi: Math.PI / 3.6, radius: 520, running: true };
     const applyCamera = () => {
       camera.position.set(
         state.radius * Math.sin(state.phi) * Math.cos(state.theta),
@@ -1851,7 +2001,7 @@ class ARRegionalApp {
     });
     el.addEventListener('wheel', e => {
       e.preventDefault();
-      state.radius = Math.min(4000, Math.max(250, state.radius + e.deltaY));
+      state.radius = Math.min(3000, Math.max(120, state.radius + e.deltaY));
       applyCamera();
     }, { passive: false });
 
@@ -1864,7 +2014,14 @@ class ARRegionalApp {
 
     const srcEl = document.getElementById('three-credit-source');
     if (srcEl) {
-      srcEl.textContent = `中心: ${center.name}｜座標・標高は各スポットの出典（OpenStreetMap・公式サイト等）に基づきます`;
+      srcEl.innerHTML = `中心: ${center.name}｜建物${builtCount}棟（うち高さ実測${measuredCount}棟）｜`
+        + `建物形状・高さ: <a href="${OSM_BUILDINGS_META.licenseUrl}" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors（${OSM_BUILDINGS_META.license}）</a>`;
+    }
+    const caveatEl = document.querySelector('#three-credit .overlay-credit-caveat');
+    if (caveatEl) {
+      caveatEl.textContent = '建物の輪郭と高さは、現存する建物の実測データ（OpenStreetMap）です。'
+        + '半透明の建物は高さが実測ではなく、階数などからの推定値です。'
+        + 'いずれも「現在の姿」であり、江戸期など過去の建物を復元したものではありません。';
     }
 
     this.threeState = { state, renderer, scene };
@@ -2051,6 +2208,70 @@ class ARRegionalApp {
     if (this.aerialStatus) this.aerialStatus.textContent = statusText || '';
   }
 
+  // 現況写真（ウィキメディア・コモンズ）を表示する。
+  // CC BY / CC BY-SA は著作者表示が条件のため、撮影者名を必ず添える。
+  renderPresentPhoto(spot) {
+    const box = document.getElementById('modal-present-photo');
+    if (!box) return;
+    const photo = spot.presentPhoto;
+    if (!photo) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+
+    const credit = photo.attributionRequired
+      ? `撮影: ${photo.author}｜${photo.license}`
+      : `${photo.license}（権利者表示は不要）｜提供: ${photo.author}`;
+
+    box.classList.remove('hidden');
+    box.innerHTML = `
+      <div class="present-photo-label"><i data-lucide="camera"></i> 現在の様子</div>
+      <img class="present-photo-img" src="${photo.imageUrl}" alt="${spot.name}の現在の様子" loading="lazy">
+      <div class="present-photo-credit">
+        ${credit}
+        <a href="${photo.sourceUrl}" target="_blank" rel="noopener noreferrer">ウィキメディア・コモンズ</a>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  // 表示モードを切り替える。
+  //  artwork: 絵として鑑賞（不透明・画面にフィット）
+  //  blend  : カメラ映像に重ねる（透過あり）
+  setOverlayViewMode(mode, media = null) {
+    this.overlayViewMode = mode;
+    const isArtwork = mode === 'artwork';
+    document.body.classList.toggle('overlay-artwork', isArtwork);
+
+    if (isArtwork) {
+      // 絵はそのまま見せる。透過や回転はいじらない。
+      this.overlayState.opacity = 1;
+      this.overlayState.scale = 1;
+      this.overlayState.rotate = 0;
+      this.overlayState.posX = 0;
+      this.overlayState.posY = 0;
+    } else if (this.overlayState.opacity >= 0.99) {
+      this.overlayState.opacity = 0.7;
+    }
+    this.applyOverlayTransform();
+
+    const slider = this.opacitySlider;
+    if (slider) slider.value = String(Math.round(this.overlayState.opacity * 100));
+    const val = document.getElementById('opacity-val');
+    if (val) val.textContent = `${Math.round(this.overlayState.opacity * 100)}%`;
+
+    document.querySelectorAll('[data-overlay-mode]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.overlayMode === mode);
+    });
+
+    const hint = document.getElementById('overlay-mode-hint');
+    if (hint) {
+      const m = media || this.getPrimaryMedia(this.selectedSpot);
+      hint.textContent = isArtwork
+        ? 'この資料は測量図ではないため、絵として表示しています。重ねたい場合は「重ねる」を選んでください。'
+        : (m?.positionAccuracy === 'reference_only'
+            ? '位置は正確に一致しません。雰囲気を重ねて楽しむ表示です。'
+            : '現在の風景に重ねて表示しています。ドラッグ・拡大で位置を調整できます。');
+    }
+  }
+
   // 重ね合わせ中に出典を常時表示し、資料ごとの「重ならない理由」も明示する。
   // 出典表示はNDLが求めている表記であり、消せないUIとして置く。
   renderOverlayCredit(media) {
@@ -2224,6 +2445,9 @@ class ARRegionalApp {
     modalImg.src = hasVerifiedImage ? media.imageUrl : (media?.isHistorical ? '' : PLACEHOLDER_IMAGE_URL);
     modalImg.alt = hasVerifiedImage ? (media?.title || `${spot.name}の画像`) : '画像未検証（資料ページで確認してください）';
     modalImg.classList.toggle('hidden', !hasVerifiedImage);
+
+    // 現況写真は史料と別枠で表示し、必要なら撮影者名も明記する
+    this.renderPresentPhoto(spot);
 
     const eraBadge = document.getElementById('modal-era-badge');
     eraBadge.textContent = spot.eraLabel || '歴史';

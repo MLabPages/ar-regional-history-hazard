@@ -13,6 +13,13 @@
   <div id="app-container">
     <video id="camera-feed" autoplay playsinline muted></video>
     <div id="map-view" class="hidden"></div>
+    <!-- スワイプ比較のハンドル（左が過去・右が現代） -->
+    <div id="swipe-handle" class="swipe-handle hidden" aria-hidden="true">
+      <div class="swipe-line"></div>
+      <div class="swipe-grip"><i data-lucide="chevrons-left-right"></i></div>
+      <div class="swipe-label swipe-label-left" id="swipe-label-past">過去</div>
+      <div class="swipe-label swipe-label-right">現代</div>
+    </div>
     <section id="map-navigation-tools" class="map-navigation-tools hidden" aria-label="地図の場所検索">
       <form id="map-search-form" class="map-search-form" role="search">
         <label class="sr-only" for="map-search-input">地名・住所を検索</label>
@@ -45,6 +52,11 @@
           <button id="btn-reset-overlay" class="btn-chip-small" type="button"><i data-lucide="rotate-ccw"></i> リセット</button>
           <button id="btn-close-overlay" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
         </div>
+        <div class="overlay-mode-row">
+          <button class="overlay-mode-btn" type="button" data-overlay-mode="artwork"><i data-lucide="image"></i> 絵として見る</button>
+          <button class="overlay-mode-btn" type="button" data-overlay-mode="blend"><i data-lucide="layers"></i> 重ねる</button>
+        </div>
+        <p class="overlay-mode-hint" id="overlay-mode-hint"></p>
         <div class="panel-sliders">
           <div class="slider-row">
             <label>透過</label>
@@ -239,9 +251,17 @@
           <button class="era-chip" type="button" data-era="prewar_1928">1928年頃</button>
         </div>
         <div class="map-compare-controls">
-          <label for="map-opacity-slider">重ねる濃さ <span id="map-opacity-val">65%</span></label>
-          <input type="range" id="map-opacity-slider" min="0" max="100" value="65" aria-label="過去航空写真の透明度">
-          <button id="btn-time-travel" class="btn-chip-small" type="button"><i data-lucide="history"></i> 時間旅行</button>
+          <label for="map-opacity-slider">重ねる濃さ <span id="map-opacity-val">100%</span></label>
+          <input type="range" id="map-opacity-slider" min="0" max="100" value="100" aria-label="過去航空写真の透明度">
+          <div class="compare-actions">
+            <button id="btn-back-to-present" class="btn-chip-small btn-back-present hidden" type="button">
+              <i data-lucide="undo-2"></i> 現代地図に戻す
+            </button>
+            <button id="btn-swipe-compare" class="btn-chip-small hidden" type="button" aria-pressed="false">
+              <i data-lucide="columns-2"></i> スワイプ比較
+            </button>
+            <button id="btn-time-travel" class="btn-chip-small" type="button"><i data-lucide="history"></i> 時間旅行</button>
+          </div>
         </div>
         <p class="timeline-note">明治・江戸・平安の大阪向け位置精度付き地図タイルは未収録です。江戸期資料はスポット詳細から確認できます。</p>
       </section>
@@ -332,6 +352,7 @@
           <h2 id="modal-title">スポット名称</h2>
           <span id="modal-trust-badge" class="trust-badge"></span>
           <p id="modal-summary" class="modal-summary">概要</p>
+          <div id="modal-present-photo" class="present-photo-box hidden"></div>
           <div id="modal-hazard-box" class="modal-hazard-box hidden">
             <h4><i data-lucide="alert-circle"></i> 防災・リスク情報</h4>
             <p id="modal-hazard-detail"></p>
