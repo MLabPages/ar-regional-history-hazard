@@ -162,8 +162,17 @@ class ARRegionalApp {
   }
 
   resizeCanvas() {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    // 端末のピクセル密度に合わせて実解像度を上げ、描画はCSSピクセル基準に揃える。
+    // これをしないと高精細スマホでピンの文字がぼやける。
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    this.viewW = window.innerWidth;
+    this.viewH = window.innerHeight;
+    this.canvas.width = Math.round(this.viewW * dpr);
+    this.canvas.height = Math.round(this.viewH * dpr);
+    this.canvas.style.width = `${this.viewW}px`;
+    this.canvas.style.height = `${this.viewH}px`;
+    // 以降の描画座標はすべてCSSピクセルで扱えるようにする
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (this.map) {
       setTimeout(() => this.map.invalidateSize(), 100);
     }
@@ -1388,7 +1397,7 @@ class ARRegionalApp {
 
   renderLoop() {
     if (this.viewMode === 'ar') {
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.clearRect(0, 0, this.viewW, this.viewH);
       this.renderedPins = [];
 
       // 防災AR: 洪水を選択中かつユーザーが概念イメージ表示をONにした場合のみ水面を描画。
@@ -1403,9 +1412,13 @@ class ARRegionalApp {
         .filter(s => s.category === this.currentLayer)
         .sort((a, b) => this.calculateDistance(this.userPos.latitude, this.userPos.longitude, a.coordinate.latitude, a.coordinate.longitude)
           - this.calculateDistance(this.userPos.latitude, this.userPos.longitude, b.coordinate.latitude, b.coordinate.longitude));
+      // 近い順に配置し、近いスポットが優先的に見やすい位置を取れるようにする
+      const offscreen = [];
       filteredSpots.forEach(spot => {
-        this.drawARSpotMarker(spot);
+        const result = this.drawARSpotMarker(spot);
+        if (result && result.offscreen) offscreen.push(result);
       });
+      this.drawAROffscreenCues(offscreen);
       const now = Date.now();
       if (now - this.lastArHudUpdate > 150) {
         this.updateARHud(filteredSpots);
@@ -1451,8 +1464,8 @@ class ARRegionalApp {
 
   drawARFloodWaterline() {
     const ctx = this.ctx;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
+    const w = this.viewW;
+    const h = this.viewH;
     const waterY = h * 0.58;
 
     const grad = ctx.createLinearGradient(0, waterY, 0, h);
@@ -1499,19 +1512,34 @@ class ARRegionalApp {
     while (angleDiff > 180) angleDiff -= 360;
 
     const fov = 65;
-    if (Math.abs(angleDiff) > fov / 2 + 10) return;
+    // 視野外のスポットは画面端の方向キューに回す（完全に消さない）
+    if (Math.abs(angleDiff) > fov / 2 + 10) {
+      return { offscreen: true, spot, angleDiff, distanceMeters };
+    }
 
-    const screenX = (this.canvas.width / 2) + (angleDiff / (fov / 2)) * (this.canvas.width / 2);
-    const baseScreenY = (this.canvas.height * 0.45) - Math.min(distanceMeters * 0.8, 120);
+    const w = this.viewW;
+    const h = this.viewH;
+    const screenX = (w / 2) + (angleDiff / (fov / 2)) * (w / 2);
+
+    // 距離に応じた遠近感。近いほど大きく・低く、遠いほど小さく・水平線寄りに描く。
+    const near = 30;      // これより近ければ最大サイズ
+    const far = 1500;     // これより遠ければ最小サイズ
+    const clamped = Math.min(Math.max(distanceMeters, near), far);
+    // 対数スケールにすると、数十m〜数kmの幅を自然に圧縮できる
+    const t = Math.log(clamped / near) / Math.log(far / near); // 0(近い)〜1(遠い)
+    const scale = 1.05 - 0.45 * t; // 1.05倍〜0.6倍
+    const baseScreenY = (h * 0.52) - t * (h * 0.16);
     let screenY = baseScreenY;
-    const cardW = 180;
-    const cardH = 58;
+
+    const cardW = Math.round(190 * scale);
+    const cardH = Math.round(60 * scale);
+    const poleH = Math.round(40 * scale);
     const cardX = -cardW / 2;
     const cardY = -cardH;
 
     // 近接スポットのカードが重ならないよう、表示済みカードを避けて上下にずらす。
     for (let attempt = 0; attempt < 5; attempt++) {
-      const candidate = { x: screenX + cardX, y: screenY + cardY, width: cardW, height: cardH + 40 };
+      const candidate = { x: screenX + cardX, y: screenY + cardY, width: cardW, height: cardH + poleH };
       const overlaps = this.renderedPins.some(({ bounds }) => (
         candidate.x < bounds.x + bounds.width
         && candidate.x + candidate.width > bounds.x
@@ -1519,8 +1547,8 @@ class ARRegionalApp {
         && candidate.y + candidate.height > bounds.y
       ));
       if (!overlaps) break;
-      screenY = baseScreenY + (attempt + 1) * 70;
-      if (screenY > this.canvas.height - 150) screenY = Math.max(190, baseScreenY - (attempt + 1) * 70);
+      screenY = baseScreenY + (attempt + 1) * (cardH + 14);
+      if (screenY > h - 150) screenY = Math.max(190, baseScreenY - (attempt + 1) * (cardH + 14));
     }
 
     const ctx = this.ctx;
@@ -1531,46 +1559,59 @@ class ARRegionalApp {
 
     ctx.save();
     ctx.translate(screenX, screenY);
+    // 遠いスポットはわずかに透過させ、奥行きを感じさせる
+    ctx.globalAlpha = 1 - 0.35 * t;
 
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(0, 40);
+    ctx.lineTo(0, poleH);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = Math.max(2, 3 * scale);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(0, 40, 6, 0, Math.PI * 2);
+    ctx.arc(0, poleH, Math.max(4, 6 * scale), 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
 
     ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
-    this.drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 10);
+    this.drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 10 * scale);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'left';
+    const pad = Math.round(10 * scale);
+    let textTop = cardY + Math.round(9 * scale);
 
+    // 時代ラベルは実測幅に合わせたバッジにする（機械的な文字切りをやめる）
     if (spot.eraLabel) {
+      const badgeFont = Math.max(8, Math.round(10 * scale));
+      ctx.font = `bold ${badgeFont}px sans-serif`;
+      const badgeText = this.truncateToWidth(ctx, this.shortEraLabel(spot.eraLabel), cardW - pad * 2 - 6);
+      const badgeW = ctx.measureText(badgeText).width + 10;
+      const badgeH = badgeFont + 6;
       ctx.fillStyle = color;
-      ctx.fillRect(cardX + 8, cardY + 8, 48, 14);
+      this.drawRoundedRect(ctx, cardX + pad, textTop, badgeW, badgeH, 3);
+      ctx.fill();
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 9px sans-serif';
-      ctx.fillText(spot.eraLabel.substring(0, 4), cardX + 12, cardY + 18);
+      ctx.fillText(badgeText, cardX + pad + 5, textTop + badgeFont + 1);
+      textTop += badgeH + Math.round(5 * scale);
     }
 
+    // スポット名も実測幅で省略する
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px sans-serif';
-    const titleText = spot.name.length > 12 ? spot.name.substring(0, 11) + '…' : spot.name;
-    ctx.fillText(titleText, cardX + 10, cardY + 36);
+    const titleFont = Math.max(10, Math.round(12 * scale));
+    ctx.font = `bold ${titleFont}px sans-serif`;
+    const titleText = this.truncateToWidth(ctx, spot.name, cardW - pad * 2);
+    ctx.fillText(titleText, cardX + pad, textTop + titleFont);
+    textTop += titleFont + Math.round(5 * scale);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '10px sans-serif';
-    ctx.fillText(`距離: 約${Math.round(distanceMeters)}m (タップで表示)`, cardX + 10, cardY + 50);
+    const metaFont = Math.max(9, Math.round(10 * scale));
+    ctx.font = `${metaFont}px sans-serif`;
+    ctx.fillText(`約${this.formatDistance(distanceMeters)}・タップで表示`, cardX + pad, textTop + metaFont);
 
     ctx.restore();
 
@@ -1580,8 +1621,84 @@ class ARRegionalApp {
         x: screenX + cardX,
         y: screenY + cardY,
         width: cardW,
-        height: cardH + 40
+        height: cardH + poleH
       }
+    });
+    return { offscreen: false };
+  }
+
+  // 指定幅に収まるよう末尾を「…」で省略する（文字数ではなく実測幅で判断）
+  truncateToWidth(ctx, text, maxWidth) {
+    if (!text) return '';
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    let lo = 0;
+    let hi = text.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (ctx.measureText(text.slice(0, mid) + '…').width <= maxWidth) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo > 0 ? text.slice(0, lo) + '…' : '';
+  }
+
+  // 「元和6年（1620年）」のような表記から、バッジ向けの短い見出しを取り出す
+  shortEraLabel(label) {
+    const paren = label.indexOf('（');
+    const head = paren > 0 ? label.slice(0, paren) : label;
+    return head.trim() || label;
+  }
+
+  // 視野外のスポットを画面端の矢印で示し、どちらを向けばよいか分かるようにする
+  drawAROffscreenCues(items) {
+    if (!items || !items.length) return;
+    const ctx = this.ctx;
+    const h = this.viewH;
+    const w = this.viewW;
+
+    const left = items.filter(i => i.angleDiff < 0).sort((a, b) => a.distanceMeters - b.distanceMeters);
+    const right = items.filter(i => i.angleDiff >= 0).sort((a, b) => a.distanceMeters - b.distanceMeters);
+
+    [['left', left], ['right', right]].forEach(([side, list]) => {
+      if (!list.length) return;
+      const nearest = list[0];
+      const isLeft = side === 'left';
+      const y = h * 0.42;
+      const boxH = 40;
+      const boxW = 150;
+      const x = isLeft ? 10 : w - boxW - 10;
+
+      let color = '#f59e0b';
+      if (nearest.spot.category === 'community') color = '#10b981';
+      if (nearest.spot.category === 'disaster') color = '#ef4444';
+
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      this.drawRoundedRect(ctx, x, y, boxW, boxH, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = color;
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = isLeft ? 'left' : 'right';
+      const arrow = isLeft ? '←' : '→';
+      const arrowX = isLeft ? x + 8 : x + boxW - 8;
+      ctx.fillText(arrow, arrowX, y + 25);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      const textX = isLeft ? x + 30 : x + 8;
+      const textW = boxW - 38;
+      ctx.fillText(this.truncateToWidth(ctx, nearest.spot.name, textW), textX, y + 18);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px sans-serif';
+      const more = list.length > 1 ? `ほか${list.length - 1}件` : '';
+      ctx.fillText(`約${this.formatDistance(nearest.distanceMeters)} ${more}`.trim(), textX, y + 32);
+      ctx.restore();
     });
   }
 
@@ -1604,8 +1721,8 @@ class ARRegionalApp {
       const fov = 65;
       if (Math.abs(angleDiff) > fov / 2) return;
 
-      const screenX = (this.canvas.width / 2) + (angleDiff / (fov / 2)) * (this.canvas.width / 2);
-      const screenY = this.canvas.height * 0.25;
+      const screenX = (this.viewW / 2) + (angleDiff / (fov / 2)) * (this.viewW / 2);
+      const screenY = this.viewH * 0.25;
 
       ctx.save();
       ctx.translate(screenX, screenY);

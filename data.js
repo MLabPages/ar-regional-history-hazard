@@ -662,6 +662,48 @@ export const SPOT_DATA = [
     verificationNote: '開館日・イベント・見学可否は変更されるため、来館前に公式サイトで最新情報を確認してください。'
   },
   {
+    id: 'hist-16', name: '三光神社（真田の抜け穴伝承地）', category: 'history',
+    coordinate: { latitude: 34.6742, longitude: 135.5265, elevationMeter: 18 }, era: 'sengoku', eraLabel: '大坂の陣（1614〜1615年）伝承',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '「真田の抜け穴」と伝わる穴が残る、真田丸跡とされる丘の神社です。',
+    description: '三光神社は玉造の丘に建ち、大坂の陣で真田信繁（幸村）が築いた出丸「真田丸」があったとされる一帯に位置します。境内には真田信繁の像と、大坂城へ通じていたと伝わる「真田の抜け穴」の穴口が残ります。大阪城の南に築かれた防衛線を、現地の高低差とともに体感できるスポットです。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '三光神社 公式サイト', license: '公式説明参照・座標は住所からの概略位置',
+    sources: [
+      { sourceName: '三光神社 公式サイト', sourceUrl: 'https://www.sankoujinja.com/', claimStatus: 'verified' }
+    ],
+    verificationNote: '「真田の抜け穴」および真田丸の正確な位置は伝承であり、史実として確定した遺構ではありません。ARピンは所在地（天王寺区玉造本町14-90）からの概略位置です。抜け穴は通常は鉄格子越しの見学で、例年11月の真田祭の際に開放されます。'
+  },
+  {
+    id: 'hist-17', name: '安居神社（真田幸村戦死跡伝承地）', category: 'history',
+    coordinate: { latitude: 34.6558, longitude: 135.5100, elevationMeter: 16 }, era: 'sengoku', eraLabel: '慶長20年（1615年）大坂夏の陣',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '大坂夏の陣で真田幸村が最期を迎えたと伝わる、天王寺の高台の神社です。',
+    description: '安居神社は、大坂夏の陣（1615年）の最終局面で真田信繁（幸村）が戦い疲れて休んでいたところを討たれたと伝わる場所です。境内には「真田幸村戦死跡之碑」と像が建てられています。三光神社（真田丸跡）から一心寺・茶臼山へと続く上町台地の南端は、大坂の陣の激戦地をたどる道筋にあたります。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '大阪市公式サイト（真田幸村戦死跡之碑）', license: '公式説明参照・座標は住所からの概略位置',
+    sources: [
+      { sourceName: '大阪市（真田幸村戦死跡之碑）', sourceUrl: 'https://www.city.osaka.lg.jp/kensetsu/page/0000009754.html', claimStatus: 'verified' }
+    ],
+    verificationNote: '戦死の場所は大阪市の公式案内でも「討死したという」伝承として紹介されており、史実として確定した地点ではありません。ARピンは所在地（天王寺区逢坂1-3-24）からの概略位置です。'
+  },
+  {
+    id: 'hist-18', name: '一心寺', category: 'history',
+    coordinate: { latitude: 34.6560, longitude: 135.5093, elevationMeter: 15 }, era: 'edo', eraLabel: '文治元年（1185年）創建・大坂の陣ゆかり',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '「お骨佛（こつぶつ）の寺」として知られ、大坂の陣の徳川方本陣が置かれた寺です。',
+    description: '一心寺は納められた遺骨で阿弥陀仏像を造立する「お骨佛」で広く知られるお寺です。大坂冬の陣では徳川家康の本陣が置かれ、夏の陣で戦死した家康の孫・本多忠朝の墓が残ります。安居神社・茶臼山とあわせて、大坂の陣で徳川方と豊臣方が対峙した上町台地南端の地形を歩いて確かめられます。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '一心寺 公式サイト', license: '公式説明参照・座標は住所からの概略位置',
+    sources: [
+      { sourceName: '一心寺 公式サイト', sourceUrl: 'https://www.isshinji.or.jp/', claimStatus: 'verified' }
+    ],
+    verificationNote: 'ARピンは所在地（天王寺区逢阪2-8-69）からの概略位置です。受付時間は9時〜16時で、法要日は混雑します。'
+  },
+  {
     id: 'disaster-1', name: '寝屋川・大川周辺の洪水浸水想定', category: 'disaster',
     coordinate: { latitude: 34.6890, longitude: 135.5220, elevationMeter: 3.2 },
     verificationStatus: 'verified',
