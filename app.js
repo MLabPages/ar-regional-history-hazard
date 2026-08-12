@@ -13,7 +13,7 @@ import { OSM_BUILDINGS, OSM_BUILDINGS_META } from './buildings.js?v=__BUILD_ID__
 class ARRegionalApp {
   constructor() {
     // モードステート: 'ar' | 'map'
-    this.viewMode = 'ar';
+    this.viewMode = 'map';
     this.currentLayer = 'history'; // history | community | disaster
     this.currentEra = 'present';   // 確認済みの現代・昭和期タイルのみ
     this.currentHazardType = 'flood'; // flood | tsunami | sediment
@@ -54,6 +54,8 @@ class ARRegionalApp {
     this.spots = [...SPOT_DATA];
     this.shelters = [...EVACUATION_SHELTERS];
     this.selectedSpot = null;
+    this.discoveredSpotIds = this.loadDiscoveredSpotIds();
+    this.discoveryToastTimer = null;
 
     // DOMエレメント
     this.canvas = document.getElementById('ar-canvas');
@@ -97,6 +99,14 @@ class ARRegionalApp {
     this.timeTravelPanel = document.getElementById('time-travel-panel');
     this.timeTravelList = document.getElementById('time-travel-list');
     this.timeTravelLocation = document.getElementById('time-travel-location');
+    this.mapFirstHint = document.getElementById('map-first-hint');
+    this.mapSpotPreview = document.getElementById('map-spot-preview');
+    this.discoveryProgress = document.getElementById('discovery-progress');
+    this.discoveryProgressValue = document.getElementById('discovery-progress-value');
+    this.discoveryPanel = document.getElementById('discovery-panel');
+    this.discoveryList = document.getElementById('discovery-list');
+    this.discoveryPanelSummary = document.getElementById('discovery-panel-summary');
+    this.discoveryToast = document.getElementById('discovery-toast');
 
     // 年代別航空写真オーバーレイ（AR）
     this.aerialOverlay = document.getElementById('aerial-overlay');
@@ -115,6 +125,9 @@ class ARRegionalApp {
     try {
       if (window.localStorage?.getItem('ar-guide-dismissed') === '1') {
         this.guideHint?.classList.add('hidden');
+      }
+      if (window.localStorage?.getItem('map-first-hint-dismissed') === '1') {
+        this.mapFirstHint?.classList.add('hidden');
       }
     } catch (_) {
       // Safariのプライベートブラウズ等で保存領域が使えなくても起動を継続する
@@ -177,6 +190,8 @@ class ARRegionalApp {
 
     // Leafletマップ初期化を試行
     this.initLeafletMap();
+    this.switchViewMode('map');
+    this.updateDiscoveryUI();
 
     requestAnimationFrame(() => this.renderLoop());
   }
@@ -219,7 +234,7 @@ class ARRegionalApp {
       // ユーザー現在地ピン
       const userIcon = L.divIcon({
         className: 'custom-user-pin',
-        html: `<div style="background:#3b82f6; width:18px; height:18px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 12px rgba(59,130,246,0.9);"></div>`,
+        html: `<div class="map-user-location"></div>`,
         iconSize: [18, 18]
       });
       this.userMapMarker = L.marker([this.userPos.latitude, this.userPos.longitude], { icon: userIcon })
@@ -489,7 +504,7 @@ class ARRegionalApp {
     if (!this.map) return;
 
     // 既存マーカークリア
-    this.mapMarkers.forEach(m => this.map.removeLayer(m));
+    this.mapMarkers.forEach(item => this.map.removeLayer(item.marker || item));
     this.mapMarkers = [];
 
     // フィルタリングしたスポットの表示
@@ -507,23 +522,24 @@ class ARRegionalApp {
     }
 
     filteredSpots.forEach(spot => {
-      let color = '#f59e0b';
-      if (spot.category === 'community') color = '#10b981';
+      let color = '#d95d20';
+      if (spot.category === 'community') color = '#277c78';
       if (spot.category === 'disaster') color = '#ef4444';
 
       const icon = L.divIcon({
-        className: 'custom-spot-pin',
-        html: `<div style="background:${color}; padding:5px 10px; border-radius:14px; color:#fff; font-weight:bold; font-size:12px; border:2px solid #fff; box-shadow:0 4px 14px rgba(0,0,0,0.5); white-space:nowrap; cursor:pointer;">${spot.name.substring(0, 11)}</div>`,
-        iconSize: [115, 26]
+        className: `custom-spot-pin${this.selectedSpot?.id === spot.id ? ' is-selected' : ''}`,
+        html: `<div class="map-pin-marker" style="--pin-color:${color}"><span class="map-pin-dot"><i></i></span><span class="map-pin-label">${spot.name.substring(0, 11)}</span></div>`,
+        iconSize: [130, 44],
+        iconAnchor: [20, 40]
       });
 
       const marker = L.marker([spot.coordinate.latitude, spot.coordinate.longitude], { icon })
         .addTo(this.map)
         .on('click', () => {
-          this.openSpotModal(spot);
+          this.selectMapSpot(spot, marker);
         });
 
-      this.mapMarkers.push(marker);
+      this.mapMarkers.push({ marker, spot });
     });
 
     // 防災レイヤー時は避難所もプロット（公式データ検証後に再有効化）
@@ -548,7 +564,7 @@ class ARRegionalApp {
     this.btnModeAr.addEventListener('click', () => this.switchViewMode('ar'));
     this.btnModeMap.addEventListener('click', () => this.switchViewMode('map'));
 
-    // プロンプト内「部屋の中で地図から体験する」ボタン
+    // 旧レイアウト互換: プロンプト内の地図ボタンが残る場合も動作させる
     const mapPromptBtn = document.getElementById('btn-switch-to-map-prompt');
     if (mapPromptBtn) {
       mapPromptBtn.addEventListener('click', (e) => {
@@ -576,6 +592,34 @@ class ARRegionalApp {
     this.mapSearchCancelButton?.addEventListener('click', () => this.cancelMapLocationSearch());
     this.mapCurrentLocationButton?.addEventListener('click', () => this.moveMapToCurrentLocation());
 
+    document.getElementById('btn-close-map-first-hint')?.addEventListener('click', () => {
+      this.mapFirstHint?.classList.add('hidden');
+      try { window.localStorage?.setItem('map-first-hint-dismissed', '1'); } catch (_) {}
+    });
+    document.getElementById('btn-close-spot-preview')?.addEventListener('click', () => this.clearMapSpotSelection());
+    document.getElementById('btn-open-spot-preview')?.addEventListener('click', () => {
+      if (this.selectedSpot) this.openSpotModal(this.selectedSpot);
+    });
+    this.discoveryProgress?.addEventListener('click', () => this.openDiscoveryPanel());
+    document.getElementById('btn-close-discovery-panel')?.addEventListener('click', () => {
+      this.discoveryPanel?.classList.add('hidden');
+    });
+    this.discoveryList?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-discovery-spot-id]');
+      if (!button) return;
+      const spot = this.spots.find(item => item.id === button.dataset.discoverySpotId);
+      if (!spot) return;
+      this.discoveryPanel?.classList.add('hidden');
+      this.currentLayer = spot.category;
+      document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach(item => {
+        item.classList.toggle('active', item.dataset.layer === spot.category);
+      });
+      this.switchViewMode('map');
+      this.updateLayerUI();
+      if (this.map) this.map.setView([spot.coordinate.latitude, spot.coordinate.longitude], 17);
+      this.selectMapSpot(spot);
+    });
+
     // ヘッダー カメラON/OFFボタン
     if (this.toggleCameraBtn) {
       this.toggleCameraBtn.addEventListener('click', () => {
@@ -588,7 +632,7 @@ class ARRegionalApp {
     }
 
     // レイヤー切り替えタブ
-    document.querySelectorAll('.layer-tabs-compact .tab-btn').forEach(btn => {
+    document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const targetBtn = e.currentTarget;
         document.querySelectorAll('.layer-tabs-compact .tab-btn').forEach(b => b.classList.remove('active'));
@@ -831,7 +875,10 @@ class ARRegionalApp {
   // モード切り替え (AR ↔ 地図)
   switchViewMode(mode) {
     this.viewMode = mode;
-    document.getElementById('app-container')?.classList.toggle('map-mode', mode === 'map');
+    const appContainer = document.getElementById('app-container');
+    appContainer?.classList.toggle('map-mode', mode === 'map');
+    appContainer?.classList.toggle('ar-idle', mode === 'ar' && !this.cameraActive && !this.demoArActive);
+    appContainer?.classList.toggle('ar-running', mode === 'ar' && (this.cameraActive || this.demoArActive));
     const spotsPanel = this.getMapSpotsPanel();
 
     if (mode === 'map') {
@@ -839,12 +886,12 @@ class ARRegionalApp {
       this.mapNavigationTools?.classList.remove('hidden');
       this.btnModeAr.classList.remove('active');
       this.btnModeMap.classList.add('active');
+      this.btnModeAr.setAttribute('aria-selected', 'false');
+      this.btnModeMap.setAttribute('aria-selected', 'true');
       this.mapViewEl.classList.remove('hidden');
       this.canvas.classList.add('hidden');
-      let eraDismissed = false;
-      try { eraDismissed = window.localStorage?.getItem('ar-era-panel-dismissed') === '1'; } catch (_) {}
-      this.eraTimelineBar.classList.toggle('hidden', eraDismissed);
-      this.reopenEraPanelButton?.classList.toggle('hidden', !eraDismissed);
+      this.eraTimelineBar.classList.add('hidden');
+      this.reopenEraPanelButton?.classList.remove('hidden');
       if (this.mapDataStatus) this.mapDataStatus.classList.remove('hidden');
       if (spotsPanel) spotsPanel.classList.add('hidden');
       this.openSpotsButton?.classList.remove('active');
@@ -872,6 +919,8 @@ class ARRegionalApp {
       this.mapNavigationTools?.classList.add('hidden');
       this.btnModeAr.classList.add('active');
       this.btnModeMap.classList.remove('active');
+      this.btnModeAr.setAttribute('aria-selected', 'true');
+      this.btnModeMap.setAttribute('aria-selected', 'false');
       this.mapViewEl.classList.add('hidden');
       if (this.mapDataStatus) this.mapDataStatus.classList.add('hidden');
       if (spotsPanel) spotsPanel.classList.add('hidden');
@@ -887,6 +936,7 @@ class ARRegionalApp {
         this.guideHintText.textContent = '画面を左右にドラッグして見回します';
       }
       this.updateARExperienceVisibility();
+      if (!this.cameraActive && !this.demoArActive) this.cameraPlaceholder?.classList.remove('hidden');
     }
   }
 
@@ -1038,6 +1088,7 @@ class ARRegionalApp {
   }
 
   async startCamera() {
+    this.switchViewMode('ar');
     if (!navigator.mediaDevices?.getUserMedia) {
       this.showCameraError('このブラウザではカメラを利用できません。HTTPSの公開ページを開くか、カメラなしARをお試しください。');
       return;
@@ -1077,6 +1128,7 @@ class ARRegionalApp {
   }
 
   startDemoAR() {
+    this.switchViewMode('ar');
     this.demoArActive = true;
     this.cameraActive = false;
     this.cameraPlaceholder.classList.add('hidden');
@@ -1102,6 +1154,9 @@ class ARRegionalApp {
   updateARExperienceVisibility() {
     const isRunning = this.viewMode === 'ar' && (this.cameraActive || this.demoArActive);
     this.arHud?.classList.toggle('hidden', !isRunning);
+    const appContainer = document.getElementById('app-container');
+    appContainer?.classList.toggle('ar-running', isRunning);
+    appContainer?.classList.toggle('ar-idle', this.viewMode === 'ar' && !isRunning);
   }
 
   stopCamera() {
@@ -1120,6 +1175,7 @@ class ARRegionalApp {
     this.cameraBtnText.textContent = 'カメラON';
     this.toggleCameraBtn.classList.remove('active-highlight');
     this.arHud?.classList.add('hidden');
+    this.updateARExperienceVisibility();
     // カメラを切ったら探索モードへ戻す
     this.enableExploreMode();
   }
@@ -1479,8 +1535,8 @@ class ARRegionalApp {
   updateLocationStatus() {
     const latStr = this.userPos.latitude.toFixed(4);
     const lngStr = this.userPos.longitude.toFixed(4);
-    const modeTag = this.locationMode === 'onsite' ? '(現地GPS)' : '(探索/シミュレーション)';
-    this.locationText.textContent = `現在地: 北緯 ${latStr}, 東経 ${lngStr} ${modeTag}`;
+    const modeTag = this.locationMode === 'onsite' ? '現地GPS' : '地図探索';
+    this.locationText.textContent = `${modeTag}｜${latStr}, ${lngStr}`;
 
     if (this.userMapMarker) {
       this.userMapMarker.setLatLng([this.userPos.latitude, this.userPos.longitude]);
@@ -1490,16 +1546,21 @@ class ARRegionalApp {
     }
 
     this.updateLayerUI();
+    this.updateMapSpotPreview(this.selectedSpot);
   }
 
   updateLayerUI() {
     const banner = this.disasterBanner;
+    if (this.selectedSpot && this.selectedSpot.category !== this.currentLayer) {
+      this.clearMapSpotSelection();
+    }
     if (this.currentLayer === 'disaster') {
       this.mapSpotsPanel?.classList.add('hidden');
       this.openSpotsButton?.classList.remove('active');
       this.openSpotsButton?.setAttribute('aria-pressed', 'false');
       banner?.classList.remove('hidden');
       this.reopenHazardSheetButton?.classList.add('hidden');
+      document.getElementById('explore-quick-actions')?.classList.add('hidden');
       this.updateFloodConceptToggleVisibility();
 
       // 避難所データは公式一次資料で未検証のため、具体的な方向・距離の案内を一時停止。
@@ -1511,14 +1572,13 @@ class ARRegionalApp {
     } else {
       banner?.classList.add('hidden');
       this.reopenHazardSheetButton?.classList.add('hidden');
+      document.getElementById('explore-quick-actions')?.classList.remove('hidden');
     }
 
     // 地図ツールは地図モードかつ歴史/地域で表示
     if (this.viewMode === 'map' && this.currentLayer !== 'disaster') {
-      let eraDismissed = false;
-      try { eraDismissed = window.localStorage?.getItem('ar-era-panel-dismissed') === '1'; } catch (_) {}
-      this.eraTimelineBar?.classList.toggle('hidden', eraDismissed);
-      this.reopenEraPanelButton?.classList.toggle('hidden', !eraDismissed);
+      this.eraTimelineBar?.classList.add('hidden');
+      this.reopenEraPanelButton?.classList.remove('hidden');
     } else if (this.currentLayer === 'disaster') {
       this.eraTimelineBar?.classList.add('hidden');
       this.reopenEraPanelButton?.classList.add('hidden');
@@ -1532,6 +1592,12 @@ class ARRegionalApp {
     if (this.viewMode === 'ar') {
       this.ctx.clearRect(0, 0, this.viewW, this.viewH);
       this.renderedPins = [];
+
+      // AR開始前は操作選択に集中できるよう、背景のピンを描かない。
+      if (!this.cameraActive && !this.demoArActive) {
+        requestAnimationFrame(() => this.renderLoop());
+        return;
+      }
 
       // 防災AR: 洪水を選択中かつユーザーが概念イメージ表示をONにした場合のみ水面を描画。
       // 津波は洪水用イメージを流用しない。土砂災害は水面表現を一切描かない。
@@ -1726,8 +1792,8 @@ class ARRegionalApp {
 
     const ctx = this.ctx;
 
-    let color = '#f59e0b';
-    if (spot.category === 'community') color = '#10b981';
+    let color = '#d95d20';
+    if (spot.category === 'community') color = '#277c78';
     if (spot.category === 'disaster') color = '#ef4444';
 
     ctx.save();
@@ -1779,7 +1845,7 @@ class ARRegionalApp {
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = `${metaFont}px sans-serif`;
-    ctx.fillText(`約${this.formatDistance(distanceMeters)}・タップで表示`, cardX + pad, textTop + metaFont);
+    ctx.fillText(`約${this.formatDistance(distanceMeters)}・タップで詳しく`, cardX + pad, textTop + metaFont);
 
     ctx.restore();
 
@@ -1799,8 +1865,8 @@ class ARRegionalApp {
   // タップ判定は残すので、詳細は開ける。
   drawARDotMarker(spot, screenX, screenY, scale, t, distanceMeters) {
     const ctx = this.ctx;
-    let color = '#f59e0b';
-    if (spot.category === 'community') color = '#10b981';
+    let color = '#d95d20';
+    if (spot.category === 'community') color = '#277c78';
     if (spot.category === 'disaster') color = '#ef4444';
 
     const r = Math.max(5, 7 * scale);
@@ -2340,8 +2406,8 @@ class ARRegionalApp {
       const boxW = 150;
       const x = isLeft ? 10 : w - boxW - 10;
 
-      let color = '#f59e0b';
-      if (nearest.spot.category === 'community') color = '#10b981';
+      let color = '#d95d20';
+      if (nearest.spot.category === 'community') color = '#277c78';
       if (nearest.spot.category === 'disaster') color = '#ef4444';
 
       ctx.save();
@@ -2434,8 +2500,15 @@ class ARRegionalApp {
     this.selectedSpot = spot;
     const modal = document.getElementById('spot-modal');
     const media = this.getPrimaryMedia(spot);
+    const newlyDiscovered = this.saveDiscoveredSpot(spot);
 
     document.getElementById('modal-title').textContent = spot.name;
+    const discoveryStatus = document.getElementById('modal-discovery-status');
+    if (discoveryStatus) {
+      discoveryStatus.innerHTML = `<i data-lucide="${newlyDiscovered ? 'stamp' : 'check'}"></i><span>${newlyDiscovered ? '発見ノートに新しく記録しました' : '発見ノートに記録済みです'}</span>`;
+      discoveryStatus.classList.toggle('hidden', spot.category === 'disaster');
+      discoveryStatus.classList.toggle('is-new', newlyDiscovered);
+    }
     // 直感的な信頼度バッジ（✓公式資料確認済み / ◐一部確認済み / △未確認情報を含む など）
     this.renderTrustBadge(spot, media);
     document.getElementById('modal-summary').textContent = spot.summary || '';
@@ -2501,6 +2574,8 @@ class ARRegionalApp {
     this.renderHistoricalMaterials(spot);
 
     modal.classList.remove('hidden');
+    this.updateMapSpotPreview(spot);
+    if (window.lucide) lucide.createIcons();
   }
 
   openTimeTravel(spot = null) {
@@ -2531,6 +2606,114 @@ class ARRegionalApp {
 
   closeTimeTravel() {
     this.timeTravelPanel?.classList.add('hidden');
+  }
+
+  loadDiscoveredSpotIds() {
+    try {
+      const saved = JSON.parse(window.localStorage?.getItem('ar-discovered-spots') || '[]');
+      return new Set(Array.isArray(saved) ? saved.filter(id => typeof id === 'string') : []);
+    } catch (_) {
+      return new Set();
+    }
+  }
+
+  getDiscoverableSpots() {
+    return this.getPointSpots().filter(spot => spot.category !== 'disaster');
+  }
+
+  saveDiscoveredSpot(spot) {
+    if (!spot || spot.category === 'disaster' || this.discoveredSpotIds.has(spot.id)) return false;
+    this.discoveredSpotIds.add(spot.id);
+    try {
+      window.localStorage?.setItem('ar-discovered-spots', JSON.stringify([...this.discoveredSpotIds]));
+    } catch (_) {
+      // 保存領域が使えない場合も、その閲覧中は発見状態を維持する
+    }
+    this.updateDiscoveryUI();
+    this.showDiscoveryToast(spot);
+    return true;
+  }
+
+  updateDiscoveryUI() {
+    const discoverable = this.getDiscoverableSpots();
+    const validIds = new Set(discoverable.map(spot => spot.id));
+    const count = [...this.discoveredSpotIds].filter(id => validIds.has(id)).length;
+    if (this.discoveryProgressValue) this.discoveryProgressValue.textContent = `${count} / ${discoverable.length}`;
+    this.discoveryProgress?.classList.toggle('has-discoveries', count > 0);
+    this.renderDiscoveryPanel();
+    this.updateMapSpotPreview(this.selectedSpot);
+  }
+
+  renderDiscoveryPanel() {
+    if (!this.discoveryList || !this.discoveryPanelSummary) return;
+    const discoverable = this.getDiscoverableSpots();
+    const discovered = discoverable.filter(spot => this.discoveredSpotIds.has(spot.id));
+    this.discoveryPanelSummary.textContent = discovered.length
+      ? `${discoverable.length}か所のうち${discovered.length}か所の物語を読みました。この記録はこの端末内だけに保存されます。`
+      : `スポットの「詳しく見る」を開くと、${discoverable.length}か所の発見がここに記録されます。記録はこの端末内だけに保存されます。`;
+    this.discoveryList.innerHTML = discovered.length
+      ? discovered.map(spot => `<button type="button" class="discovery-list-item" data-discovery-spot-id="${spot.id}">
+          <span class="discovery-stamp"><i data-lucide="check"></i></span>
+          <span><strong>${spot.name}</strong><small>${spot.eraLabel || (spot.category === 'community' ? '地域' : '歴史')}</small></span>
+          <i data-lucide="chevron-right"></i>
+        </button>`).join('')
+      : '<div class="discovery-empty"><i data-lucide="map-pin-plus"></i><strong>最初の発見を探しましょう</strong><span>地図のピンを選び、物語を開いてみてください。</span></div>';
+    if (window.lucide) lucide.createIcons();
+  }
+
+  openDiscoveryPanel() {
+    this.renderDiscoveryPanel();
+    this.discoveryPanel?.classList.remove('hidden');
+  }
+
+  showDiscoveryToast(spot) {
+    if (!this.discoveryToast) return;
+    window.clearTimeout(this.discoveryToastTimer);
+    this.discoveryToast.innerHTML = `<i data-lucide="stamp"></i><span><strong>発見ノートに記録</strong>${spot.name}</span>`;
+    this.discoveryToast.classList.remove('hidden');
+    this.discoveryToast.classList.add('is-visible');
+    if (window.lucide) lucide.createIcons();
+    this.discoveryToastTimer = window.setTimeout(() => {
+      this.discoveryToast?.classList.remove('is-visible');
+      window.setTimeout(() => this.discoveryToast?.classList.add('hidden'), 220);
+    }, 2600);
+  }
+
+  selectMapSpot(spot, marker = null) {
+    if (!spot) return;
+    this.selectedSpot = spot;
+    document.getElementById('app-container')?.classList.add('has-spot-selection');
+    this.mapMarkers.forEach(item => {
+      const element = item.marker?.getElement?.();
+      element?.classList.toggle('is-selected', item.spot.id === spot.id);
+    });
+    if (marker?.getElement) marker.getElement()?.classList.add('is-selected');
+    this.updateMapSpotPreview(spot);
+    this.mapSpotPreview?.classList.remove('hidden');
+    this.mapFirstHint?.classList.add('hidden');
+    try { window.localStorage?.setItem('map-first-hint-dismissed', '1'); } catch (_) {}
+  }
+
+  clearMapSpotSelection() {
+    this.selectedSpot = null;
+    document.getElementById('app-container')?.classList.remove('has-spot-selection');
+    this.mapSpotPreview?.classList.add('hidden');
+    this.mapMarkers.forEach(item => item.marker?.getElement?.()?.classList.remove('is-selected'));
+  }
+
+  updateMapSpotPreview(spot) {
+    if (!spot || !this.mapSpotPreview) return;
+    const meta = spot.eraLabel || (spot.category === 'community' ? '地域スポット' : '歴史スポット');
+    const distance = this.calculateDistance(this.userPos.latitude, this.userPos.longitude, spot.coordinate.latitude, spot.coordinate.longitude);
+    document.getElementById('spot-preview-meta').textContent = `${meta}・約${this.formatDistance(distance)}`;
+    document.getElementById('spot-preview-title').textContent = spot.name;
+    document.getElementById('spot-preview-summary').textContent = spot.summary || '';
+    const discovery = document.getElementById('spot-preview-discovery');
+    const isDiscovered = this.discoveredSpotIds.has(spot.id);
+    if (discovery) {
+      discovery.textContent = isDiscovered ? '発見済み' : '未発見';
+      discovery.classList.toggle('is-discovered', isDiscovered);
+    }
   }
 
   getMapSpotsPanel() {

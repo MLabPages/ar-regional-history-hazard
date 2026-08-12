@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR地域理解・歴史・防災統合プラットフォーム</title>
+  <title>まちの記憶 AR｜歴史・地域・防災を歩いて知る</title>
+  <meta name="theme-color" content="#10213e">
   <link rel="stylesheet" href="styles.css?v=__BUILD_ID__">
   <script src="https://unpkg.com/lucide@0.468.0"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-  <div id="app-container">
+  <div id="app-container" class="map-mode">
     <video id="camera-feed" autoplay playsinline muted></video>
-    <div id="map-view" class="hidden"></div>
+    <div id="map-view"></div>
     <!-- スワイプ比較のハンドル（左が過去・右が現代） -->
     <div id="swipe-handle" class="swipe-handle hidden" aria-hidden="true">
       <div class="swipe-line"></div>
@@ -83,7 +84,7 @@
       </div>
     </div>
 
-    <canvas id="ar-canvas"></canvas>
+    <canvas id="ar-canvas" class="hidden"></canvas>
 
     <!-- 年代別航空写真オーバーレイ（位置合わせ済みタイルを使うため重なり精度が高い） -->
     <div id="aerial-overlay" class="hidden">
@@ -132,19 +133,19 @@
     <div class="ui-layer">
       <header class="top-bar">
         <div class="brand">
-          <i data-lucide="compass" class="brand-icon"></i>
+          <i data-lucide="map-pinned" class="brand-icon"></i>
           <div>
-            <h1 class="brand-title">AR City Viewer</h1>
+            <h1 class="brand-title">まちの記憶 AR</h1>
             <div id="location-text" class="status-subtitle">位置情報: 取得中...</div>
           </div>
         </div>
 
         <div class="view-mode-toggle" role="tablist" aria-label="表示切替">
-          <button id="btn-mode-ar" class="mode-btn active" type="button">
-            <i data-lucide="camera"></i><span>現地AR</span>
+          <button id="btn-mode-ar" class="mode-btn" type="button" role="tab" aria-selected="false">
+            <i data-lucide="scan-line"></i><span>ARで見る</span>
           </button>
-          <button id="btn-mode-map" class="mode-btn" type="button">
-            <i data-lucide="map"></i><span>地図</span>
+          <button id="btn-mode-map" class="mode-btn active" type="button" role="tab" aria-selected="true">
+            <i data-lucide="map"></i><span>地図で探す</span>
           </button>
         </div>
 
@@ -154,7 +155,7 @@
             <i data-lucide="video-off" id="camera-icon-off" class="hidden"></i>
             <span id="camera-btn-text" class="sr-only">カメラON</span>
           </button>
-          <button id="btn-toggle-sim" class="btn-icon-action active-highlight" type="button" title="操作パネル" aria-label="操作パネル">
+          <button id="btn-toggle-sim" class="btn-icon-action" type="button" title="操作パネル" aria-label="操作パネル">
             <i data-lucide="sliders-horizontal"></i>
           </button>
           <button id="btn-info" class="btn-icon-action" type="button" title="出典と使い方" aria-label="出典と使い方">
@@ -164,17 +165,18 @@
       </header>
 
       <div id="camera-placeholder" class="start-card">
-        <i data-lucide="map-pin"></i>
-        <h2>土地の過去・現在・リスクを見る</h2>
-        <p>初めての方は、まず<strong>地図</strong>から始めるのがおすすめです。<br>現地では<strong>現地AR</strong>でその場所の情報を重ねて表示できます。</p>
+        <div class="start-card-copy">
+          <i data-lucide="scan-line"></i>
+          <div>
+            <h2>ARを始める</h2>
+            <p>現地ではカメラを、室内ではカメラなし体験を選べます。</p>
+          </div>
+        </div>
         <div class="placeholder-actions">
-          <button id="btn-switch-to-map-prompt" class="btn-primary" type="button">
-            <i data-lucide="map"></i><span>地図から始める</span>
+          <button id="btn-start-camera" class="btn-primary" type="button">
+            <i data-lucide="video"></i><span>カメラで始める</span>
           </button>
-          <button id="btn-start-camera" class="btn-secondary" type="button">
-            <i data-lucide="video"></i><span>カメラを起動</span>
-          </button>
-          <button id="btn-start-demo-ar" class="btn-tertiary" type="button">
+          <button id="btn-start-demo-ar" class="btn-secondary" type="button">
             <i data-lucide="sparkles"></i><span>カメラなしでARを試す</span>
           </button>
         </div>
@@ -265,7 +267,14 @@
         </div>
         <p class="timeline-note">明治・江戸・平安の大阪向け位置精度付き地図タイルは未収録です。江戸期資料はスポット詳細から確認できます。</p>
       </section>
-      <button id="btn-reopen-era-panel" class="fab-tool hidden" type="button"><i data-lucide="clock-3"></i><span>年代</span></button>
+      <div id="explore-quick-actions" class="explore-quick-actions">
+        <button id="btn-reopen-era-panel" class="fab-tool" type="button"><i data-lucide="clock-3"></i><span>年代を比べる</span></button>
+        <button id="discovery-progress" class="discovery-progress" type="button" aria-label="発見ノートを開く">
+          <i data-lucide="notebook-tabs"></i>
+          <span>発見ノート</span>
+          <strong id="discovery-progress-value">0 / 0</strong>
+        </button>
+      </div>
 
       <!-- 防災ツール: 折りたたみ式 -->
       <section id="disaster-alert-banner" class="bottom-sheet hazard-sheet hidden" aria-label="防災ハザード">
@@ -304,7 +313,39 @@
         </div>
       </div>
 
-      <!-- 下部ナビ: 誰でも分かる3分類 -->
+      <div id="map-first-hint" class="map-first-hint" role="status">
+        <i data-lucide="mouse-pointer-click"></i>
+        <span>ピンを選ぶと、その場所の物語が読めます</span>
+        <button id="btn-close-map-first-hint" class="guide-close" type="button" aria-label="案内を閉じる"><i data-lucide="x"></i></button>
+      </div>
+
+      <section id="map-spot-preview" class="map-spot-preview hidden" aria-label="選択中のスポット">
+        <button id="btn-close-spot-preview" class="preview-close" type="button" aria-label="選択を解除"><i data-lucide="x"></i></button>
+        <div class="preview-copy">
+          <div class="preview-meta-row">
+            <span id="spot-preview-meta">歴史スポット</span>
+            <span id="spot-preview-discovery">未発見</span>
+          </div>
+          <h2 id="spot-preview-title">スポット名称</h2>
+          <p id="spot-preview-summary">この場所の概要</p>
+        </div>
+        <button id="btn-open-spot-preview" class="preview-open" type="button">
+          <i data-lucide="book-open"></i><span>詳しく見る</span><i data-lucide="chevron-right"></i>
+        </button>
+      </section>
+
+      <aside id="discovery-panel" class="discovery-panel hidden" aria-label="発見ノート">
+        <div class="discovery-panel-header">
+          <div><i data-lucide="notebook-tabs"></i><strong>発見ノート</strong></div>
+          <button id="btn-close-discovery-panel" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+        </div>
+        <p id="discovery-panel-summary" class="discovery-panel-summary"></p>
+        <div id="discovery-list" class="discovery-list"></div>
+      </aside>
+
+      <div id="discovery-toast" class="discovery-toast hidden" role="status" aria-live="polite"></div>
+
+      <!-- 下部ナビ: 3分類と一覧 -->
       <nav class="bottom-nav layer-tabs-compact" aria-label="情報レイヤー">
         <button class="tab-btn active" type="button" data-layer="history">
           <i data-lucide="landmark"></i>
@@ -350,6 +391,7 @@
         </div>
         <div class="modal-body">
           <h2 id="modal-title">スポット名称</h2>
+          <p id="modal-discovery-status" class="modal-discovery-status hidden"></p>
           <span id="modal-trust-badge" class="trust-badge"></span>
           <p id="modal-summary" class="modal-summary">概要</p>
           <div id="modal-present-photo" class="present-photo-box hidden"></div>
@@ -396,6 +438,7 @@
             <li><strong>地図</strong>: 自宅や教室から年代比較・スポット確認</li>
             <li><strong>現地AR</strong>: その場所でカメラ映像に情報を重ねる</li>
             <li><strong>下のタブ</strong>: 歴史 / 地域 / 防災 を切替</li>
+            <li><strong>発見ノート</strong>: 読んだ歴史・地域スポットを端末内に記録</li>
             <li><strong>左下の出典</strong>: 今見ている地図・資料の出典を常時表示</li>
           </ul>
           <h3>公的データ出典</h3>
