@@ -14,7 +14,7 @@ class ARRegionalApp {
   constructor() {
     // モードステート: 'ar' | 'map'
     this.viewMode = 'map';
-    this.currentLayer = 'history'; // history | community | disaster
+    this.currentLayer = 'history'; // history | community | religious | disaster
     this.currentEra = 'present';   // 確認済みの現代・昭和期タイルのみ
     this.currentHazardType = 'flood'; // flood | tsunami | sediment
 
@@ -517,7 +517,13 @@ class ARRegionalApp {
 
     const spotsPanel = this.getMapSpotsPanel();
     if (spotsPanel) {
-      const layerLabel = this.currentLayer === 'history' ? '歴史・観光' : this.currentLayer === 'community' ? '地域理解' : '防災';
+      const layerLabel = this.currentLayer === 'history'
+        ? '歴史・観光'
+        : this.currentLayer === 'community'
+          ? '地域理解'
+          : this.currentLayer === 'religious'
+            ? '寺社'
+            : '防災';
       spotsPanel.innerHTML = `
         <div class="map-spots-title">${layerLabel}スポット</div>
         ${filteredSpots.length === 0 ? this.getSpotsEmptyMessage() : filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
@@ -529,6 +535,7 @@ class ARRegionalApp {
     filteredSpots.forEach(spot => {
       let color = '#d95d20';
       if (spot.category === 'community') color = '#277c78';
+      if (spot.category === 'religious') color = '#b45309';
       if (spot.category === 'disaster') color = '#ef4444';
 
       const icon = L.divIcon({
@@ -1809,6 +1816,7 @@ class ARRegionalApp {
 
     let color = '#d95d20';
     if (spot.category === 'community') color = '#277c78';
+    if (spot.category === 'religious') color = '#b45309';
     if (spot.category === 'disaster') color = '#ef4444';
 
     ctx.save();
@@ -1882,6 +1890,7 @@ class ARRegionalApp {
     const ctx = this.ctx;
     let color = '#d95d20';
     if (spot.category === 'community') color = '#277c78';
+    if (spot.category === 'religious') color = '#b45309';
     if (spot.category === 'disaster') color = '#ef4444';
 
     const r = Math.max(5, 7 * scale);
@@ -2423,6 +2432,7 @@ class ARRegionalApp {
 
       let color = '#d95d20';
       if (nearest.spot.category === 'community') color = '#277c78';
+      if (nearest.spot.category === 'religious') color = '#b45309';
       if (nearest.spot.category === 'disaster') color = '#ef4444';
 
       ctx.save();
@@ -2670,7 +2680,7 @@ class ARRegionalApp {
     this.discoveryList.innerHTML = discovered.length
       ? discovered.map(spot => `<button type="button" class="discovery-list-item" data-discovery-spot-id="${spot.id}">
           <span class="discovery-stamp"><i data-lucide="check"></i></span>
-          <span><strong>${spot.name}</strong><small>${spot.eraLabel || (spot.category === 'community' ? '地域' : '歴史')}</small></span>
+          <span><strong>${spot.name}</strong><small>${spot.eraLabel || (spot.category === 'community' ? '地域' : spot.category === 'religious' ? '寺社' : '歴史')}</small></span>
           <i data-lucide="chevron-right"></i>
         </button>`).join('')
       : '<div class="discovery-empty"><i data-lucide="map-pin-plus"></i><strong>最初の発見を探しましょう</strong><span>地図のピンを選び、物語を開いてみてください。</span></div>';
@@ -2716,7 +2726,7 @@ class ARRegionalApp {
     this.walkPicksList.innerHTML = picks.length
       ? picks.map((spot, index) => {
         const discovered = this.discoveredSpotIds.has(spot.id);
-        const meta = spot.eraLabel || (spot.category === 'community' ? '地域スポット' : '歴史スポット');
+        const meta = spot.religiousType || spot.eraLabel || (spot.category === 'community' ? '地域スポット' : spot.category === 'religious' ? '寺社' : '歴史スポット');
         return `<button type="button" class="walk-pick-item${discovered ? ' is-discovered' : ''}" data-walk-pick-id="${spot.id}">
           <span class="walk-pick-index">${index + 1}</span>
           <span class="walk-pick-copy"><strong>${spot.name}</strong><small>${meta}・約${this.formatDistance(spot.distanceFromMapCenter)}</small></span>
@@ -2782,7 +2792,7 @@ class ARRegionalApp {
 
   updateMapSpotPreview(spot) {
     if (!spot || !this.mapSpotPreview) return;
-    const meta = spot.eraLabel || (spot.category === 'community' ? '地域スポット' : '歴史スポット');
+    const meta = spot.religiousType || spot.eraLabel || (spot.category === 'community' ? '地域スポット' : spot.category === 'religious' ? '寺社' : '歴史スポット');
     const distance = this.calculateDistance(this.userPos.latitude, this.userPos.longitude, spot.coordinate.latitude, spot.coordinate.longitude);
     document.getElementById('spot-preview-meta').textContent = `${meta}・約${this.formatDistance(distance)}`;
     document.getElementById('spot-preview-title').textContent = spot.name;

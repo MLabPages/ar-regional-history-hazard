@@ -940,7 +940,7 @@ export const SPOT_DATA = [
     verificationNote: '開館日・料金・展示内容は変更されるため、来館前に公式サイトで最新情報を確認してください。'
   },
   {
-    id: 'hist-11', name: '四天王寺', category: 'history',
+    id: 'hist-11', name: '四天王寺', category: 'religious', religiousType: '寺院・和宗総本山',
     coordinate: { latitude: 34.6537001, longitude: 135.5137442, elevationMeter: 18 }, era: 'asuka', eraLabel: '推古元年（593年）創建',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -955,7 +955,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは境内周辺の概略位置です。伽藍への立ち入り区分・拝観時間は公式サイトで確認してください。'
   },
   {
-    id: 'hist-12', name: '生國魂神社（いくくにたま）', category: 'history',
+    id: 'hist-12', name: '生國魂神社（いくくにたま）', category: 'religious', religiousType: '神社・上町台地の総鎮守',
     coordinate: { latitude: 34.665303, longitude: 135.5126698, elevationMeter: 20 }, era: 'ancient', eraLabel: '神武天皇東征伝承・上町台地の総鎮守',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -970,7 +970,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは社殿周辺の概略位置です。祭事・境内立入時間は公式サイトで確認してください。'
   },
   {
-    id: 'hist-13', name: '高津宮（こうづぐう）', category: 'history',
+    id: 'hist-13', name: '高津宮（こうづぐう）', category: 'religious', religiousType: '神社・高津宮伝承地',
     coordinate: { latitude: 34.6688534, longitude: 135.5139029, elevationMeter: 22 }, era: 'ancient', eraLabel: '仁徳天皇・高津宮伝承地',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -985,7 +985,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは社殿周辺の概略位置です。境内立入時間・行事は公式サイトで確認してください。'
   },
   {
-    id: 'hist-14', name: '大阪天満宮', category: 'history',
+    id: 'hist-14', name: '大阪天満宮', category: 'religious', religiousType: '神社・天満の天神さん',
     coordinate: { latitude: 34.6960904, longitude: 135.5127654, elevationMeter: 6 }, era: 'heian', eraLabel: '天暦3年（949年）創建',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1000,7 +1000,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは社殿周辺の概略位置です。天神祭の交通規制や境内立入時間は公式サイトで確認してください。'
   },
   {
-    id: 'hist-15', name: '住吉大社', category: 'history',
+    id: 'hist-15', name: '住吉大社', category: 'religious', religiousType: '神社・住吉神社の総本社',
     coordinate: { latitude: 34.6130027, longitude: 135.4931012, elevationMeter: 6 }, era: 'ancient', eraLabel: '神功皇后・全国住吉神社の総本社',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1045,7 +1045,7 @@ export const SPOT_DATA = [
     verificationNote: '開館日・イベント・見学可否は変更されるため、来館前に公式サイトで最新情報を確認してください。'
   },
   {
-    id: 'hist-16', name: '三光神社（真田の抜け穴伝承地）', category: 'history',
+    id: 'hist-16', name: '三光神社（真田の抜け穴伝承地）', category: 'religious', religiousType: '神社・真田丸伝承地',
     coordinate: { latitude: 34.6742, longitude: 135.5265, elevationMeter: 18 }, era: 'sengoku', eraLabel: '大坂の陣（1614〜1615年）伝承',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1059,7 +1059,7 @@ export const SPOT_DATA = [
     verificationNote: '「真田の抜け穴」および真田丸の正確な位置は伝承であり、史実として確定した遺構ではありません。ARピンは所在地（天王寺区玉造本町14-90）からの概略位置です。抜け穴は通常は鉄格子越しの見学で、例年11月の真田祭の際に開放されます。'
   },
   {
-    id: 'hist-17', name: '安居神社（真田幸村戦死跡伝承地）', category: 'history',
+    id: 'hist-17', name: '安居神社（真田幸村戦死跡伝承地）', category: 'religious', religiousType: '神社・大坂の陣伝承地',
     coordinate: { latitude: 34.6558, longitude: 135.5100, elevationMeter: 16 }, era: 'sengoku', eraLabel: '慶長20年（1615年）大坂夏の陣',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1073,7 +1073,7 @@ export const SPOT_DATA = [
     verificationNote: '戦死の場所は大阪市の公式案内でも「討死したという」伝承として紹介されており、史実として確定した地点ではありません。ARピンは所在地（天王寺区逢坂1-3-24）からの概略位置です。'
   },
   {
-    id: 'hist-18', name: '一心寺', category: 'history',
+    id: 'hist-18', name: '一心寺', category: 'religious', religiousType: '寺院・お骨佛で知られる寺',
     coordinate: { latitude: 34.6560, longitude: 135.5093, elevationMeter: 15 }, era: 'edo', eraLabel: '文治元年（1185年）創建・大坂の陣ゆかり',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1085,6 +1085,97 @@ export const SPOT_DATA = [
       { sourceName: '一心寺 公式サイト', sourceUrl: 'https://www.isshinji.or.jp/', claimStatus: 'verified' }
     ],
     verificationNote: 'ARピンは所在地（天王寺区逢阪2-8-69）からの概略位置です。受付時間は9時〜16時で、法要日は混雑します。'
+  },
+  {
+    id: 'religious-1', name: '大阪城豊國神社', category: 'religious', religiousType: '神社・豊臣秀吉公を祀る',
+    coordinate: { latitude: 34.6842401, longitude: 135.526886, elevationMeter: 18 }, era: 'meiji', eraLabel: '明治期創立・昭和36年に大阪城内へ奉遷',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '豊臣秀吉公ゆかりの神社で、大阪城本丸の南側に鎮座します。',
+    description: '豊國神社は、明治期に創立された大阪の豊國神社が、昭和36年（1961年）に大阪城内へ奉遷されたものです。秀吉公・秀頼公・秀長卿を御祭神として案内する、城内の宗教拠点です。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '大阪城豊國神社 公式サイト', license: '公式由緒参照・座標は境内周辺の概略位置',
+    sources: [
+      { sourceName: '大阪城豊國神社 公式サイト（御由緒）', sourceUrl: 'https://www.osaka-hokokujinja.org/yuisyo/', claimStatus: 'verified' },
+      { sourceName: '大阪府神社庁（豊國神社）', sourceUrl: 'https://www.osaka-jinjacho.jp/funai_jinja/dai7shibu/chuo-ku/07003hokokujinja.html', claimStatus: 'verified' }
+    ],
+    verificationNote: '大阪城内の境内周辺を示す概略位置です。参拝時間・行事・車両規制は公式サイトで確認してください。'
+  },
+  {
+    id: 'religious-2', name: '坐摩神社', category: 'religious', religiousType: '神社・摂津国一之宮',
+    coordinate: { latitude: 34.6809544, longitude: 135.498738, elevationMeter: 4 }, era: 'ancient', eraLabel: '古代以来の由緒・天正11年（1583年）に現地へ遷座',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '土地や居所を守る神を祀る、船場の鎮守です。',
+    description: '坐摩神社は、坐摩大神を祀る神社で、公式由緒では神武天皇の即位時に宮中へ奉斎されたことを起源としています。天正11年（1583年）に豊臣秀吉の大坂城築城に伴って現在地へ遷座したと伝えられ、摂津国一之宮としても案内されています。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '坐摩神社 公式サイト', license: '公式由緒参照・座標は國學院大學資料等を基にした概略位置',
+    sources: [
+      { sourceName: '坐摩神社 公式サイト（神社のご由緒）', sourceUrl: 'https://www.ikasuri.or.jp/yuisho.html', claimStatus: 'verified' },
+      { sourceName: '國學院大學デジタル・ミュージアム（坐摩神社）', sourceUrl: 'https://jmapps.ne.jp/kokugakuin/det.html?data_id=53479&data_idx=0&referer_id=53090', claimStatus: 'verified' }
+    ],
+    verificationNote: '社殿周辺の概略位置です。平日・土日祝で開門時間が異なるため、参拝前に公式サイトで確認してください。'
+  },
+  {
+    id: 'religious-3', name: '難波神社', category: 'religious', religiousType: '神社・仁徳天皇を祀る',
+    coordinate: { latitude: 34.6787459, longitude: 135.5001184, elevationMeter: 5 }, era: 'ancient', eraLabel: '仁徳天皇ゆかり・天正年間に現在地へ遷座',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '船場の中心で信仰を集めてきた、仁徳天皇を御祭神とする神社です。',
+    description: '難波神社は、公式サイトが仁徳天皇を御祭神とし、反正天皇の時代に創建されたと伝えています。その後、上本町を経て、豊臣秀吉の大坂城築城後の天正年間に現在地へ遷座したと案内されています。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '難波神社 公式サイト', license: '公式由緒参照・座標は所在地周辺の概略位置',
+    sources: [
+      { sourceName: '難波神社 公式サイト', sourceUrl: 'https://www.nanba-jinja.or.jp/', claimStatus: 'verified' },
+      { sourceName: '難波神社 地図・アクセス', sourceUrl: 'https://www.nanba-jinja.or.jp/map.html', claimStatus: 'verified' }
+    ],
+    verificationNote: '社殿周辺の概略位置です。祭礼・駐車場・参拝時間は公式サイトで確認してください。'
+  },
+  {
+    id: 'religious-4', name: '大念佛寺', category: 'religious', religiousType: '寺院・融通念佛宗総本山',
+    coordinate: { latitude: 34.627079, longitude: 135.551392, elevationMeter: 7 }, era: 'heian', eraLabel: '大治2年（1127年）建立・融通念佛宗総本山',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '平安末期から続く融通念佛宗の総本山で、平野郷の信仰の核です。',
+    description: '大念佛寺は、大阪市平野区にある融通念佛宗の総本山です。大阪市の案内では大治2年（1127年）に聖応大師良忍上人が建立したとされ、万部おねりなどの行事や大規模な木造本堂が地域の信仰と文化を伝えています。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '融通念佛宗総本山 大念佛寺 公式サイト', license: '公式・大阪市案内参照・座標は歴史地名資料の概略位置',
+    sources: [
+      { sourceName: '融通念佛宗総本山 大念佛寺 公式サイト', sourceUrl: 'https://www.dainenbutsuji.com/', claimStatus: 'verified' },
+      { sourceName: '大阪市平野区（大念佛寺）', sourceUrl: 'https://www.city.osaka.lg.jp/hirano/page/0000210310.html', claimStatus: 'verified' }
+    ],
+    verificationNote: '境内周辺の概略位置です。拝観時間・行事・境内利用は公式サイトで確認してください。'
+  },
+  {
+    id: 'religious-5', name: '杭全神社', category: 'religious', religiousType: '神社・平野郷の氏神',
+    coordinate: { latitude: 34.627903, longitude: 135.554916, elevationMeter: 7 }, era: 'heian', eraLabel: '平安時代初期創建と伝わる古社',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '平野郷の氏神として、祭礼と連歌の文化を受け継ぐ神社です。',
+    description: '杭全神社は、平野郷の氏神として信仰されてきた神社です。大阪ミュージアムの案内では平安時代初期の創建と伝えられ、公式サイトは全国唯一の連歌所やだんじり祭で知られることを紹介しています。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '杭全神社 公式サイト・大阪ミュージアム', license: '公式・自治体関連案内参照・座標は歴史地名資料の概略位置',
+    sources: [
+      { sourceName: '杭全神社 公式サイト', sourceUrl: 'https://kumata.jp/page/3', claimStatus: 'verified' },
+      { sourceName: '大阪ミュージアム（杭全神社）', sourceUrl: 'https://www.osaka-museum.com/spot/search/?act=detail&id=93', claimStatus: 'verified' }
+    ],
+    verificationNote: '社殿周辺の概略位置です。車両の進入・駐車や祭礼時の案内は公式サイトで確認してください。'
+  },
+  {
+    id: 'religious-6', name: '全興寺', category: 'religious', religiousType: '寺院・高野山真言宗',
+    coordinate: { latitude: 34.623285, longitude: 135.555388, elevationMeter: 6 }, era: 'asuka', eraLabel: '創建不詳・薬師如来を祀る寺伝',
+    verificationStatus: 'partially_verified',
+    verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+    summary: '平野の町の起源と結びつく寺伝と、古い仏像群を伝える寺院です。',
+    description: '全興寺は、寺伝で聖徳太子が薬師如来を安置したことを草創とし、平野の町の形成と結びつけて語られてきた寺院です。大阪市の案内では創建は不詳とされ、大阪市指定の仏像群など、確認済みの文化財情報と寺伝を分けて紹介します。',
+    mediaAssets: [], historicalMaterials: [],
+    source: '全興寺 公式サイト・大阪市文化財案内', license: '公式・大阪市案内参照・座標は所在地周辺の概略位置',
+    sources: [
+      { sourceName: '全興寺 公式サイト', sourceUrl: 'https://senkoji.net/', claimStatus: 'verified' },
+      { sourceName: '大阪市（全興寺）', sourceUrl: 'https://www.city.osaka.lg.jp/kensetsu/page/0000009212.html', claimStatus: 'verified' },
+      { sourceName: '大阪市（全興寺仏像群）', sourceUrl: 'https://www.city.osaka.lg.jp/kyoiku/cmsfiles/contents/0000669/669324/15.pdf', claimStatus: 'verified' }
+    ],
+    verificationNote: '寺院周辺の概略位置です。寺伝と文化財の説明を分けて表示しています。参拝・見学時間は公式サイトで確認してください。'
   },
   {
     id: 'disaster-1', name: '寝屋川・大川周辺の洪水浸水想定', category: 'disaster',
