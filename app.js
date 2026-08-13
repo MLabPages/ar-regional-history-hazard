@@ -526,6 +526,7 @@ class ARRegionalApp {
             : '防災';
       spotsPanel.innerHTML = `
         <div class="map-spots-title">${layerLabel}スポット</div>
+        ${this.currentLayer === 'religious' ? '<p class="religious-layer-note">由緒・創建年は各公式情報の記載範囲で表示</p>' : ''}
         ${filteredSpots.length === 0 ? this.getSpotsEmptyMessage() : filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
           <strong>${spot.name}</strong><small>${spot.eraLabel || spot.hazardInfo?.typeName || '情報'}</small>
         </button>`).join('')}
@@ -1573,6 +1574,7 @@ class ARRegionalApp {
 
   updateLayerUI() {
     const banner = this.disasterBanner;
+    document.getElementById('app-container')?.classList.toggle('religious-layer', this.currentLayer === 'religious');
     if (this.selectedSpot && this.selectedSpot.category !== this.currentLayer) {
       this.clearMapSpotSelection();
     }
