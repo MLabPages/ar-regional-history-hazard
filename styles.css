@@ -4957,3 +4957,102 @@ a:focus-visible {
     max-width: 360px;
   }
 }
+
+/* スマホでは地図を主役にし、補助操作と固定UIの占有を最小限にする。 */
+@media (max-width: 600px) {
+  .map-navigation-status:empty {
+    display: none;
+  }
+
+  .explore-quick-actions {
+    right: 8px;
+    bottom: 78px;
+    gap: 4px;
+  }
+
+  .explore-quick-actions > button {
+    width: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    justify-content: center;
+    padding: 7px;
+  }
+
+  .explore-quick-actions > button > span:not(.sr-only) {
+    display: none;
+  }
+
+  .explore-quick-actions > button > svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .explore-quick-actions > button > strong {
+    min-width: 0;
+    font-size: 0.62rem;
+  }
+
+  .bottom-nav.layer-tabs-compact,
+  .map-mode .layer-tabs-compact {
+    bottom: 8px;
+    padding: 4px;
+    gap: 3px;
+  }
+
+  .bottom-nav .tab-btn {
+    min-height: 50px;
+    padding: 5px 2px;
+    font-size: 0.64rem;
+  }
+
+  .bottom-nav .tab-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .bottom-sheet,
+  .map-mode .bottom-sheet,
+  .discovery-panel,
+  .walk-picks-panel,
+  .visit-log-panel,
+  .time-travel-panel {
+    bottom: 76px;
+  }
+
+  .map-mode .map-spots-panel {
+    bottom: 76px;
+  }
+
+  .map-spot-preview {
+    bottom: 76px;
+  }
+
+  .map-first-hint,
+  .bottom-left-stack {
+    bottom: 126px;
+  }
+
+  .has-spot-selection .bottom-left-stack {
+    bottom: 250px;
+  }
+
+  .map-tools-sheet:not(.hidden) ~ .bottom-left-stack {
+    bottom: 212px;
+  }
+
+  .hazard-sheet:not(.hidden) ~ .bottom-left-stack {
+    bottom: 318px;
+  }
+}
+
+@media (max-width: 370px) {
+  .explore-quick-actions > button {
+    width: 38px;
+    min-width: 38px;
+    padding: 6px;
+  }
+
+  .explore-quick-actions > button > strong {
+    font-size: 0.58rem;
+  }
+}

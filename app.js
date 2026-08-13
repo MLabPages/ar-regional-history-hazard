@@ -677,7 +677,10 @@ class ARRegionalApp {
       const spot = this.spots.find(item => item.id === button.dataset.walkPickId);
       if (spot) this.selectWalkPick(spot);
     });
-    this.visitLogProgress?.addEventListener('click', () => this.toggleVisitLogPanel());
+    this.visitLogProgress?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.toggleVisitLogPanel();
+    });
     document.getElementById('btn-close-visit-log')?.addEventListener('click', () => this.closeVisitLogPanel());
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !this.visitLogPanel?.classList.contains('hidden')) {
