@@ -58,6 +58,7 @@ class ARRegionalApp {
     this.shelters = [...EVACUATION_SHELTERS];
     this.selectedSpot = null;
     this.discoveredSpotIds = this.loadDiscoveredSpotIds();
+    this.visitRecords = this.loadVisitRecords();
     this.discoveryToastTimer = null;
 
     // DOMエレメント
@@ -115,6 +116,19 @@ class ARRegionalApp {
     this.walkPicksList = document.getElementById('walk-picks-list');
     this.walkPicksSummary = document.getElementById('walk-picks-summary');
     this.walkPicksProgress = document.getElementById('walk-picks-progress');
+    this.visitLogProgress = document.getElementById('visit-log-progress');
+    this.visitLogProgressValue = document.getElementById('visit-log-progress-value');
+    this.visitLogPanel = document.getElementById('visit-log-panel');
+    this.visitLogSummary = document.getElementById('visit-log-summary');
+    this.visitLogStats = document.getElementById('visit-log-stats');
+    this.visitNextStopContent = document.getElementById('visit-next-stop-content');
+    this.visitLogList = document.getElementById('visit-log-list');
+    this.modalVisitBox = document.getElementById('modal-visit-box');
+    this.modalVisitStatus = document.getElementById('modal-visit-status');
+    this.toggleVisitButton = document.getElementById('btn-toggle-visit');
+    this.modalVisitForm = document.getElementById('modal-visit-form');
+    this.modalVisitNote = document.getElementById('modal-visit-note');
+    this.saveVisitNoteButton = document.getElementById('btn-save-visit-note');
 
     // 年代別航空写真オーバーレイ（AR）
     this.aerialOverlay = document.getElementById('aerial-overlay');
@@ -662,6 +676,30 @@ class ARRegionalApp {
       const spot = this.spots.find(item => item.id === button.dataset.walkPickId);
       if (spot) this.selectWalkPick(spot);
     });
+    this.visitLogProgress?.addEventListener('click', () => this.openVisitLogPanel());
+    document.getElementById('btn-close-visit-log')?.addEventListener('click', () => {
+      this.visitLogPanel?.classList.add('hidden');
+    });
+    this.visitLogList?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-visit-spot-id]');
+      if (!button) return;
+      const spot = this.spots.find(item => item.id === button.dataset.visitSpotId);
+      if (spot) {
+        this.visitLogPanel?.classList.add('hidden');
+        this.openSpotModal(spot);
+      }
+    });
+    this.visitNextStopContent?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-next-stop-id]');
+      if (!button) return;
+      const spot = this.spots.find(item => item.id === button.dataset.nextStopId);
+      if (spot) {
+        this.visitLogPanel?.classList.add('hidden');
+        this.selectWalkPick(spot);
+      }
+    });
+    this.toggleVisitButton?.addEventListener('click', () => this.toggleVisitRecord());
+    this.saveVisitNoteButton?.addEventListener('click', () => this.saveVisitNote());
 
     // ヘッダー カメラON/OFFボタン
     if (this.toggleCameraBtn) {
@@ -2573,6 +2611,7 @@ class ARRegionalApp {
       discoveryStatus.classList.toggle('hidden', spot.category === 'disaster');
       discoveryStatus.classList.toggle('is-new', newlyDiscovered);
     }
+    this.renderVisitRecordControls(spot);
     // 直感的な信頼度バッジ（✓公式資料確認済み / ◐一部確認済み / △未確認情報を含む など）
     this.renderTrustBadge(spot, media);
     document.getElementById('modal-summary').textContent = spot.summary || '';
@@ -2681,6 +2720,162 @@ class ARRegionalApp {
     }
   }
 
+  loadVisitRecords() {
+    try {
+      const saved = JSON.parse(window.localStorage?.getItem('ar-visit-records') || '{}');
+      return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  saveVisitRecords() {
+    try {
+      window.localStorage?.setItem('ar-visit-records', JSON.stringify(this.visitRecords));
+    } catch (_) {
+      // 保存領域が使えなくても、閲覧中の記録はメモリ上で維持する
+    }
+  }
+
+  getVisitKind(spot) {
+    if (spot?.category === 'castle') return '城';
+    if (spot?.category === 'religious') {
+      const label = `${spot.religiousType || ''}${spot.name || ''}`;
+      return /寺|院/.test(label) && !/神社|神宮|大社|宮/.test(label) ? 'お寺' : '神社';
+    }
+    return spot?.category === 'community' ? '地域' : '歴史';
+  }
+
+  getVisitedSpots() {
+    const validIds = new Set(this.getDiscoverableSpots()
+      .filter(spot => spot.category === 'castle' || spot.category === 'religious')
+      .map(spot => spot.id));
+    return Object.entries(this.visitRecords)
+      .filter(([id, record]) => validIds.has(id) && record?.visitedAt)
+      .map(([id, record]) => ({
+        spot: this.spots.find(item => item.id === id),
+        record
+      }))
+      .filter(item => item.spot)
+      .sort((a, b) => String(b.record.visitedAt).localeCompare(String(a.record.visitedAt)));
+  }
+
+  formatVisitDate(value) {
+    if (!value) return '訪問日未記録';
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  getVisitStats() {
+    const spots = this.getDiscoverableSpots().filter(spot => spot.category === 'castle' || spot.category === 'religious');
+    return ['城', 'お寺', '神社'].map(kind => {
+      const total = spots.filter(spot => this.getVisitKind(spot) === kind).length;
+      const visited = spots.filter(spot => this.getVisitKind(spot) === kind && this.visitRecords[spot.id]?.visitedAt).length;
+      return { kind, total, visited };
+    });
+  }
+
+  isVisited(spot) {
+    return Boolean(spot && this.visitRecords[spot.id]?.visitedAt);
+  }
+
+  renderVisitRecordControls(spot) {
+    if (!this.modalVisitBox || !spot || (spot.category !== 'castle' && spot.category !== 'religious')) {
+      this.modalVisitBox?.classList.add('hidden');
+      return;
+    }
+    const record = this.visitRecords[spot.id];
+    const visited = Boolean(record?.visitedAt);
+    this.modalVisitBox.classList.remove('hidden');
+    this.modalVisitStatus.textContent = visited ? `${this.formatVisitDate(record.visitedAt)}に訪問` : '未訪問';
+    this.modalVisitStatus.classList.toggle('is-visited', visited);
+    this.toggleVisitButton.classList.toggle('is-visited', visited);
+    this.toggleVisitButton.innerHTML = `<i data-lucide="${visited ? 'rotate-ccw' : 'map-pin-check'}"></i><span>${visited ? '訪問記録を取り消す' : '訪問したら記録する'}</span>`;
+    this.modalVisitForm.classList.toggle('hidden', !visited);
+    this.modalVisitNote.value = visited ? String(record.note || '') : '';
+    if (window.lucide) lucide.createIcons();
+  }
+
+  toggleVisitRecord() {
+    const spot = this.selectedSpot;
+    if (!spot || (spot.category !== 'castle' && spot.category !== 'religious')) return;
+    if (this.isVisited(spot)) {
+      delete this.visitRecords[spot.id];
+      this.saveVisitRecords();
+      this.updateVisitUI();
+      this.renderVisitRecordControls(spot);
+      this.showDiscoveryToast({ ...spot, name: `${spot.name}の訪問記録を取り消しました`, toastTitle: '巡り帳を更新' });
+      return;
+    }
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    this.visitRecords[spot.id] = { visitedAt: today, note: '' };
+    this.saveVisitRecords();
+    this.updateVisitUI();
+    this.renderVisitRecordControls(spot);
+    this.showDiscoveryToast({ ...spot, name: `${spot.name}を巡り帳に記録しました`, toastTitle: '巡り帳に記録' });
+  }
+
+  saveVisitNote() {
+    const spot = this.selectedSpot;
+    if (!spot || !this.isVisited(spot)) return;
+    this.visitRecords[spot.id].note = this.modalVisitNote.value.trim();
+    this.saveVisitRecords();
+    this.updateVisitUI();
+    this.showDiscoveryToast({ ...spot, name: `${spot.name}のメモを保存しました`, toastTitle: '巡り帳を更新' });
+  }
+
+  updateVisitUI() {
+    const visited = this.getVisitedSpots();
+    if (this.visitLogProgressValue) this.visitLogProgressValue.textContent = String(visited.length);
+    this.visitLogProgress?.classList.toggle('has-visits', visited.length > 0);
+    this.renderVisitLogPanel();
+  }
+
+  renderVisitLogPanel() {
+    if (!this.visitLogSummary || !this.visitLogList) return;
+    const discoverable = this.getDiscoverableSpots().filter(spot => spot.category === 'castle' || spot.category === 'religious');
+    const visited = this.getVisitedSpots();
+    this.visitLogSummary.textContent = visited.length
+      ? `${discoverable.length}か所のうち${visited.length}か所を訪問しました。次の一歩を見つけましょう。`
+      : '気になった場所へ出かけたら、巡り帳に日付とひとことを残せます。';
+    this.visitLogStats.innerHTML = this.getVisitStats().map(({ kind, visited: count, total }) => `<div class="visit-stat"><strong>${count}</strong><span>${kind}</span><small>/ ${total}</small></div>`).join('');
+
+    const next = this.getWalkPicks()
+      .filter(spot => spot.category === 'castle' || spot.category === 'religious')
+      .find(spot => !this.isVisited(spot))
+      || discoverable
+        .filter(spot => !this.isVisited(spot))
+        .map(spot => ({
+          ...spot,
+          distanceFromMapCenter: this.calculateDistance(
+            this.map?.getCenter?.()?.lat || this.userPos.latitude,
+            this.map?.getCenter?.()?.lng || this.userPos.longitude,
+            spot.coordinate.latitude,
+            spot.coordinate.longitude
+          )
+        }))
+        .sort((a, b) => a.distanceFromMapCenter - b.distanceFromMapCenter)[0];
+    this.visitNextStopContent.innerHTML = next
+      ? `<button type="button" class="visit-next-stop-card" data-next-stop-id="${next.id}"><span class="visit-next-icon"><i data-lucide="map-pin"></i></span><span><strong>${next.name}</strong><small>${this.getVisitKind(next)}・約${this.formatDistance(next.distanceFromMapCenter || 0)}｜地図で見る</small></span><i data-lucide="chevron-right"></i></button>`
+      : '<div class="visit-complete"><i data-lucide="trophy"></i><strong>登録スポットを巡りました</strong><span>発見ノートで物語を振り返れます。</span></div>';
+    this.visitLogList.innerHTML = visited.length
+      ? visited.map(({ spot, record }) => `<button type="button" class="visit-log-item" data-visit-spot-id="${spot.id}"><span class="visit-kind">${this.getVisitKind(spot)}</span><span class="visit-log-copy"><strong>${spot.name}</strong><small>${this.formatVisitDate(record.visitedAt)}${record.note ? `｜${this.escapeHtml(record.note)}` : ''}</small></span><i data-lucide="chevron-right"></i></button>`).join('')
+      : '<div class="visit-log-empty"><i data-lucide="footprints"></i><span>訪問した場所がここに並びます。</span></div>';
+    if (window.lucide) lucide.createIcons();
+  }
+
+  openVisitLogPanel() {
+    this.discoveryPanel?.classList.add('hidden');
+    this.walkPicksPanel?.classList.add('hidden');
+    this.renderVisitLogPanel();
+    this.visitLogPanel?.classList.remove('hidden');
+  }
+
+  escapeHtml(value) {
+    return String(value || '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+  }
+
   getDiscoverableSpots() {
     return this.getPointSpots().filter(spot => spot.category !== 'disaster');
   }
@@ -2706,6 +2901,7 @@ class ARRegionalApp {
     this.discoveryProgress?.classList.toggle('has-discoveries', count > 0);
     this.renderDiscoveryPanel();
     this.renderWalkPicks();
+    this.updateVisitUI();
     this.updateMapSpotPreview(this.selectedSpot);
   }
 
@@ -2798,7 +2994,7 @@ class ARRegionalApp {
   showDiscoveryToast(spot) {
     if (!this.discoveryToast) return;
     window.clearTimeout(this.discoveryToastTimer);
-    this.discoveryToast.innerHTML = `<i data-lucide="stamp"></i><span><strong>発見ノートに記録</strong>${spot.name}</span>`;
+    this.discoveryToast.innerHTML = `<i data-lucide="stamp"></i><span><strong>${spot.toastTitle || '発見ノートに記録'}</strong>${spot.name}</span>`;
     this.discoveryToast.classList.remove('hidden');
     this.discoveryToast.classList.add('is-visible');
     if (window.lucide) lucide.createIcons();

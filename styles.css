@@ -3113,6 +3113,311 @@ a:focus-visible {
   }
 }
 
+/* 巡り帳: 城・寺・神社を訪ねる継続導線 */
+.explore-quick-actions .visit-log-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: static;
+  min-height: 42px;
+  padding: 8px 11px;
+  color: var(--ink-950);
+  background: rgba(255, 253, 247, 0.97);
+  border: 1px solid rgba(11, 35, 66, 0.24);
+  border-radius: 11px;
+  box-shadow: 0 8px 20px rgba(7, 24, 45, 0.2);
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.visit-log-progress svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-community);
+}
+
+.visit-log-progress strong {
+  min-width: 1.1em;
+  color: var(--accent-community);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.visit-log-progress.has-visits { border-color: rgba(39, 124, 120, 0.58); }
+
+.visit-log-panel {
+  position: fixed;
+  right: 10px;
+  bottom: 84px;
+  z-index: 965;
+  width: min(430px, calc(100vw - 20px));
+  max-height: min(72vh, 600px);
+  overflow: auto;
+  padding: 15px;
+  color: var(--ink-950);
+  background: linear-gradient(140deg, rgba(39, 124, 120, 0.07), transparent 45%), var(--paper);
+  border: 1px solid rgba(11, 35, 66, 0.25);
+  border-radius: 15px;
+  box-shadow: 0 18px 42px rgba(7, 24, 45, 0.34);
+}
+
+.visit-log-header,
+.visit-log-header > div,
+.visit-section-label,
+.modal-visit-heading,
+.modal-visit-heading > div {
+  display: flex;
+  align-items: center;
+}
+
+.visit-log-header,
+.modal-visit-heading {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.visit-log-header {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.visit-log-header > div,
+.visit-section-label,
+.modal-visit-heading > div { gap: 7px; }
+
+.visit-log-header > div { font-size: 1rem; }
+.visit-log-header svg,
+.visit-section-label svg,
+.modal-visit-heading > div { color: var(--accent-community); }
+
+.visit-log-header .btn-icon-small {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: #5f6c7a;
+  border-radius: 8px;
+}
+
+.visit-log-summary {
+  margin: 10px 0;
+  color: #68727d;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.visit-log-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 11px 0 15px;
+}
+
+.visit-stat {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 4px;
+  padding: 9px 8px;
+  background: rgba(39, 124, 120, 0.08);
+  border: 1px solid rgba(39, 124, 120, 0.18);
+  border-radius: 10px;
+}
+
+.visit-stat strong { color: var(--accent-community); font-size: 1.1rem; }
+.visit-stat span,
+.visit-stat small { color: #5f6c7a; font-size: 0.66rem; }
+.visit-stat small { grid-column: 2; }
+
+.visit-section-label {
+  margin: 12px 0 7px;
+  color: var(--ink-950);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.visit-next-stop-card,
+.visit-log-item {
+  display: grid;
+  align-items: center;
+  width: 100%;
+  color: var(--ink-950);
+  text-align: left;
+  background: rgba(255, 253, 247, 0.78);
+  border: 1px solid rgba(39, 124, 120, 0.24);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.visit-next-stop-card {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 9px;
+  padding: 9px;
+}
+
+.visit-next-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #fff;
+  background: var(--accent-community);
+  border-radius: 9px;
+}
+
+.visit-next-stop-card svg:last-child,
+.visit-log-item > svg { color: #6d7d82; }
+
+.visit-next-stop-card strong,
+.visit-log-copy strong {
+  display: block;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visit-next-stop-card small,
+.visit-log-copy small {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  color: #68727d;
+  font-size: 0.66rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visit-log-list { display: grid; gap: 5px; }
+
+.visit-log-item {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 9px;
+  padding: 8px;
+  border-color: rgba(11, 35, 66, 0.14);
+  background: transparent;
+}
+
+.visit-kind {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  min-height: 27px;
+  padding: 3px 5px;
+  color: var(--accent-community);
+  background: rgba(39, 124, 120, 0.1);
+  border-radius: 7px;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.visit-next-stop-card:hover,
+.visit-next-stop-card:focus-visible,
+.visit-log-item:hover,
+.visit-log-item:focus-visible {
+  border-color: var(--accent-community);
+  outline: none;
+}
+
+.visit-complete,
+.visit-log-empty {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 15px 10px;
+  color: #68727d;
+  text-align: center;
+}
+
+.visit-complete svg,
+.visit-log-empty svg { width: 25px; height: 25px; color: var(--accent-community); }
+.visit-complete strong { color: var(--ink-950); font-size: 0.78rem; }
+.visit-complete span,
+.visit-log-empty span { font-size: 0.68rem; }
+
+.visit-log-note {
+  margin: 13px 0 0;
+  color: #8b7566;
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+.modal-visit-box {
+  margin: 1px 0 3px;
+  padding: 10px;
+  background: rgba(39, 124, 120, 0.08);
+  border: 1px solid rgba(39, 124, 120, 0.22);
+  border-radius: 11px;
+}
+
+.modal-visit-heading { margin-bottom: 8px; }
+.modal-visit-heading > div { font-size: 0.76rem; font-weight: 800; }
+.modal-visit-heading > div svg { width: 15px; height: 15px; }
+
+#modal-visit-status { color: #7c6e62; font-size: 0.66rem; }
+#modal-visit-status.is-visited { color: var(--accent-community); font-weight: 800; }
+
+.btn-visit-record,
+.btn-save-visit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  color: #fff;
+  background: var(--accent-community);
+  border: 0;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-visit-record.is-visited {
+  color: #725b4c;
+  background: rgba(255, 253, 247, 0.8);
+  border: 1px solid rgba(124, 110, 98, 0.3);
+}
+
+.btn-visit-record svg,
+.btn-save-visit svg { width: 15px; height: 15px; }
+
+.modal-visit-form { display: grid; gap: 6px; margin-top: 9px; }
+.modal-visit-form label { color: #5f6c7a; font-size: 0.68rem; font-weight: 700; }
+.modal-visit-form label small { font-weight: 500; }
+
+#modal-visit-note {
+  width: 100%;
+  min-height: 54px;
+  padding: 7px 8px;
+  color: var(--ink-950);
+  background: rgba(255, 253, 247, 0.92);
+  border: 1px solid rgba(11, 35, 66, 0.18);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.74rem;
+  resize: vertical;
+}
+
+.btn-save-visit {
+  color: var(--accent-community);
+  background: transparent;
+  border: 1px solid rgba(39, 124, 120, 0.34);
+}
+
+@media (max-width: 600px) {
+  .visit-log-panel { right: 8px; bottom: 78px; width: calc(100vw - 16px); max-height: min(68vh, 540px); }
+}
+
+@media (max-width: 370px) {
+  .visit-log-progress > span { display: none; }
+}
+
 /* 防災表示は地図を隠さず、選択状態は高コントラストで示す */
 .hazard-sheet .hazard-badge,
 .hazard-sheet #hazard-depth-text {

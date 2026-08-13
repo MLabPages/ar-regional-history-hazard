@@ -278,6 +278,11 @@
           <span>発見ノート</span>
           <strong id="discovery-progress-value">0 / 0</strong>
         </button>
+        <button id="visit-log-progress" class="visit-log-progress" type="button" aria-label="巡り帳を開く">
+          <i data-lucide="book-marked"></i>
+          <span>巡り帳</span>
+          <strong id="visit-log-progress-value">0</strong>
+        </button>
       </div>
 
       <!-- 防災ツール: 折りたたみ式 -->
@@ -363,6 +368,27 @@
         <div id="walk-picks-list" class="walk-picks-list"></div>
       </aside>
 
+      <aside id="visit-log-panel" class="visit-log-panel hidden" aria-label="巡り帳">
+        <div class="visit-log-header">
+          <div>
+            <i data-lucide="book-marked"></i>
+            <strong>巡り帳</strong>
+          </div>
+          <button id="btn-close-visit-log" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+        </div>
+        <p id="visit-log-summary" class="visit-log-summary"></p>
+        <div id="visit-log-stats" class="visit-log-stats" aria-label="種類別の訪問数"></div>
+        <section class="visit-next-stop">
+          <div class="visit-section-label"><i data-lucide="compass"></i><span>次の一か所</span></div>
+          <div id="visit-next-stop-content"></div>
+        </section>
+        <section class="visit-history-section">
+          <div class="visit-section-label"><i data-lucide="check-check"></i><span>訪問した場所</span></div>
+          <div id="visit-log-list" class="visit-log-list"></div>
+        </section>
+        <p class="visit-log-note">訪問記録はこの端末内だけに保存されます。位置情報は自動で記録しません。</p>
+      </aside>
+
       <div id="discovery-toast" class="discovery-toast hidden" role="status" aria-live="polite"></div>
 
       <!-- 下部ナビ: 3分類と一覧 -->
@@ -420,6 +446,18 @@
         <div class="modal-body">
           <h2 id="modal-title">スポット名称</h2>
           <p id="modal-discovery-status" class="modal-discovery-status hidden"></p>
+          <section id="modal-visit-box" class="modal-visit-box hidden" aria-label="訪問記録">
+            <div class="modal-visit-heading">
+              <div><i data-lucide="book-marked"></i><strong>巡り帳</strong></div>
+              <span id="modal-visit-status">未訪問</span>
+            </div>
+            <button id="btn-toggle-visit" class="btn-visit-record" type="button"><i data-lucide="map-pin-check"></i><span>訪問したら記録する</span></button>
+            <div id="modal-visit-form" class="modal-visit-form hidden">
+              <label for="modal-visit-note">ひとことメモ <small>（任意・140字まで）</small></label>
+              <textarea id="modal-visit-note" maxlength="140" rows="2" placeholder="見つけたもの、感じたことを残せます"></textarea>
+              <button id="btn-save-visit-note" class="btn-save-visit" type="button"><i data-lucide="save"></i><span>メモを保存</span></button>
+            </div>
+          </section>
           <span id="modal-trust-badge" class="trust-badge"></span>
           <p id="modal-summary" class="modal-summary">概要</p>
           <div id="modal-present-photo" class="present-photo-box hidden"></div>
@@ -467,6 +505,7 @@
             <li><strong>現地AR</strong>: その場所でカメラ映像に情報を重ねる</li>
             <li><strong>下のタブ</strong>: 歴史 / 地域 / 防災 を切替</li>
             <li><strong>発見ノート</strong>: 読んだ歴史・地域スポットを端末内に記録</li>
+            <li><strong>巡り帳</strong>: 城・寺・神社の訪問日とひとことを端末内に記録</li>
             <li><strong>左下の出典</strong>: 今見ている地図・資料の出典を常時表示</li>
           </ul>
           <h3>公的データ出典</h3>
