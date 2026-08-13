@@ -737,6 +737,7 @@ const 大坂城跡整備計画 = {
 };
 
 // 全国の文化拠点。由緒は各社寺・自治体・城郭公式案内、座標は境内・城域周辺の概略位置を参照。
+// 2026-08-13: 四国遍路・出羽三山・北海道の宗教拠点と城郭を追加。
 const makeNationalSpot = ({
   id, name, category, region, coordinate, era, eraLabel, summary, description,
   sourceName, sourceUrl, religiousType, castleType, verificationNote
