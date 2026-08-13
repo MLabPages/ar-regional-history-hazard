@@ -736,7 +736,86 @@ const 大坂城跡整備計画 = {
   claimStatus: 'verified'
 };
 
+// 全国の文化拠点。由緒は各社寺・自治体・城郭公式案内、座標は境内・城域周辺の概略位置を参照。
+const makeNationalSpot = ({
+  id, name, category, region, coordinate, era, eraLabel, summary, description,
+  sourceName, sourceUrl, religiousType, castleType, verificationNote
+}) => ({
+  id, name, category, region,
+  ...(religiousType ? { religiousType } : {}),
+  ...(castleType ? { castleType } : {}),
+  coordinate: { ...coordinate },
+  era, eraLabel,
+  verificationStatus: 'partially_verified',
+  verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
+  summary,
+  description,
+  mediaAssets: [],
+  historicalMaterials: [],
+  source: sourceName,
+  license: `公式説明参照・座標は${category === 'castle' ? '城域' : '境内'}周辺の概略位置`,
+  sources: [
+    { sourceName, sourceUrl, claimStatus: 'verified' },
+    { sourceName: 'OpenStreetMap', sourceUrl: DATA_SOURCES.osmCopyright, claimStatus: 'verified' }
+  ],
+  verificationNote: verificationNote || `ARピンは${category === 'castle' ? '城域' : '境内'}周辺の概略位置です。開館・参拝時間や立入制限は公式サイトで確認してください。`
+});
+
+const NATIONAL_CULTURAL_SPOTS = [
+  // 寺社・霊場（全国）
+  makeNationalSpot({ id: 'religious-7', name: '中尊寺', category: 'religious', region: '東北', coordinate: { latitude: 39.0014, longitude: 141.0994, elevationMeter: 165 }, era: 'heian', eraLabel: '嘉祥3年（850年）開山・平泉の仏教文化', religiousType: '寺院・天台宗東北大本山', summary: '奥州藤原氏が平和な仏国土を願って整えた、平泉を代表する寺院です。', description: '中尊寺は850年に開かれ、12世紀初めに奥州藤原氏初代・清衡が大規模な堂塔を造営しました。戦乱で亡くなった人々を敵味方なく供養し、東北に仏国土を築くという願いを伝える宗教拠点です。', sourceName: '中尊寺 公式サイト（御由緒）', sourceUrl: 'https://www.chusonji.or.jp/know/', verificationNote: 'ARピンは金色堂を含む境内周辺の概略位置です。拝観時間・入山料は公式サイトで確認してください。' }),
+  makeNationalSpot({ id: 'religious-8', name: '瑞巌寺', category: 'religious', region: '東北', coordinate: { latitude: 38.3679, longitude: 141.0615, elevationMeter: 8 }, era: 'edo', eraLabel: '慶長14年（1609年）伊達政宗による再興', religiousType: '寺院・臨済宗妙心寺派', summary: '松島の景観と一体になった、伊達政宗の菩提寺です。', description: '瑞巌寺は松島に伝わる古刹を伊達政宗が再興し、1609年に完成した寺院です。国宝の本堂や庫裏を通じて、奥州の霊場と近世大名文化が重なった場所をたどれます。', sourceName: '国宝 瑞巌寺 公式サイト（縁起）', sourceUrl: 'https://zuiganji.or.jp/history/' }),
+  makeNationalSpot({ id: 'religious-9', name: '日光東照宮', category: 'religious', region: '関東', coordinate: { latitude: 36.7581, longitude: 139.5987, elevationMeter: 650 }, era: 'edo', eraLabel: '元和3年（1617年）創建・徳川家康を祀る', religiousType: '神社・日光の社寺', summary: '徳川家康を祀り、日光の山岳信仰と近世の国家的祭祀が交わる神社です。', description: '日光東照宮は徳川家康を御祭神とする神社で、日光山の自然と絢爛な社殿群が一体となっています。陽明門などの建築・彫刻を通して、江戸幕府が整えた宗教的・政治的拠点を学べます。', sourceName: '日光東照宮 公式サイト', sourceUrl: 'https://toshogu.jp/' }),
+  makeNationalSpot({ id: 'religious-10', name: '成田山新勝寺', category: 'religious', region: '関東', coordinate: { latitude: 35.7851, longitude: 140.3181, elevationMeter: 34 }, era: 'heian', eraLabel: '天慶3年（940年）開山・不動尊信仰', religiousType: '寺院・真言宗智山派大本山', summary: '不動明王への信仰を中心に、全国から参詣者を集めてきた寺院です。', description: '成田山新勝寺は、平将門の乱を鎮めるために不動明王を奉安したことを起源とする寺院です。成田の門前町とともに、護摩祈祷を中心とした民衆信仰の広がりを感じられます。', sourceName: '成田山新勝寺 公式サイト', sourceUrl: 'https://www.naritasan.or.jp/' }),
+  makeNationalSpot({ id: 'religious-11', name: '浅草寺', category: 'religious', region: '関東', coordinate: { latitude: 35.7148, longitude: 139.7967, elevationMeter: 4 }, era: 'asuka', eraLabel: '推古天皇36年（628年）創建伝承', religiousType: '寺院・聖観音宗総本山', summary: '東京の門前町・浅草の中心で、観音信仰を今に伝える古刹です。', description: '浅草寺は隅田川から現れた観音像を祀ったことを起源と伝える、東京を代表する寺院です。雷門から仲見世を通って本堂へ至る参詣の道は、都市の中で続く民衆信仰の景観を形づくっています。', sourceName: '浅草寺 公式サイト', sourceUrl: 'https://www.senso-ji.jp/' }),
+  makeNationalSpot({ id: 'religious-12', name: '明治神宮', category: 'religious', region: '関東', coordinate: { latitude: 35.6764, longitude: 139.6993, elevationMeter: 31 }, era: 'taisho', eraLabel: '大正9年（1920年）創建・明治天皇を祀る', religiousType: '神社・明治天皇と昭憲皇太后を祀る', summary: '近代日本の記憶と、都心に広がる人工林が一体となった神社です。', description: '明治神宮は明治天皇と昭憲皇太后をお祀りする神社として1920年に創建されました。約100年かけて育てられてきた鎮守の森は、近代の国家的祭祀と都市の自然形成を考える手がかりになります。', sourceName: '明治神宮 公式サイト（Q&A）', sourceUrl: 'https://www.meijijingu.or.jp/faq/' }),
+  makeNationalSpot({ id: 'religious-13', name: '鹿島神宮', category: 'religious', region: '関東', coordinate: { latitude: 35.9680, longitude: 140.6315, elevationMeter: 37 }, era: 'ancient', eraLabel: '常陸国一之宮・武甕槌大神を祀る', religiousType: '神社・東国三社', summary: '東国三社の一つとして知られる、古代から続く鹿島の鎮守です。', description: '鹿島神宮は武甕槌大神を御祭神とし、古代から東国の信仰・交通の要所として崇敬されてきた神社です。香取神宮・息栖神社と結ぶ東国三社の信仰圏にもつながります。', sourceName: '鹿島神宮 公式サイト', sourceUrl: 'https://kashimajingu.jp/' }),
+  makeNationalSpot({ id: 'religious-14', name: '香取神宮', category: 'religious', region: '関東', coordinate: { latitude: 35.8874, longitude: 140.5283, elevationMeter: 41 }, era: 'ancient', eraLabel: '下総国一之宮・経津主大神を祀る', religiousType: '神社・東国三社', summary: '香取の森に鎮座し、東国三社の信仰を伝える古社です。', description: '香取神宮は経津主大神を御祭神とする下総国一之宮です。鹿島神宮とともに東国の武神信仰を担い、香取の森と参道が古社の立地を今に伝えています。', sourceName: '香取神宮 公式サイト', sourceUrl: 'https://katori-jingu.or.jp/' }),
+  makeNationalSpot({ id: 'religious-15', name: '善光寺', category: 'religious', region: '中部', coordinate: { latitude: 36.6614, longitude: 138.1877, elevationMeter: 380 }, era: 'asuka', eraLabel: '皇極天皇元年（642年）現在地へ遷座伝承', religiousType: '寺院・無宗派の信仰拠点', summary: '宗派を問わず人々を受け入れてきた、信州を代表する大寺院です。', description: '善光寺は一光三尊阿弥陀如来を御本尊とし、約1400年にわたり広い信仰を集めてきました。特定の宗派に属さず、長野の門前町を中心に全国へ信仰が広がった拠点です。', sourceName: '善光寺 公式サイト（紹介）', sourceUrl: 'https://www.zenkoji.jp/about/' }),
+  makeNationalSpot({ id: 'religious-16', name: '諏訪大社 上社本宮', category: 'religious', region: '中部', coordinate: { latitude: 35.9981, longitude: 138.1166, elevationMeter: 760 }, era: 'ancient', eraLabel: '信濃国一之宮・御柱祭の社', religiousType: '神社・諏訪信仰の総本社', summary: '山と湖の信仰、御柱祭で知られる諏訪信仰の中心です。', description: '諏訪大社は上社・下社からなる信濃国一之宮で、御柱祭などの独自の祭礼文化を伝えます。上社本宮では、諏訪の地形と古い信仰の結びつきを現地で感じられます。', sourceName: '諏訪大社 公式サイト', sourceUrl: 'https://suwataisha.or.jp/' }),
+  makeNationalSpot({ id: 'religious-17', name: '熱田神宮', category: 'religious', region: '中部', coordinate: { latitude: 35.1264, longitude: 136.9085, elevationMeter: 8 }, era: 'ancient', eraLabel: '1900年以上の歴史・草薙神剣を祀る', religiousType: '神社・三種の神器ゆかり', summary: '草薙神剣を祀り、名古屋の都市形成とともに歩んできた大社です。', description: '熱田神宮は草薙神剣を祀る神宮として、1900年以上の歴史を伝えています。古代の神話・宮廷儀礼・尾張の地域信仰が重なる、東海を代表する宗教拠点です。', sourceName: '熱田神宮 公式サイト（歴史）', sourceUrl: 'https://www.atsutajingu.or.jp/jingu/about/history.html' }),
+  makeNationalSpot({ id: 'religious-18', name: '伊勢神宮 内宮', category: 'religious', region: '中部', coordinate: { latitude: 34.4550, longitude: 136.7256, elevationMeter: 32 }, era: 'ancient', eraLabel: '皇大神宮・天照大御神を祀る', religiousType: '神宮・皇大神宮（内宮）', summary: '天照大御神を祀り、「お伊勢参り」の中心となってきた神宮です。', description: '伊勢神宮の内宮は皇大神宮といい、天照大御神をお祀りしています。外宮をはじめとする宮域全体と式年遷宮の営みを通じ、日本の祭祀文化を今に伝える中心です。', sourceName: '伊勢神宮 公式サイト（神宮について）', sourceUrl: 'https://www.isejingu.or.jp/about/index.html' }),
+  makeNationalSpot({ id: 'religious-19', name: '比叡山延暦寺', category: 'religious', region: '近畿', coordinate: { latitude: 35.0708, longitude: 135.8330, elevationMeter: 680 }, era: 'heian', eraLabel: '延暦7年（788年）最澄開創・日本仏教の母山', religiousType: '寺院・天台宗総本山', summary: '多くの宗派の祖師を育てた、比叡山の山岳仏教拠点です。', description: '比叡山延暦寺は最澄が開いた一乗止観院を起源とする天台宗の総本山です。東塔・西塔・横川に広がる堂塔群と修行の場は、日本仏教史の大きな流れをたどる手がかりになります。', sourceName: '比叡山延暦寺 公式サイト', sourceUrl: 'https://www.hieizan.or.jp/' }),
+  makeNationalSpot({ id: 'religious-20', name: '伏見稲荷大社', category: 'religious', region: '近畿', coordinate: { latitude: 34.9671, longitude: 135.7727, elevationMeter: 35 }, era: 'nara', eraLabel: '和銅4年（711年）創建伝承・稲荷信仰総本宮', religiousType: '神社・全国稲荷社の総本宮', summary: '稲荷山全体を信仰の場とする、全国の稲荷社の総本宮です。', description: '伏見稲荷大社は稲荷山の三ヶ峰を中心に、五穀豊穣や商売繁昌の信仰を集めてきました。千本鳥居だけでなく、山そのものを歩く参詣の構造が特徴です。', sourceName: '伏見稲荷大社 公式サイト（由緒）', sourceUrl: 'https://inari.jp/about/' }),
+  makeNationalSpot({ id: 'religious-21', name: '清水寺', category: 'religious', region: '近畿', coordinate: { latitude: 34.9949, longitude: 135.7850, elevationMeter: 95 }, era: 'heian', eraLabel: '宝亀9年（778年）開創伝承・北法相宗大本山', religiousType: '寺院・北法相宗大本山', summary: '音羽の滝と舞台で知られる、京都東山の観音信仰の拠点です。', description: '清水寺は音羽山の観音霊場として開創され、現在の本堂は江戸初期に再建されました。坂道・門前・舞台を含む景観から、山の信仰が都市の文化へ広がった様子をたどれます。', sourceName: '清水寺 公式サイト', sourceUrl: 'https://www.kiyomizudera.or.jp/' }),
+  makeNationalSpot({ id: 'religious-22', name: '東大寺', category: 'religious', region: '近畿', coordinate: { latitude: 34.6887, longitude: 135.8398, elevationMeter: 90 }, era: 'nara', eraLabel: '天平勝宝4年（752年）大仏開眼供養', religiousType: '寺院・華厳宗大本山', summary: '国家の安寧と万民の豊楽を願って建立された、奈良の大寺院です。', description: '東大寺は国分寺として建立され、盧舎那仏の造立と大仏殿の建立を進めた奈良時代の国家的寺院です。大仏殿や二月堂の儀礼は、古代から続く祈りと都市の歴史を伝えます。', sourceName: '東大寺 公式サイト（歴史）', sourceUrl: 'https://www.todaiji.or.jp/history/' }),
+  makeNationalSpot({ id: 'religious-23', name: '春日大社', category: 'religious', region: '近畿', coordinate: { latitude: 34.6813, longitude: 135.8480, elevationMeter: 105 }, era: 'nara', eraLabel: '神護景雲2年（768年）創建・春日神社総本社', religiousType: '神社・全国春日神社の総本社', summary: '御蓋山の森とともに、1200年以上の祭祀を続ける古社です。', description: '春日大社は768年、称徳天皇の勅命により御本殿が造営されたとされています。約3000社の春日神社の総本社で、神山・社殿・祭礼が一体になった宗教景観を伝えます。', sourceName: '春日大社 公式サイト（ご由緒）', sourceUrl: 'https://www.kasugataisha.or.jp/about/' }),
+  makeNationalSpot({ id: 'religious-24', name: '高野山 金剛峯寺', category: 'religious', region: '近畿', coordinate: { latitude: 34.2130, longitude: 135.5850, elevationMeter: 800 }, era: 'heian', eraLabel: '弘仁7年（816年）空海開創・真言密教の聖地', religiousType: '寺院・高野山真言宗総本山', summary: '山上の宗教都市として発展した、真言密教の総本山です。', description: '高野山は空海が開いた真言密教の道場で、金剛峯寺を中心に山内の寺院群と奥之院が広がります。参詣道と宿坊文化を含め、山岳霊場が町として続く姿を体験できます。', sourceName: '高野山真言宗 総本山金剛峯寺 公式サイト', sourceUrl: 'https://www.koyasan.or.jp/' }),
+  makeNationalSpot({ id: 'religious-25', name: '石清水八幡宮', category: 'religious', region: '近畿', coordinate: { latitude: 34.8848, longitude: 135.7007, elevationMeter: 120 }, era: 'heian', eraLabel: '貞観元年（859年）創建・八幡信仰の社', religiousType: '神社・日本三大八幡宮', summary: '男山の山上に鎮座し、都の守護と八幡信仰を担ってきた神社です。', description: '石清水八幡宮は859年に宇佐神宮から八幡大神を勧請したことを起源とする神社です。男山の地形と社殿の配置から、京都盆地を見守る宗教的・軍事的な要衝を読み取れます。', sourceName: '石清水八幡宮 公式サイト', sourceUrl: 'https://iwashimizu.or.jp/' }),
+  makeNationalSpot({ id: 'religious-26', name: '熊野本宮大社', category: 'religious', region: '近畿', coordinate: { latitude: 33.8380, longitude: 135.7747, elevationMeter: 67 }, era: 'ancient', eraLabel: '熊野三山・全国熊野信仰の中心', religiousType: '神社・熊野三山の一社', summary: '熊野古道と結びつく、山岳信仰と巡礼の中心です。', description: '熊野本宮大社は熊野三山の一つで、熊野川流域の自然と巡礼の道に支えられてきました。熊野詣の広がりは、遠く離れた地域を結ぶ日本の宗教文化を物語ります。', sourceName: '熊野本宮大社 公式サイト', sourceUrl: 'https://www.hongutaisha.jp/' }),
+  makeNationalSpot({ id: 'religious-27', name: '出雲大社', category: 'religious', region: '中国', coordinate: { latitude: 35.4021, longitude: 132.6852, elevationMeter: 20 }, era: 'ancient', eraLabel: '大国主大神を祀る・出雲国造家の祭祀', religiousType: '神社・縁結びと国譲りの信仰拠点', summary: '大国主大神を祀り、古代から「むすび」の信仰を集めてきた大社です。', description: '出雲大社は大国主大神をお祀りし、国づくりと目に見えない世界を司る神としての信仰を伝えています。巨大な本殿と神楽殿、門前の参詣道から出雲の宗教文化を学べます。', sourceName: '出雲大社 公式サイト（大国主大神）', sourceUrl: 'https://izumooyashiro.or.jp/about/ookami' }),
+  makeNationalSpot({ id: 'religious-28', name: '嚴島神社', category: 'religious', region: '中国', coordinate: { latitude: 34.2959, longitude: 132.3198, elevationMeter: 3 }, era: 'asuka', eraLabel: '推古天皇元年（593年）鎮座伝承', religiousType: '神社・海上守護の社', summary: '海と社殿が一体になった、宮島の世界文化遺産です。', description: '嚴島神社は593年の鎮座伝承を持ち、皇室の安泰や国家鎮護、海上の守護神として信仰されてきました。潮の満ち引きで表情を変える社殿配置が、信仰と自然の関係を示します。', sourceName: '嚴島神社 公式サイト（御由緒）', sourceUrl: 'https://www.itsukushimajinja.jp/jp/history.html' }),
+  makeNationalSpot({ id: 'religious-29', name: '金刀比羅宮', category: 'religious', region: '四国', coordinate: { latitude: 34.1858, longitude: 133.8194, elevationMeter: 251 }, era: 'ancient', eraLabel: '象頭山の海上安全信仰・785段の石段', religiousType: '神社・金毘羅信仰の総本宮', summary: '海上安全の信仰を集め、長い石段の参詣道で知られる神社です。', description: '金刀比羅宮は象頭山に鎮座し、古くから海上安全や五穀豊穣の信仰を集めてきました。門前町から御本宮までの石段は、歩くこと自体が参詣になる宗教景観です。', sourceName: '金刀比羅宮 公式サイト', sourceUrl: 'https://www.konpira.or.jp/' }),
+  makeNationalSpot({ id: 'religious-30', name: '太宰府天満宮', category: 'religious', region: '九州・沖縄', coordinate: { latitude: 33.5196, longitude: 130.5348, elevationMeter: 52 }, era: 'heian', eraLabel: '延喜3年（903年）菅原道真公を祀る', religiousType: '神社・全国天満宮の総本宮', summary: '菅原道真公を祀り、学問と文化の信仰を集める天満宮です。', description: '太宰府天満宮は、太宰府で生涯を終えた菅原道真公をお祀りする神社です。全国の天満宮・天神信仰の中心として、門前町や祭礼とともに発展してきました。', sourceName: '太宰府天満宮 公式サイト', sourceUrl: 'https://www.dazaifutenmangu.or.jp/' }),
+  makeNationalSpot({ id: 'religious-31', name: '宇佐神宮', category: 'religious', region: '九州・沖縄', coordinate: { latitude: 33.5229, longitude: 131.3483, elevationMeter: 20 }, era: 'nara', eraLabel: '全国八幡社の総本宮・宇佐八幡信仰', religiousType: '神社・八幡社の総本宮', summary: '全国の八幡社へ広がった、宇佐八幡信仰の総本宮です。', description: '宇佐神宮は八幡大神を祀る神社で、古代から朝廷や地域の信仰を集めてきました。上宮・下宮や呉橋など、宇佐の地形と社殿配置を歩いて確認できます。', sourceName: '宇佐神宮 公式サイト', sourceUrl: 'https://www.usajingu.com/' }),
+  makeNationalSpot({ id: 'religious-32', name: '阿蘇神社', category: 'religious', region: '九州・沖縄', coordinate: { latitude: 32.9529, longitude: 131.1155, elevationMeter: 522 }, era: 'ancient', eraLabel: '肥後国一之宮・阿蘇火山信仰', religiousType: '神社・阿蘇山を仰ぐ古社', summary: '阿蘇山と火山信仰を背景に、肥後国一之宮として続く神社です。', description: '阿蘇神社は阿蘇山を仰ぐ肥後国一之宮で、阿蘇氏と地域の祭祀を伝える古社です。楼門や門前町、火山地形との関係から、自然と宗教拠点の結びつきを感じられます。', sourceName: '阿蘇神社 公式サイト', sourceUrl: 'https://asojinja.or.jp/' }),
+  makeNationalSpot({ id: 'religious-33', name: '北海道神宮', category: 'religious', region: '北海道', coordinate: { latitude: 43.0148, longitude: 141.3070, elevationMeter: 65 }, era: 'meiji', eraLabel: '明治4年（1871年）創建・北海道の総鎮守', religiousType: '神社・北海道の総鎮守', summary: '札幌の開拓とともに歩み、北海道の総鎮守とされる神社です。', description: '北海道神宮は開拓三神などを祀る神社として札幌に鎮座し、北海道の開拓と都市の成長を見守ってきました。円山の森と参道は、近代の地域形成と信仰の場の重なりを伝えます。', sourceName: '北海道神宮 公式サイト', sourceUrl: 'https://www.hokkaidojingu.or.jp/' }),
+
+  // 城郭（全国）
+  makeNationalSpot({ id: 'castle-1', name: '弘前城', category: 'castle', region: '東北', coordinate: { latitude: 40.6079, longitude: 140.4648, elevationMeter: 42 }, era: 'edo', eraLabel: '江戸期の現存天守・弘前公園', castleType: '現存天守・国指定史跡', summary: '津軽氏の居城で、東北に残る現存天守の一つです。', description: '弘前城は弘前藩津軽氏の居城として整えられ、現在は弘前公園として櫓・門・堀などを伝えています。桜の名所としての景観と、北国の城下町の歴史を一緒にたどれます。', sourceName: '弘前公園 公式サイト', sourceUrl: 'https://www.hirosakipark.jp/' }),
+  makeNationalSpot({ id: 'castle-2', name: '盛岡城跡', category: 'castle', region: '東北', coordinate: { latitude: 39.7020, longitude: 141.1546, elevationMeter: 135 }, era: 'edo', eraLabel: '南部氏の居城・石垣が残る城跡', castleType: '国指定史跡・城跡公園', summary: '南部氏の居城で、東北地方を代表する石垣の城跡です。', description: '盛岡城は南部氏が築いた城で、現在は石垣や曲輪の地形が盛岡城跡公園に残ります。北上川・中津川の合流点に近い立地から、城下町の成立を考えられます。', sourceName: '盛岡市 公式サイト（盛岡城跡）', sourceUrl: 'https://www.city.morioka.iwate.jp/' }),
+  makeNationalSpot({ id: 'castle-3', name: '仙台城跡', category: 'castle', region: '東北', coordinate: { latitude: 38.2521, longitude: 140.8566, elevationMeter: 110 }, era: 'edo', eraLabel: '慶長年間築城・伊達氏の居城', castleType: '国指定史跡・城跡', summary: '青葉山に築かれた、伊達政宗と仙台城下の中心です。', description: '仙台城は伊達政宗が青葉山に築いた居城で、城跡からは広瀬川と仙台平野を見渡せます。石垣や大手門跡を通して、近世の城と都市の関係を学べます。', sourceName: '仙台市観光情報サイト', sourceUrl: 'https://www.sentabi.jp/guidebook/'}),
+  makeNationalSpot({ id: 'castle-4', name: '会津若松城（鶴ヶ城）', category: 'castle', region: '東北', coordinate: { latitude: 37.4873, longitude: 139.9294, elevationMeter: 218 }, era: 'edo', eraLabel: '蒲生氏郷が整備・戊辰戦争の舞台', castleType: '復元天守・国指定史跡', summary: '会津の政治と戊辰戦争の記憶を伝える、赤瓦の城です。', description: '会津若松城は蒲生氏郷らによって整備され、幕末の戊辰戦争では籠城戦の舞台となりました。赤瓦の天守と城跡の地形から、会津の近世・近代をたどれます。', sourceName: '会津若松城 公式サイト', sourceUrl: 'https://www.tsurugajo.com/turugajo/' }),
+  makeNationalSpot({ id: 'castle-5', name: '江戸城跡', category: 'castle', region: '関東', coordinate: { latitude: 35.6852, longitude: 139.7528, elevationMeter: 25 }, era: 'edo', eraLabel: '徳川将軍家の居城・皇居東御苑', castleType: '特別史跡・城跡', summary: '江戸幕府の中枢で、皇居東御苑に石垣や門が残ります。', description: '江戸城は徳川将軍家の居城として拡張され、現在も皇居東御苑などに天守台・石垣・門・濠の遺構が残ります。巨大な城郭が都市東京へ変化した過程を現地で考えられます。', sourceName: '宮内庁 公式サイト（皇居東御苑）', sourceUrl: 'https://www.kunaicho.go.jp/visit/kyoto/kyoto.html' }),
+  makeNationalSpot({ id: 'castle-6', name: '小田原城', category: 'castle', region: '関東', coordinate: { latitude: 35.2509, longitude: 139.1530, elevationMeter: 28 }, era: 'sengoku', eraLabel: '北条氏の本拠・戦国最大級の城郭', castleType: '復元天守・国指定史跡', summary: '北条氏の本拠として、関東の戦国史を象徴する城です。', description: '小田原城は北条氏の本拠として発展し、豊臣秀吉の小田原攻めを経て近世城郭へ移りました。天守や総構の名残から、城が町全体を包む構造を読み取れます。', sourceName: '小田原城 公式サイト', sourceUrl: 'https://odawaracastle.com/' }),
+  makeNationalSpot({ id: 'castle-7', name: '松本城', category: 'castle', region: '中部', coordinate: { latitude: 36.2381, longitude: 137.9687, elevationMeter: 590 }, era: 'sengoku', eraLabel: '現存最古の五重六階天守・国宝', castleType: '国宝・現存天守', summary: '黒い外観と現存天守で知られる、信濃の国宝城郭です。', description: '松本城は戦国期の深志城を起源とし、現存する五重六階の天守として日本最古とされています。戦国と江戸の建築が重なる天守群を、城下町とともに見学できます。', sourceName: '国宝 松本城 公式サイト', sourceUrl: 'https://www.matsumoto-castle.jp/about/' }),
+  makeNationalSpot({ id: 'castle-8', name: '金沢城', category: 'castle', region: '中部', coordinate: { latitude: 36.5621, longitude: 136.6626, elevationMeter: 45 }, era: 'edo', eraLabel: '加賀藩前田家の居城・城下町の核', castleType: '国指定史跡・復元建築', summary: '加賀百万石の政治・文化を支えた、金沢の城跡です。', description: '金沢城は加賀藩前田家の居城として整えられ、石川門や菱櫓・五十間長屋などの建築が復元されています。兼六園と隣接する立地から、藩政都市の構造をたどれます。', sourceName: '石川県 公式サイト（金沢城公園）', sourceUrl: 'https://www.pref.ishikawa.jp/siro-niwa/kanazawajou/' }),
+  makeNationalSpot({ id: 'castle-9', name: '犬山城', category: 'castle', region: '中部', coordinate: { latitude: 35.3880, longitude: 136.9395, elevationMeter: 80 }, era: 'sengoku', eraLabel: '現存最古級の天守・国宝', castleType: '国宝・現存天守', summary: '木曽川を見下ろす、現存最古級の国宝天守です。', description: '犬山城は木曽川沿いの丘に築かれ、現存天守の中でも古い形式を残す国宝です。城下町と河川交通の関係を歩いて確かめられます。', sourceName: '犬山城 公式サイト', sourceUrl: 'https://inuyamajo.jp/' }),
+  makeNationalSpot({ id: 'castle-10', name: '名古屋城', category: 'castle', region: '中部', coordinate: { latitude: 35.1856, longitude: 136.8990, elevationMeter: 12 }, era: 'edo', eraLabel: '慶長15年（1610年）築城・尾張徳川家', castleType: '特別史跡・近世城郭', summary: '尾張徳川家の居城で、金鯱と巨大な石垣で知られます。', description: '名古屋城は徳川家康が尾張の要衝に築かせた城で、尾張徳川家の居城となりました。本丸御殿の復元や石垣・堀を通して、近世城郭の規模を体感できます。', sourceName: '名古屋城 公式サイト', sourceUrl: 'https://www.nagoyajo.city.nagoya.jp/' }),
+  makeNationalSpot({ id: 'castle-11', name: '彦根城', category: 'castle', region: '近畿', coordinate: { latitude: 35.2769, longitude: 136.2510, elevationMeter: 136 }, era: 'edo', eraLabel: '元和8年（1622年）完成・現存天守', castleType: '国宝・現存天守', summary: '琵琶湖東岸に残る、井伊家の国宝天守です。', description: '彦根城は井伊家の居城として整備され、天守・櫓・門・石垣・堀がまとまって残ります。城下町と琵琶湖を結ぶ立地から、江戸時代の交通と政治を読み解けます。', sourceName: '彦根城 公式サイト', sourceUrl: 'https://hikonecastle.com/' }),
+  makeNationalSpot({ id: 'castle-12', name: '姫路城', category: 'castle', region: '近畿', coordinate: { latitude: 34.8394, longitude: 134.6939, elevationMeter: 46 }, era: 'edo', eraLabel: '17世紀初頭の城郭建築・世界文化遺産', castleType: '世界文化遺産・国宝・現存天守', summary: '白い連立天守と防御構造が残る、日本を代表する城郭です。', description: '姫路城は17世紀初頭の城郭建築を代表し、天守群・櫓・門・石垣・堀が良好に保存されています。世界文化遺産と国宝の両方から、日本の城郭文化を学べます。', sourceName: '姫路城 公式サイト（姫路市）', sourceUrl: 'https://www.city.himeji.lg.jp/castle/0000007744.html' }),
+  makeNationalSpot({ id: 'castle-13', name: '松江城', category: 'castle', region: '中国', coordinate: { latitude: 35.4747, longitude: 133.0505, elevationMeter: 30 }, era: 'edo', eraLabel: '現存天守・国宝・堀尾氏の居城', castleType: '国宝・現存天守', summary: '宍道湖と城下町を望む、山陰に残る国宝天守です。', description: '松江城は堀尾氏が築き、江戸期の姿を伝える現存天守が国宝に指定されています。堀や城下町、宍道湖とつながる景観から、水都松江の歴史をたどれます。', sourceName: '松江城 公式サイト', sourceUrl: 'https://www.matsue-castle.jp/' }),
+  makeNationalSpot({ id: 'castle-14', name: '岡山城', category: 'castle', region: '中国', coordinate: { latitude: 34.6677, longitude: 133.9350, elevationMeter: 18 }, era: 'sengoku', eraLabel: '宇喜多秀家が整備・黒い外観の城', castleType: '復元天守・国指定史跡', summary: '旭川沿いに築かれ、黒い外観から烏城と呼ばれる城です。', description: '岡山城は宇喜多秀家が整備し、旭川を利用した縄張りと黒い外観から烏城の名で知られます。後楽園と向かい合う立地から、城と庭園がつくる岡山の景観を学べます。', sourceName: '岡山城 公式サイト', sourceUrl: 'https://okayama-castle.jp/' }),
+  makeNationalSpot({ id: 'castle-15', name: '高知城', category: 'castle', region: '四国', coordinate: { latitude: 33.5611, longitude: 133.5317, elevationMeter: 45 }, era: 'edo', eraLabel: '山内氏の居城・本丸御殿が残る城', castleType: '重要文化財・現存天守', summary: '天守と本丸御殿がそろって残る、土佐の城下町の核です。', description: '高知城は山内氏の居城として築かれ、天守と本丸御殿を含む本丸の建物がまとまって残ります。城下町の通りと合わせて、土佐藩の政治拠点をたどれます。', sourceName: '高知城 公式サイト', sourceUrl: 'https://kochipark.jp/kochijyo/' }),
+  makeNationalSpot({ id: 'castle-16', name: '熊本城', category: 'castle', region: '九州・沖縄', coordinate: { latitude: 32.8062, longitude: 130.7058, elevationMeter: 50 }, era: 'edo', eraLabel: '慶長12年（1607年）完成・加藤清正の名城', castleType: '特別史跡・復元天守', summary: '加藤清正が築き、近代の戦争と地震の記憶も刻む大城郭です。', description: '熊本城は1607年に加藤清正が完成させた城で、明治期の戦闘や熊本地震を経て保存・復旧が続けられています。石垣・本丸御殿・天守から、城の強さと災害復旧を学べます。', sourceName: '熊本城 公式サイト（歴史）', sourceUrl: 'https://castle.kumamoto-guide.jp/history/' }),
+  makeNationalSpot({ id: 'castle-17', name: '首里城跡', category: 'castle', region: '九州・沖縄', coordinate: { latitude: 26.2173, longitude: 127.7197, elevationMeter: 120 }, era: 'medieval', eraLabel: '琉球王国の王城・世界遺産関連資産', castleType: '国指定史跡・琉球王国の城跡', summary: '琉球王国の政治・外交・祭祀を担った王城です。', description: '首里城は琉球王国の王城として政治・外交・文化の中心となり、正殿などの復元と城跡の保存が進められています。日本の城郭とは異なる石垣・御庭・門の構成を学べる重要拠点です。', sourceName: '首里城公園 公式サイト', sourceUrl: 'https://oki-park.jp/shurijo/' }),
+  makeNationalSpot({ id: 'castle-18', name: '松山城', category: 'castle', region: '四国', coordinate: { latitude: 33.8456, longitude: 132.7657, elevationMeter: 132 }, era: 'edo', eraLabel: '加藤嘉明が築城・現存天守', castleType: '重要文化財・現存天守', summary: '松山市街を見下ろす山城で、現存天守と城郭遺構が残ります。', description: '松山城は勝山の山頂に築かれ、天守・櫓・門など江戸期の姿を伝える建物が残ります。瀬戸内を望む立地から、四国の城下町と海上交通の関係を考えられます。', sourceName: '松山城 公式サイト', sourceUrl: 'https://www.matsuyamajo.jp/' }),
+  makeNationalSpot({ id: 'castle-19', name: '丸亀城', category: 'castle', region: '四国', coordinate: { latitude: 34.2872, longitude: 133.8008, elevationMeter: 66 }, era: 'edo', eraLabel: '現存天守・高石垣の城', castleType: '重要文化財・現存天守', summary: '日本一の高さと称される石垣に築かれた、讃岐の現存天守です。', description: '丸亀城は亀山に築かれ、急勾配の高石垣と現存天守が特徴です。瀬戸内の島々を望む立地から、城郭の防御と海上交通を一緒に見ることができます。', sourceName: '丸亀城 公式サイト', sourceUrl: 'https://www.marugame-castle.jp/' }),
+  makeNationalSpot({ id: 'castle-20', name: '安土城跡', category: 'castle', region: '近畿', coordinate: { latitude: 35.1420, longitude: 136.1260, elevationMeter: 190 }, era: 'sengoku', eraLabel: '織田信長の居城・天下布武の象徴', castleType: '特別史跡・城跡', summary: '織田信長が築いた、近世城郭の先駆けとなる山城跡です。', description: '安土城は織田信長が築いた城で、壮大な石垣・大手道・礎石などの遺構が安土山に残ります。天守を中心とする城の見せ方が、後世の城郭へ与えた影響を考える拠点です。', sourceName: '近江八幡市 公式サイト（安土城跡）', sourceUrl: 'https://www.city.omihachiman.lg.jp/' })
+];
+
 export const SPOT_DATA = [
+  ...NATIONAL_CULTURAL_SPOTS,
   {
     id: 'hist-1', name: '大阪城 天守閣（昭和6年復元）', category: 'history',
     coordinate: { latitude: 34.6873, longitude: 135.5260, elevationMeter: 24 }, era: 'showa', eraLabel: '昭和6年（1931年）',
@@ -940,7 +1019,7 @@ export const SPOT_DATA = [
     verificationNote: '開館日・料金・展示内容は変更されるため、来館前に公式サイトで最新情報を確認してください。'
   },
   {
-    id: 'hist-11', name: '四天王寺', category: 'religious', religiousType: '寺院・和宗総本山',
+    id: 'hist-11', name: '四天王寺', category: 'religious', region: '近畿', religiousType: '寺院・和宗総本山',
     coordinate: { latitude: 34.6537001, longitude: 135.5137442, elevationMeter: 18 }, era: 'asuka', eraLabel: '推古元年（593年）創建',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -955,7 +1034,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは境内周辺の概略位置です。伽藍への立ち入り区分・拝観時間は公式サイトで確認してください。'
   },
   {
-    id: 'hist-12', name: '生國魂神社（いくくにたま）', category: 'religious', religiousType: '神社・上町台地の総鎮守',
+    id: 'hist-12', name: '生國魂神社（いくくにたま）', category: 'religious', region: '近畿', religiousType: '神社・上町台地の総鎮守',
     coordinate: { latitude: 34.665303, longitude: 135.5126698, elevationMeter: 20 }, era: 'ancient', eraLabel: '神武天皇東征伝承・上町台地の総鎮守',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -970,7 +1049,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは社殿周辺の概略位置です。祭事・境内立入時間は公式サイトで確認してください。'
   },
   {
-    id: 'hist-13', name: '高津宮（こうづぐう）', category: 'religious', religiousType: '神社・高津宮伝承地',
+    id: 'hist-13', name: '高津宮（こうづぐう）', category: 'religious', region: '近畿', religiousType: '神社・高津宮伝承地',
     coordinate: { latitude: 34.6688534, longitude: 135.5139029, elevationMeter: 22 }, era: 'ancient', eraLabel: '仁徳天皇・高津宮伝承地',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -985,7 +1064,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは社殿周辺の概略位置です。境内立入時間・行事は公式サイトで確認してください。'
   },
   {
-    id: 'hist-14', name: '大阪天満宮', category: 'religious', religiousType: '神社・天満の天神さん',
+    id: 'hist-14', name: '大阪天満宮', category: 'religious', region: '近畿', religiousType: '神社・天満の天神さん',
     coordinate: { latitude: 34.6960904, longitude: 135.5127654, elevationMeter: 6 }, era: 'heian', eraLabel: '天暦3年（949年）創建',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1000,7 +1079,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは社殿周辺の概略位置です。天神祭の交通規制や境内立入時間は公式サイトで確認してください。'
   },
   {
-    id: 'hist-15', name: '住吉大社', category: 'religious', religiousType: '神社・住吉神社の総本社',
+    id: 'hist-15', name: '住吉大社', category: 'religious', region: '近畿', religiousType: '神社・住吉神社の総本社',
     coordinate: { latitude: 34.6130027, longitude: 135.4931012, elevationMeter: 6 }, era: 'ancient', eraLabel: '神功皇后・全国住吉神社の総本社',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1045,7 +1124,7 @@ export const SPOT_DATA = [
     verificationNote: '開館日・イベント・見学可否は変更されるため、来館前に公式サイトで最新情報を確認してください。'
   },
   {
-    id: 'hist-16', name: '三光神社（真田の抜け穴伝承地）', category: 'religious', religiousType: '神社・真田丸伝承地',
+    id: 'hist-16', name: '三光神社（真田の抜け穴伝承地）', category: 'religious', region: '近畿', religiousType: '神社・真田丸伝承地',
     coordinate: { latitude: 34.6742, longitude: 135.5265, elevationMeter: 18 }, era: 'sengoku', eraLabel: '大坂の陣（1614〜1615年）伝承',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1059,7 +1138,7 @@ export const SPOT_DATA = [
     verificationNote: '「真田の抜け穴」および真田丸の正確な位置は伝承であり、史実として確定した遺構ではありません。ARピンは所在地（天王寺区玉造本町14-90）からの概略位置です。抜け穴は通常は鉄格子越しの見学で、例年11月の真田祭の際に開放されます。'
   },
   {
-    id: 'hist-17', name: '安居神社（真田幸村戦死跡伝承地）', category: 'religious', religiousType: '神社・大坂の陣伝承地',
+    id: 'hist-17', name: '安居神社（真田幸村戦死跡伝承地）', category: 'religious', region: '近畿', religiousType: '神社・大坂の陣伝承地',
     coordinate: { latitude: 34.6558, longitude: 135.5100, elevationMeter: 16 }, era: 'sengoku', eraLabel: '慶長20年（1615年）大坂夏の陣',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1073,7 +1152,7 @@ export const SPOT_DATA = [
     verificationNote: '戦死の場所は大阪市の公式案内でも「討死したという」伝承として紹介されており、史実として確定した地点ではありません。ARピンは所在地（天王寺区逢坂1-3-24）からの概略位置です。'
   },
   {
-    id: 'hist-18', name: '一心寺', category: 'religious', religiousType: '寺院・お骨佛で知られる寺',
+    id: 'hist-18', name: '一心寺', category: 'religious', region: '近畿', religiousType: '寺院・お骨佛で知られる寺',
     coordinate: { latitude: 34.6560, longitude: 135.5093, elevationMeter: 15 }, era: 'edo', eraLabel: '文治元年（1185年）創建・大坂の陣ゆかり',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1087,7 +1166,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは所在地（天王寺区逢阪2-8-69）からの概略位置です。受付時間は9時〜16時で、法要日は混雑します。'
   },
   {
-    id: 'religious-1', name: '大阪城豊國神社', category: 'religious', religiousType: '神社・豊臣秀吉公を祀る',
+    id: 'religious-1', name: '大阪城豊國神社', category: 'religious', region: '近畿', religiousType: '神社・豊臣秀吉公を祀る',
     coordinate: { latitude: 34.6842401, longitude: 135.526886, elevationMeter: 18 }, era: 'meiji', eraLabel: '明治期創立・昭和36年に大阪城内へ奉遷',
     verificationStatus: 'partially_verified',
     verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1102,7 +1181,7 @@ export const SPOT_DATA = [
     verificationNote: '大阪城内の境内周辺を示す概略位置です。参拝時間・行事・車両規制は公式サイトで確認してください。'
   },
   {
-    id: 'religious-2', name: '坐摩神社', category: 'religious', religiousType: '神社・摂津国一之宮',
+    id: 'religious-2', name: '坐摩神社', category: 'religious', region: '近畿', religiousType: '神社・摂津国一之宮',
     coordinate: { latitude: 34.6809544, longitude: 135.498738, elevationMeter: 4 }, era: 'ancient', eraLabel: '古代以来の由緒・天正11年（1583年）に現地へ遷座',
     verificationStatus: 'partially_verified',
     verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1117,7 +1196,7 @@ export const SPOT_DATA = [
     verificationNote: '社殿周辺の概略位置です。平日・土日祝で開門時間が異なるため、参拝前に公式サイトで確認してください。'
   },
   {
-    id: 'religious-3', name: '難波神社', category: 'religious', religiousType: '神社・仁徳天皇を祀る',
+    id: 'religious-3', name: '難波神社', category: 'religious', region: '近畿', religiousType: '神社・仁徳天皇を祀る',
     coordinate: { latitude: 34.6787459, longitude: 135.5001184, elevationMeter: 5 }, era: 'ancient', eraLabel: '仁徳天皇ゆかり・天正年間に現在地へ遷座',
     verificationStatus: 'partially_verified',
     verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1132,7 +1211,7 @@ export const SPOT_DATA = [
     verificationNote: '社殿周辺の概略位置です。祭礼・駐車場・参拝時間は公式サイトで確認してください。'
   },
   {
-    id: 'religious-4', name: '大念佛寺', category: 'religious', religiousType: '寺院・融通念佛宗総本山',
+    id: 'religious-4', name: '大念佛寺', category: 'religious', region: '近畿', religiousType: '寺院・融通念佛宗総本山',
     coordinate: { latitude: 34.627079, longitude: 135.551392, elevationMeter: 7 }, era: 'heian', eraLabel: '大治2年（1127年）建立・融通念佛宗総本山',
     verificationStatus: 'partially_verified',
     verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1147,7 +1226,7 @@ export const SPOT_DATA = [
     verificationNote: '境内周辺の概略位置です。拝観時間・行事・境内利用は公式サイトで確認してください。'
   },
   {
-    id: 'religious-5', name: '杭全神社', category: 'religious', religiousType: '神社・平野郷の氏神',
+    id: 'religious-5', name: '杭全神社', category: 'religious', region: '近畿', religiousType: '神社・平野郷の氏神',
     coordinate: { latitude: 34.627903, longitude: 135.554916, elevationMeter: 7 }, era: 'heian', eraLabel: '平安時代初期創建と伝わる古社',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -1162,7 +1241,7 @@ export const SPOT_DATA = [
     verificationNote: '社殿周辺の概略位置です。車両の進入・駐車や祭礼時の案内は公式サイトで確認してください。'
   },
   {
-    id: 'religious-6', name: '全興寺', category: 'religious', religiousType: '寺院・高野山真言宗',
+    id: 'religious-6', name: '全興寺', category: 'religious', region: '近畿', religiousType: '寺院・高野山真言宗',
     coordinate: { latitude: 34.623285, longitude: 135.555388, elevationMeter: 6 }, era: 'asuka', eraLabel: '創建不詳・薬師如来を祀る寺伝',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },

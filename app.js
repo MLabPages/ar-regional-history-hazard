@@ -10,11 +10,14 @@ import {
 } from './data.js?v=__BUILD_ID__';
 import { OSM_BUILDINGS, OSM_BUILDINGS_META } from './buildings.js?v=__BUILD_ID__';
 
+const CULTURAL_REGIONS = ['全国', '北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'];
+
 class ARRegionalApp {
   constructor() {
     // モードステート: 'ar' | 'map'
     this.viewMode = 'map';
-    this.currentLayer = 'history'; // history | community | religious | disaster
+    this.currentLayer = 'history'; // history | community | religious | castle | disaster
+    this.culturalRegionFilter = 'all';
     this.currentEra = 'present';   // 確認済みの現代・昭和期タイルのみ
     this.currentHazardType = 'flood'; // flood | tsunami | sediment
 
@@ -513,7 +516,11 @@ class ARRegionalApp {
     this.mapMarkers = [];
 
     // フィルタリングしたスポットの表示
-    const filteredSpots = this.getPointSpots().filter(s => s.category === this.currentLayer);
+    const isCulturalLayer = this.currentLayer === 'religious' || this.currentLayer === 'castle';
+    const allLayerSpots = this.getPointSpots().filter(s => s.category === this.currentLayer);
+    const filteredSpots = allLayerSpots.filter(spot => !isCulturalLayer
+      || this.culturalRegionFilter === 'all'
+      || this.getSpotRegion(spot) === this.culturalRegionFilter);
 
     const spotsPanel = this.getMapSpotsPanel();
     if (spotsPanel) {
@@ -523,12 +530,23 @@ class ARRegionalApp {
           ? '地域理解'
           : this.currentLayer === 'religious'
             ? '寺社'
-            : '防災';
+            : this.currentLayer === 'castle'
+              ? '城'
+              : '防災';
+      const regionFilters = isCulturalLayer
+        ? `<div class="cultural-region-filters" role="group" aria-label="地域で絞り込む">
+            ${CULTURAL_REGIONS.map(region => {
+              const value = region === '全国' ? 'all' : region;
+              const count = region === '全国' ? allLayerSpots.length : allLayerSpots.filter(spot => this.getSpotRegion(spot) === region).length;
+              return `<button type="button" class="cultural-region-filter${this.culturalRegionFilter === value ? ' active' : ''}" data-region-filter="${value}"${count === 0 ? ' disabled' : ''}>${region}<span>${count}</span></button>`;
+            }).join('')}
+          </div>`
+        : '';
       spotsPanel.innerHTML = `
         <div class="map-spots-title">${layerLabel}スポット</div>
-        ${this.currentLayer === 'religious' ? '<p class="religious-layer-note">由緒・創建年は各公式情報の記載範囲で表示</p>' : ''}
+        ${isCulturalLayer ? `<p class="${this.currentLayer}-layer-note">${this.currentLayer === 'castle' ? '城域の概略位置と公式案内を地域別に表示' : '由緒・創建年は各公式情報の記載範囲で表示'}</p>${regionFilters}` : ''}
         ${filteredSpots.length === 0 ? this.getSpotsEmptyMessage() : filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
-          <strong>${spot.name}</strong><small>${spot.eraLabel || spot.hazardInfo?.typeName || '情報'}</small>
+          <strong>${spot.name}</strong><small>${this.getSpotRegion(spot)}・${spot.eraLabel || spot.hazardInfo?.typeName || '情報'}</small>
         </button>`).join('')}
       `;
     }
@@ -537,6 +555,7 @@ class ARRegionalApp {
       let color = '#d95d20';
       if (spot.category === 'community') color = '#277c78';
       if (spot.category === 'religious') color = '#b45309';
+      if (spot.category === 'castle') color = '#7c3aed';
       if (spot.category === 'disaster') color = '#ef4444';
 
       const icon = L.divIcon({
@@ -624,6 +643,7 @@ class ARRegionalApp {
       if (!spot) return;
       this.discoveryPanel?.classList.add('hidden');
       this.currentLayer = spot.category;
+      this.culturalRegionFilter = 'all';
       document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach(item => {
         item.classList.toggle('active', item.dataset.layer === spot.category);
       });
@@ -661,6 +681,7 @@ class ARRegionalApp {
         document.querySelectorAll('.layer-tabs-compact .tab-btn').forEach(b => b.classList.remove('active'));
         targetBtn.classList.add('active');
         this.currentLayer = targetBtn.dataset.layer;
+        this.culturalRegionFilter = 'all';
         this.updateLayerUI();
       });
     });
@@ -668,10 +689,22 @@ class ARRegionalApp {
     const spotsPanel = this.getMapSpotsPanel();
     if (spotsPanel) {
       spotsPanel.addEventListener('click', (event) => {
+        const filter = event.target.closest('[data-region-filter]');
+        if (filter) {
+          this.culturalRegionFilter = filter.dataset.regionFilter || 'all';
+          this.renderMapMarkers();
+          return;
+        }
         const button = event.target.closest('[data-spot-id]');
         if (!button) return;
         const spot = this.spots.find(item => item.id === button.dataset.spotId);
-        if (spot) this.openSpotModal(spot);
+        if (spot) {
+          if (this.map && (spot.category === 'religious' || spot.category === 'castle')) {
+            this.map.setView([spot.coordinate.latitude, spot.coordinate.longitude], 15);
+          }
+          this.selectMapSpot(spot);
+          this.openSpotModal(spot);
+        }
       });
     }
 
@@ -1575,6 +1608,7 @@ class ARRegionalApp {
   updateLayerUI() {
     const banner = this.disasterBanner;
     document.getElementById('app-container')?.classList.toggle('religious-layer', this.currentLayer === 'religious');
+    document.getElementById('app-container')?.classList.toggle('castle-layer', this.currentLayer === 'castle');
     if (this.selectedSpot && this.selectedSpot.category !== this.currentLayer) {
       this.clearMapSpotSelection();
     }
@@ -1817,9 +1851,10 @@ class ARRegionalApp {
     const ctx = this.ctx;
 
     let color = '#d95d20';
-    if (spot.category === 'community') color = '#277c78';
-    if (spot.category === 'religious') color = '#b45309';
-    if (spot.category === 'disaster') color = '#ef4444';
+      if (spot.category === 'community') color = '#277c78';
+      if (spot.category === 'religious') color = '#b45309';
+      if (spot.category === 'castle') color = '#7c3aed';
+      if (spot.category === 'disaster') color = '#ef4444';
 
     ctx.save();
     ctx.translate(screenX, screenY);
@@ -1891,9 +1926,10 @@ class ARRegionalApp {
   drawARDotMarker(spot, screenX, screenY, scale, t, distanceMeters) {
     const ctx = this.ctx;
     let color = '#d95d20';
-    if (spot.category === 'community') color = '#277c78';
-    if (spot.category === 'religious') color = '#b45309';
-    if (spot.category === 'disaster') color = '#ef4444';
+      if (spot.category === 'community') color = '#277c78';
+      if (spot.category === 'religious') color = '#b45309';
+      if (spot.category === 'castle') color = '#7c3aed';
+      if (spot.category === 'disaster') color = '#ef4444';
 
     const r = Math.max(5, 7 * scale);
     ctx.save();
@@ -2435,6 +2471,7 @@ class ARRegionalApp {
       let color = '#d95d20';
       if (nearest.spot.category === 'community') color = '#277c78';
       if (nearest.spot.category === 'religious') color = '#b45309';
+      if (nearest.spot.category === 'castle') color = '#7c3aed';
       if (nearest.spot.category === 'disaster') color = '#ef4444';
 
       ctx.save();
@@ -2748,6 +2785,7 @@ class ARRegionalApp {
   selectWalkPick(spot) {
     this.walkPicksPanel?.classList.add('hidden');
     this.currentLayer = spot.category;
+    this.culturalRegionFilter = 'all';
     document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach(item => {
       item.classList.toggle('active', item.dataset.layer === spot.category);
     });
@@ -2794,7 +2832,7 @@ class ARRegionalApp {
 
   updateMapSpotPreview(spot) {
     if (!spot || !this.mapSpotPreview) return;
-    const meta = spot.religiousType || spot.eraLabel || (spot.category === 'community' ? '地域スポット' : spot.category === 'religious' ? '寺社' : '歴史スポット');
+    const meta = spot.religiousType || spot.castleType || spot.eraLabel || (spot.category === 'community' ? '地域スポット' : spot.category === 'religious' ? '寺社' : spot.category === 'castle' ? '城郭' : '歴史スポット');
     const distance = this.calculateDistance(this.userPos.latitude, this.userPos.longitude, spot.coordinate.latitude, spot.coordinate.longitude);
     document.getElementById('spot-preview-meta').textContent = `${meta}・約${this.formatDistance(distance)}`;
     document.getElementById('spot-preview-title').textContent = spot.name;
@@ -2809,6 +2847,13 @@ class ARRegionalApp {
 
   getMapSpotsPanel() {
     return this.mapSpotsPanel || document.getElementById('map-spots-panel');
+  }
+
+  getSpotRegion(spot) {
+    if (!spot) return '国内';
+    if (spot.region) return spot.region;
+    if (spot.category === 'religious' || spot.category === 'castle') return '近畿';
+    return '国内';
   }
 
   getDisplayableSpots() {
