@@ -107,6 +107,11 @@ class ARRegionalApp {
     this.discoveryList = document.getElementById('discovery-list');
     this.discoveryPanelSummary = document.getElementById('discovery-panel-summary');
     this.discoveryToast = document.getElementById('discovery-toast');
+    this.walkPicksButton = document.getElementById('walk-picks-button');
+    this.walkPicksPanel = document.getElementById('walk-picks-panel');
+    this.walkPicksList = document.getElementById('walk-picks-list');
+    this.walkPicksSummary = document.getElementById('walk-picks-summary');
+    this.walkPicksProgress = document.getElementById('walk-picks-progress');
 
     // 年代別航空写真オーバーレイ（AR）
     this.aerialOverlay = document.getElementById('aerial-overlay');
@@ -618,6 +623,16 @@ class ARRegionalApp {
       this.updateLayerUI();
       if (this.map) this.map.setView([spot.coordinate.latitude, spot.coordinate.longitude], 17);
       this.selectMapSpot(spot);
+    });
+    this.walkPicksButton?.addEventListener('click', () => this.openWalkPicksPanel());
+    document.getElementById('btn-close-walk-picks')?.addEventListener('click', () => {
+      this.walkPicksPanel?.classList.add('hidden');
+    });
+    this.walkPicksList?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-walk-pick-id]');
+      if (!button) return;
+      const spot = this.spots.find(item => item.id === button.dataset.walkPickId);
+      if (spot) this.selectWalkPick(spot);
     });
 
     // ヘッダー カメラON/OFFボタン
@@ -2641,6 +2656,7 @@ class ARRegionalApp {
     if (this.discoveryProgressValue) this.discoveryProgressValue.textContent = `${count} / ${discoverable.length}`;
     this.discoveryProgress?.classList.toggle('has-discoveries', count > 0);
     this.renderDiscoveryPanel();
+    this.renderWalkPicks();
     this.updateMapSpotPreview(this.selectedSpot);
   }
 
@@ -2664,6 +2680,69 @@ class ARRegionalApp {
   openDiscoveryPanel() {
     this.renderDiscoveryPanel();
     this.discoveryPanel?.classList.remove('hidden');
+  }
+
+  getWalkPicks() {
+    const center = this.map?.getCenter?.();
+    const origin = center
+      ? { latitude: center.lat, longitude: center.lng }
+      : this.userPos;
+    return this.getDiscoverableSpots()
+      .map(spot => ({
+        ...spot,
+        distanceFromMapCenter: this.calculateDistance(
+          origin.latitude,
+          origin.longitude,
+          spot.coordinate.latitude,
+          spot.coordinate.longitude
+        )
+      }))
+      .sort((a, b) => a.distanceFromMapCenter - b.distanceFromMapCenter)
+      .slice(0, 3);
+  }
+
+  renderWalkPicks() {
+    if (!this.walkPicksList || !this.walkPicksProgress) return;
+    const picks = this.getWalkPicks();
+    const discoveredCount = picks.filter(spot => this.discoveredSpotIds.has(spot.id)).length;
+    this.walkPicksProgress.textContent = `${discoveredCount} / ${picks.length}`;
+    this.walkPicksProgress.classList.toggle('is-complete', picks.length > 0 && discoveredCount === picks.length);
+    this.walkPicksButton?.classList.toggle('has-progress', discoveredCount > 0);
+    if (this.walkPicksSummary) {
+      this.walkPicksSummary.textContent = discoveredCount === picks.length && picks.length > 0
+        ? 'この3スポットを発見しました。次は発見ノートへ。'
+        : '地図の中心に近い3スポット';
+    }
+    this.walkPicksList.innerHTML = picks.length
+      ? picks.map((spot, index) => {
+        const discovered = this.discoveredSpotIds.has(spot.id);
+        const meta = spot.eraLabel || (spot.category === 'community' ? '地域スポット' : '歴史スポット');
+        return `<button type="button" class="walk-pick-item${discovered ? ' is-discovered' : ''}" data-walk-pick-id="${spot.id}">
+          <span class="walk-pick-index">${index + 1}</span>
+          <span class="walk-pick-copy"><strong>${spot.name}</strong><small>${meta}・約${this.formatDistance(spot.distanceFromMapCenter)}</small></span>
+          <span class="walk-pick-action">${discovered ? '発見済み' : '地図で見る'}<i data-lucide="${discovered ? 'check' : 'map'}"></i></span>
+        </button>`;
+      }).join('')
+      : '<div class="walk-picks-empty"><i data-lucide="route-off"></i><strong>近くのスポットが見つかりません</strong><span>地図を少し動かして、もう一度開いてください。</span></div>';
+    if (window.lucide) lucide.createIcons();
+  }
+
+  openWalkPicksPanel() {
+    this.discoveryPanel?.classList.add('hidden');
+    this.renderWalkPicks();
+    this.walkPicksPanel?.classList.remove('hidden');
+  }
+
+  selectWalkPick(spot) {
+    this.walkPicksPanel?.classList.add('hidden');
+    this.currentLayer = spot.category;
+    document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach(item => {
+      item.classList.toggle('active', item.dataset.layer === spot.category);
+    });
+    this.switchViewMode('map');
+    this.updateLayerUI();
+    if (this.map) this.map.setView([spot.coordinate.latitude, spot.coordinate.longitude], 17);
+    this.selectMapSpot(spot);
   }
 
   showDiscoveryToast(spot) {

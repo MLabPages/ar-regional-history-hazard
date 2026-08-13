@@ -269,6 +269,10 @@
       </section>
       <div id="explore-quick-actions" class="explore-quick-actions">
         <button id="btn-reopen-era-panel" class="fab-tool" type="button"><i data-lucide="clock-3"></i><span>年代を比べる</span></button>
+        <button id="walk-picks-button" class="walk-picks-button" type="button" aria-label="まち歩き3選を開く">
+          <i data-lucide="route"></i>
+          <span>まち歩き3選</span>
+        </button>
         <button id="discovery-progress" class="discovery-progress" type="button" aria-label="発見ノートを開く">
           <i data-lucide="notebook-tabs"></i>
           <span>発見ノート</span>
@@ -341,6 +345,22 @@
         </div>
         <p id="discovery-panel-summary" class="discovery-panel-summary"></p>
         <div id="discovery-list" class="discovery-list"></div>
+      </aside>
+
+      <aside id="walk-picks-panel" class="walk-picks-panel hidden" aria-label="まち歩き3選">
+        <div class="walk-picks-header">
+          <div>
+            <i data-lucide="route"></i>
+            <strong>まち歩き3選</strong>
+          </div>
+          <button id="btn-close-walk-picks" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+        </div>
+        <div class="walk-picks-heading-row">
+          <p id="walk-picks-summary">地図の中心に近い3スポット</p>
+          <strong id="walk-picks-progress">0 / 3</strong>
+        </div>
+        <p class="walk-picks-note">距離は直線の概算です。徒歩ルートではありません。</p>
+        <div id="walk-picks-list" class="walk-picks-list"></div>
       </aside>
 
       <div id="discovery-toast" class="discovery-toast hidden" role="status" aria-live="polite"></div>

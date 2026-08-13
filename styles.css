@@ -2983,6 +2983,247 @@ a:focus-visible {
   color: #ffffff;
 }
 
+/* まち歩き3選: 地図の中心から近い既存スポットを小さく巡る導線 */
+.walk-picks-button {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 8px 11px;
+  color: var(--ink-950);
+  background: rgba(255, 253, 247, 0.97);
+  border: 1px solid rgba(11, 35, 66, 0.24);
+  border-radius: 11px;
+  box-shadow: 0 8px 20px rgba(7, 24, 45, 0.2);
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.walk-picks-button svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-community);
+}
+
+.walk-picks-button.has-progress {
+  border-color: rgba(39, 124, 120, 0.58);
+}
+
+.walk-picks-panel {
+  position: fixed;
+  right: 10px;
+  bottom: 84px;
+  z-index: 965;
+  width: min(430px, calc(100vw - 20px));
+  max-height: min(72vh, 580px);
+  overflow: auto;
+  padding: 15px;
+  color: var(--ink-950);
+  background:
+    linear-gradient(140deg, rgba(39, 124, 120, 0.06), transparent 42%),
+    var(--paper);
+  border: 1px solid rgba(11, 35, 66, 0.25);
+  border-radius: 15px;
+  box-shadow: 0 18px 42px rgba(7, 24, 45, 0.34);
+}
+
+.walk-picks-header,
+.walk-picks-header > div,
+.walk-picks-heading-row {
+  display: flex;
+  align-items: center;
+}
+
+.walk-picks-header {
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.walk-picks-header > div {
+  gap: 7px;
+  font-size: 1rem;
+}
+
+.walk-picks-header > div > svg {
+  color: var(--accent-community);
+}
+
+.walk-picks-panel .btn-icon-small {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: #5f6c7a;
+  border-radius: 8px;
+}
+
+.walk-picks-heading-row {
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 11px;
+}
+
+.walk-picks-heading-row p {
+  margin: 0;
+  color: #68727d;
+  font-size: 0.72rem;
+}
+
+.walk-picks-heading-row > strong {
+  flex: 0 0 auto;
+  color: var(--accent-community);
+  font-size: 0.86rem;
+}
+
+.walk-picks-heading-row > strong.is-complete {
+  color: var(--accent-history);
+}
+
+.walk-picks-note {
+  margin: 4px 0 11px;
+  color: #8b7566;
+  font-size: 0.64rem;
+}
+
+.walk-picks-list {
+  display: grid;
+  gap: 6px;
+}
+
+.walk-pick-item {
+  display: grid;
+  grid-template-columns: 31px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  width: 100%;
+  min-height: 62px;
+  padding: 8px;
+  color: var(--ink-950);
+  text-align: left;
+  background: rgba(255, 253, 247, 0.76);
+  border: 1px solid rgba(11, 35, 66, 0.14);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.walk-pick-item:hover,
+.walk-pick-item:focus-visible {
+  background: #f1ebe0;
+  border-color: rgba(39, 124, 120, 0.42);
+  transform: translateY(-1px);
+}
+
+.walk-pick-item.is-discovered {
+  border-color: rgba(39, 124, 120, 0.28);
+}
+
+.walk-pick-index {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  color: #fff;
+  background: var(--accent-community);
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.walk-pick-item.is-discovered .walk-pick-index {
+  background: var(--accent-history);
+}
+
+.walk-pick-copy {
+  min-width: 0;
+}
+
+.walk-pick-copy strong,
+.walk-pick-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.walk-pick-copy strong {
+  font-size: 0.78rem;
+}
+
+.walk-pick-copy small {
+  margin-top: 3px;
+  color: #737c85;
+  font-size: 0.64rem;
+}
+
+.walk-pick-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-800);
+  font-size: 0.64rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.walk-pick-action svg {
+  width: 15px;
+  height: 15px;
+}
+
+.walk-pick-item.is-discovered .walk-pick-action {
+  color: var(--accent-community);
+}
+
+.walk-picks-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 24px 12px;
+  color: #68727d;
+  text-align: center;
+}
+
+.walk-picks-empty > svg {
+  width: 30px;
+  height: 30px;
+  color: var(--accent-community);
+}
+
+.walk-picks-empty strong {
+  color: var(--ink-950);
+  font-size: 0.86rem;
+}
+
+.walk-picks-empty span {
+  font-size: 0.7rem;
+}
+
+@media (max-width: 600px) {
+  .walk-picks-button {
+    min-height: 40px;
+    padding: 7px 9px;
+    font-size: 0.66rem;
+  }
+
+  .walk-picks-panel {
+    right: 8px;
+    bottom: 78px;
+    width: calc(100vw - 16px);
+    max-height: min(68vh, 520px);
+  }
+}
+
+@media (max-width: 370px) {
+  .walk-picks-button > span {
+    display: none;
+  }
+}
+
 .hazard-sheet .hazard-type-btn {
   color: #ffffff;
   background: #7f1d1d;
