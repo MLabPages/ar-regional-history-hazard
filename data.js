@@ -1,7 +1,3 @@
-Exit code: 0
-Wall time: 0.9 seconds
-Total output lines: 1586
-Output:
 /**
  * AR地域理解・歴史・防災プラットフォームの監査済みデータ。
  * 不明な資料は「未確認」として扱い、歴史資料に見える仮画像を混在させない。
