@@ -278,9 +278,9 @@
           <span>発見ノート</span>
           <strong id="discovery-progress-value">0 / 0</strong>
         </button>
-        <button id="visit-log-progress" class="visit-log-progress" type="button" aria-label="巡り帳を開く">
+        <button id="visit-log-progress" class="visit-log-progress" type="button" aria-label="巡り帳を開く（開閉）" aria-controls="visit-log-panel" aria-expanded="false">
           <i data-lucide="book-marked"></i>
-          <span>巡り帳</span>
+          <span id="visit-log-progress-label">巡り帳</span>
           <strong id="visit-log-progress-value">0</strong>
         </button>
       </div>
@@ -374,7 +374,7 @@
             <i data-lucide="book-marked"></i>
             <strong>巡り帳</strong>
           </div>
-          <button id="btn-close-visit-log" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+          <button id="btn-close-visit-log" class="btn-icon-small" type="button" aria-label="巡り帳を閉じる" title="巡り帳を閉じる"><i data-lucide="x"></i><span class="sr-only">閉じる</span></button>
         </div>
         <p id="visit-log-summary" class="visit-log-summary"></p>
         <div id="visit-log-stats" class="visit-log-stats" aria-label="種類別の訪問数"></div>

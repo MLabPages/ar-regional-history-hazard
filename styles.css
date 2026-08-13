@@ -3145,6 +3145,13 @@ a:focus-visible {
 }
 
 .visit-log-progress.has-visits { border-color: rgba(39, 124, 120, 0.58); }
+.visit-log-progress.is-open {
+  color: #fff;
+  background: var(--accent-community);
+  border-color: var(--accent-community);
+}
+.visit-log-progress.is-open svg,
+.visit-log-progress.is-open strong { color: #fff; }
 
 .visit-log-panel {
   position: fixed;
@@ -3198,6 +3205,14 @@ a:focus-visible {
   height: 36px;
   color: #5f6c7a;
   border-radius: 8px;
+}
+
+.visit-log-header .btn-icon-small:hover,
+.visit-log-header .btn-icon-small:focus-visible {
+  color: var(--ink-950);
+  background: rgba(39, 124, 120, 0.12);
+  outline: 2px solid rgba(39, 124, 120, 0.32);
+  outline-offset: 1px;
 }
 
 .visit-log-summary {

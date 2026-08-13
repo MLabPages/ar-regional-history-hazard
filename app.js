@@ -117,6 +117,7 @@ class ARRegionalApp {
     this.walkPicksSummary = document.getElementById('walk-picks-summary');
     this.walkPicksProgress = document.getElementById('walk-picks-progress');
     this.visitLogProgress = document.getElementById('visit-log-progress');
+    this.visitLogProgressLabel = document.getElementById('visit-log-progress-label');
     this.visitLogProgressValue = document.getElementById('visit-log-progress-value');
     this.visitLogPanel = document.getElementById('visit-log-panel');
     this.visitLogSummary = document.getElementById('visit-log-summary');
@@ -676,16 +677,24 @@ class ARRegionalApp {
       const spot = this.spots.find(item => item.id === button.dataset.walkPickId);
       if (spot) this.selectWalkPick(spot);
     });
-    this.visitLogProgress?.addEventListener('click', () => this.openVisitLogPanel());
-    document.getElementById('btn-close-visit-log')?.addEventListener('click', () => {
-      this.visitLogPanel?.classList.add('hidden');
+    this.visitLogProgress?.addEventListener('click', () => this.toggleVisitLogPanel());
+    document.getElementById('btn-close-visit-log')?.addEventListener('click', () => this.closeVisitLogPanel());
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !this.visitLogPanel?.classList.contains('hidden')) {
+        this.closeVisitLogPanel();
+      }
+    });
+    document.addEventListener('click', (event) => {
+      if (this.visitLogPanel?.classList.contains('hidden')) return;
+      if (this.visitLogPanel.contains(event.target) || this.visitLogProgress?.contains(event.target)) return;
+      this.closeVisitLogPanel();
     });
     this.visitLogList?.addEventListener('click', (event) => {
       const button = event.target.closest('[data-visit-spot-id]');
       if (!button) return;
       const spot = this.spots.find(item => item.id === button.dataset.visitSpotId);
       if (spot) {
-        this.visitLogPanel?.classList.add('hidden');
+        this.closeVisitLogPanel();
         this.openSpotModal(spot);
       }
     });
@@ -694,7 +703,7 @@ class ARRegionalApp {
       if (!button) return;
       const spot = this.spots.find(item => item.id === button.dataset.nextStopId);
       if (spot) {
-        this.visitLogPanel?.classList.add('hidden');
+        this.closeVisitLogPanel();
         this.selectWalkPick(spot);
       }
     });
@@ -2832,6 +2841,19 @@ class ARRegionalApp {
     this.renderVisitLogPanel();
   }
 
+  setVisitLogOpen(isOpen) {
+    if (!this.visitLogPanel || !this.visitLogProgress) return;
+    this.visitLogPanel.classList.toggle('hidden', !isOpen);
+    this.visitLogProgress.setAttribute('aria-expanded', String(isOpen));
+    this.visitLogProgress.setAttribute('aria-label', isOpen ? '巡り帳を閉じる（開閉）' : '巡り帳を開く（開閉）');
+    this.visitLogProgress.classList.toggle('is-open', isOpen);
+    if (this.visitLogProgressLabel) this.visitLogProgressLabel.textContent = isOpen ? '巡り帳を閉じる' : '巡り帳';
+  }
+
+  closeVisitLogPanel() {
+    this.setVisitLogOpen(false);
+  }
+
   renderVisitLogPanel() {
     if (!this.visitLogSummary || !this.visitLogList) return;
     const discoverable = this.getDiscoverableSpots().filter(spot => spot.category === 'castle' || spot.category === 'religious');
@@ -2869,7 +2891,16 @@ class ARRegionalApp {
     this.discoveryPanel?.classList.add('hidden');
     this.walkPicksPanel?.classList.add('hidden');
     this.renderVisitLogPanel();
-    this.visitLogPanel?.classList.remove('hidden');
+    this.setVisitLogOpen(true);
+  }
+
+  toggleVisitLogPanel() {
+    const isOpen = !this.visitLogPanel?.classList.contains('hidden');
+    if (isOpen) {
+      this.closeVisitLogPanel();
+    } else {
+      this.openVisitLogPanel();
+    }
   }
 
   escapeHtml(value) {
