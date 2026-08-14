@@ -33,6 +33,8 @@ class ARRegionalApp {
     this.mediaStream = null;
     this.demoArActive = false;
     this.lastArHudUpdate = 0;
+    this.arDiscoverySpotId = null;
+    this.arDiscoveryDismissed = false;
     // 防災AR: 洪水の概念イメージ（水面）は明示的にONにした場合のみ描画
     this.showFloodConceptImage = false;
 
@@ -80,6 +82,12 @@ class ARRegionalApp {
     this.arHeadingText = document.getElementById('ar-heading-text');
     this.arDirectionCue = document.getElementById('ar-direction-cue');
     this.arNearbyCount = document.getElementById('ar-nearby-count');
+    this.arDiscoveryCard = document.getElementById('ar-discovery-card');
+    this.arDiscoveryThumb = document.getElementById('ar-discovery-thumb');
+    this.arDiscoveryMeta = document.getElementById('ar-discovery-meta');
+    this.arDiscoveryTitle = document.getElementById('ar-discovery-title');
+    this.arDiscoverySummary = document.getElementById('ar-discovery-summary');
+    this.arDiscoveryRoute = this.arDiscoveryCard?.querySelector('.ar-discovery-route');
     this.locationText = document.getElementById('location-text');
     this.guideHintText = document.getElementById('guide-hint-text');
     this.guideHint = document.getElementById('drag-guide-hint');
@@ -144,6 +152,7 @@ class ARRegionalApp {
     this.threeOverlay = document.getElementById('three-overlay');
     this.threeHolder = document.getElementById('three-canvas-holder');
     this.threeState = null;
+    this.threeFocusSpot = null;
 
     try {
       if (window.localStorage?.getItem('ar-guide-dismissed') === '1') {
@@ -965,6 +974,37 @@ class ARRegionalApp {
     document.getElementById('btn-close-three')?.addEventListener('click', () => {
       this.closeThreeView();
     });
+    document.getElementById('btn-close-ar-discovery')?.addEventListener('click', () => {
+      this.arDiscoveryDismissed = true;
+      this.hideArDiscoveryCard();
+    });
+    document.getElementById('btn-ar-card-materials')?.addEventListener('click', () => {
+      if (!this.selectedSpot) return;
+      this.openSpotModal(this.selectedSpot);
+      requestAnimationFrame(() => document.getElementById('material-gallery')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    });
+    document.getElementById('btn-ar-card-three')?.addEventListener('click', () => {
+      if (this.selectedSpot) this.openThreeView(this.selectedSpot);
+    });
+    document.getElementById('btn-ar-card-next')?.addEventListener('click', () => {
+      this.openWalkPicksPanel();
+    });
+    document.getElementById('btn-ar-card-visit')?.addEventListener('click', () => {
+      if (!this.selectedSpot) return;
+      this.openSpotModal(this.selectedSpot);
+      requestAnimationFrame(() => document.getElementById('modal-visit-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    });
+    document.getElementById('btn-three-materials')?.addEventListener('click', () => {
+      const spot = this.threeFocusSpot || this.selectedSpot;
+      if (!spot) return;
+      this.closeThreeView();
+      this.openSpotModal(spot);
+      requestAnimationFrame(() => document.getElementById('material-gallery')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    });
+    document.getElementById('btn-three-next')?.addEventListener('click', () => {
+      this.closeThreeView();
+      this.openWalkPicksPanel();
+    });
 
     document.getElementById('btn-reset-overlay').addEventListener('click', () => {
       this.resetOverlayTransform();
@@ -1237,6 +1277,8 @@ class ARRegionalApp {
     this.switchViewMode('ar');
     this.demoArActive = true;
     this.cameraActive = false;
+    this.arDiscoveryDismissed = false;
+    this.hideArDiscoveryCard();
     this.cameraPlaceholder.classList.add('hidden');
     document.getElementById('app-container')?.classList.add('demo-ar');
     this.enableExploreMode();
@@ -1260,6 +1302,7 @@ class ARRegionalApp {
   updateARExperienceVisibility() {
     const isRunning = this.viewMode === 'ar' && (this.cameraActive || this.demoArActive);
     this.arHud?.classList.toggle('hidden', !isRunning);
+    if (!isRunning) this.hideArDiscoveryCard();
     const appContainer = document.getElementById('app-container');
     appContainer?.classList.toggle('ar-running', isRunning);
     appContainer?.classList.toggle('ar-idle', this.viewMode === 'ar' && !isRunning);
@@ -1755,6 +1798,7 @@ class ARRegionalApp {
     if (!ranked.length) {
       this.arDirectionCue.textContent = 'このレイヤーには表示できる地点がありません';
       this.arDirectionCue.dataset.direction = 'none';
+      this.hideArDiscoveryCard();
       return;
     }
     const nearest = ranked[0];
@@ -1763,6 +1807,58 @@ class ARRegionalApp {
     const arrow = inView ? '◎' : nearest.angle < 0 ? '←' : '→';
     this.arDirectionCue.textContent = `${arrow} ${direction}：${nearest.spot.name}（約${this.formatDistance(nearest.distance)}）`;
     this.arDirectionCue.dataset.direction = inView ? 'front' : nearest.angle < 0 ? 'left' : 'right';
+    this.updateArDiscoveryCard(nearest, inView);
+  }
+
+  updateArDiscoveryCard(nearest, inView) {
+    if (!this.arDiscoveryCard || this.arDiscoveryDismissed) return;
+    if (!this.arDiscoverySpotId && nearest.distance <= 1800) {
+      this.showArDiscoveryCard(nearest.spot, nearest.distance, inView);
+      return;
+    }
+    if (this.arDiscoverySpotId === nearest.spot.id) {
+      this.arDiscoveryMeta.textContent = `${inView ? '正面' : nearest.angle < 0 ? '左方向' : '右方向'}・約${this.formatDistance(nearest.distance)}`;
+    }
+  }
+
+  showArDiscoveryCard(spot, distance = 0, inView = true) {
+    if (!this.arDiscoveryCard || !spot) return;
+    this.selectedSpot = spot;
+    this.arDiscoverySpotId = spot.id;
+    this.arDiscoveryDismissed = false;
+    const categoryLabel = spot.category === 'castle' ? '城' : spot.category === 'religious' ? '寺社' : spot.category === 'community' ? '地域' : '歴史';
+    const mediaCount = (spot.historicalMaterials?.length || 0) + (spot.mediaAssets?.length || 0);
+    const materialButton = document.getElementById('btn-ar-card-materials');
+    const threeButton = document.getElementById('btn-ar-card-three');
+    const visitButton = document.getElementById('btn-ar-card-visit');
+
+    if (this.arDiscoveryThumb) {
+      this.arDiscoveryThumb.textContent = categoryLabel;
+      this.arDiscoveryThumb.dataset.category = spot.category || 'history';
+    }
+    if (this.arDiscoveryMeta) this.arDiscoveryMeta.textContent = `${inView ? '正面' : '方向を探す'}・約${this.formatDistance(distance)}`;
+    if (this.arDiscoveryTitle) this.arDiscoveryTitle.textContent = spot.name || '歴史スポット';
+    if (this.arDiscoverySummary) this.arDiscoverySummary.textContent = spot.summary || spot.description || 'この場所の物語を見つけました。';
+
+    this.arDiscoveryCard.dataset.category = spot.category || 'history';
+    this.arDiscoveryCard.classList.toggle('has-materials', mediaCount > 0);
+    this.arDiscoveryCard.classList.toggle('has-visit', this.isVisited(spot));
+    const routeSteps = this.arDiscoveryRoute?.querySelectorAll('span') || [];
+    routeSteps[1]?.classList.toggle('is-ready', mediaCount > 0);
+    routeSteps[2]?.classList.toggle('is-ready', !spot.isAreaHazard);
+    if (materialButton) materialButton.querySelector('span').textContent = mediaCount > 0 ? `資料を見る（${mediaCount}）` : '場所の資料';
+    if (threeButton) threeButton.classList.toggle('hidden', Boolean(spot.isAreaHazard));
+    if (visitButton) {
+      visitButton.classList.toggle('is-visited', this.isVisited(spot));
+      visitButton.querySelector('span').textContent = this.isVisited(spot) ? '巡り帳に記録済み・メモを見る' : 'この場所を巡り帳に記録';
+    }
+    this.arDiscoveryCard.classList.remove('hidden');
+    if (window.lucide) lucide.createIcons();
+  }
+
+  hideArDiscoveryCard() {
+    this.arDiscoverySpotId = null;
+    this.arDiscoveryCard?.classList.add('hidden');
   }
 
   formatDistance(distance) {
@@ -2028,6 +2124,8 @@ class ARRegionalApp {
     this.threeOverlay.classList.remove('hidden');
 
     const center = spot || this.selectedSpot || { coordinate: this.userPos, name: '現在地' };
+    this.threeFocusSpot = center;
+    this.selectedSpot = center;
     const holder = this.threeHolder;
     holder.innerHTML = '';
 
@@ -2104,6 +2202,15 @@ class ARRegionalApp {
       builtCount++;
       if (b.heightSource === 'measured') measuredCount++;
     });
+
+    const focusNameEl = document.getElementById('three-focus-name');
+    const focusSummaryEl = document.getElementById('three-focus-summary');
+    const buildingCountEl = document.getElementById('three-building-count');
+    const materialCountEl = document.getElementById('three-material-count');
+    if (focusNameEl) focusNameEl.textContent = center.name || '現在地';
+    if (focusSummaryEl) focusSummaryEl.textContent = center.summary || '現在の建物と周辺スポットの位置関係を見ています。';
+    if (buildingCountEl) buildingCountEl.textContent = String(builtCount);
+    if (materialCountEl) materialCountEl.textContent = String((center.historicalMaterials?.length || 0) + (center.mediaAssets?.length || 0));
 
     const colorFor = (cat) => cat === 'community' ? 0x10b981 : cat === 'disaster' ? 0xef4444 : 0xf59e0b;
     const labels = [];
@@ -2202,7 +2309,7 @@ class ARRegionalApp {
         + 'いずれも「現在の姿」であり、江戸期など過去の建物を復元したものではありません。';
     }
 
-    this.threeState = { state, renderer, scene };
+    this.threeState = { state, renderer, scene, center };
   }
 
   closeThreeView() {
@@ -2213,6 +2320,7 @@ class ARRegionalApp {
     }
     this.threeOverlay?.classList.add('hidden');
     if (this.threeHolder) this.threeHolder.innerHTML = '';
+    this.threeFocusSpot = null;
   }
 
   // Three.js は必要になったときだけ読み込む（初期表示を重くしない）
@@ -2604,6 +2712,8 @@ class ARRegionalApp {
       const item = this.renderedPins[i];
       const b = item.bounds;
       if (clickX >= b.x && clickX <= b.x + b.width && clickY >= b.y && clickY <= b.y + b.height) {
+        const distance = this.calculateDistance(this.userPos.latitude, this.userPos.longitude, item.spot.coordinate.latitude, item.spot.coordinate.longitude);
+        this.showArDiscoveryCard(item.spot, distance, true);
         this.openSpotModal(item.spot);
         break;
       }
@@ -3127,28 +3237,74 @@ class ARRegionalApp {
     const gallery = document.getElementById('material-gallery');
     if (!gallery) return;
     const materials = spot?.historicalMaterials || [];
+    const escape = (value) => this.escapeHtml(value || '');
     if (materials.length === 0) {
-      gallery.innerHTML = '<p class="material-empty">この地点に紐づく確認済み歴史資料は未収録です。</p>';
+      const sourceCards = (spot?.sources || []).slice(0, 2).map(source => `
+        <a class="place-evidence-card" href="${escape(source.sourceUrl)}" target="_blank" rel="noreferrer">
+          <span class="place-evidence-icon">↗</span>
+          <span><small>${escape(source.claimStatus === 'verified' ? '確認済み出典' : '参照先')}</small><strong>${escape(source.sourceName)}</strong></span>
+        </a>
+      `).join('');
+      const coordinate = spot?.coordinate;
+      gallery.innerHTML = `
+        <div class="material-intro material-intro-empty">
+          <div><span class="material-intro-kicker">場所の資料</span><strong>公式情報と位置の手がかりから始める</strong></div>
+          <p>歴史資料が未収録の地点も、公式情報・座標・現地観察を一つの画面でたどれます。</p>
+          <div class="material-route" aria-hidden="true">
+            <span class="is-active">01 公式情報</span><i>→</i><span>02 地図で位置</span><i>→</i><span>03 現地で観察</span>
+          </div>
+        </div>
+        <div class="place-evidence-grid">${sourceCards}
+          <div class="place-evidence-card is-static">
+            <span class="place-evidence-icon">◎</span>
+            <span><small>ARピンの位置</small><strong>${coordinate ? `${Number(coordinate.latitude).toFixed(4)}, ${Number(coordinate.longitude).toFixed(4)}` : '概略位置'}</strong></span>
+          </div>
+        </div>
+      `;
       return;
     }
+    const materialSummary = `${materials.length}件の確認済み資料｜リンク先で原資料を開けます`;
     gallery.innerHTML = `
-      <h3>関連する歴史資料</h3>
-      ${materials.map(material => `
+      <div class="material-intro">
+        <div>
+          <span class="material-intro-kicker">資料でたどる</span>
+          <strong>この場所を、資料と現在地で見比べる</strong>
+        </div>
+        <p>${escape(materialSummary)}</p>
+        <div class="material-route" aria-hidden="true">
+          <span class="is-active">01 場所を発見</span><i>→</i><span>02 原資料を読む</span><i>→</i><span>03 現地で確かめる</span>
+        </div>
+      </div>
+      <h3 class="material-gallery-title"><span>関連する歴史資料</span><small>${materials.length}件</small></h3>
+      ${materials.map((material, index) => {
+        const accuracy = material.positionAccuracy === 'reference_only' ? '位置は参考資料' : (material.positionAccuracy || '位置精度未記載');
+        const image = material.imageUrl && material.imageUrlVerified !== false
+          ? `<img src="${escape(material.imageUrl)}" alt="${escape(material.title)}" loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.querySelector('.img-fallback').classList.remove('hidden');">`
+          : '';
+        const sourceLink = material.sourceUrl
+          ? `<a href="${escape(material.sourceUrl)}" target="_blank" rel="noreferrer">原資料を開く</a>`
+          : '';
+        const manifestLink = material.manifestUrl
+          ? `<a href="${escape(material.manifestUrl)}" target="_blank" rel="noreferrer">IIIFで見る</a>`
+          : '';
+        const licenseLink = material.licenseSourceUrl
+          ? `<a href="${escape(material.licenseSourceUrl)}" target="_blank" rel="noreferrer">利用条件</a>`
+          : '';
+        return `
         <article class="material-card">
-          ${material.imageUrl && material.imageUrlVerified !== false ? `<img src="${material.imageUrl}" alt="${material.title}" loading="lazy"
-               onerror="this.style.display='none'; this.nextElementSibling.querySelector('.img-fallback').classList.remove('hidden');">` : ''}
+          <div class="material-card-index"><span>${String(index + 1).padStart(2, '0')}</span>${image}</div>
           <div>
-            <p class="img-fallback" style="color:#fbbf24; font-size:0.72rem;">個別画像URLは未検証です。下記リンクからNDLで直接閲覧してください。</p>
-            <strong>${material.title}</strong>
-            <small>${material.date}｜${material.displayType || MATERIAL_TYPE_LABELS[material.materialType] || material.materialType}</small>
-            <small>${material.license}｜位置精度: 参考資料${material.imageUrlVerified === false ? '｜画像URL未検証' : ''}</small>
-            <p>${material.note}</p>
-            <a href="${material.sourceUrl}" target="_blank" rel="noreferrer">NDL資料ページを開く</a>
-            <a href="${material.manifestUrl}" target="_blank" rel="noreferrer">IIIFマニフェスト</a>
-            ${material.licenseSourceUrl ? `<a href="${material.licenseSourceUrl}" target="_blank" rel="noreferrer">ライセンス確認元</a>` : ''}
+            <p class="img-fallback${material.imageUrl && material.imageUrlVerified !== false ? ' hidden' : ''}">個別画像URLは未検証です。リンク先の原資料で確認してください。</p>
+            <div class="material-card-topline"><span>${escape(material.date)}</span><small>${escape(material.displayType || MATERIAL_TYPE_LABELS[material.materialType] || material.materialType)}</small></div>
+            <strong>${escape(material.title)}</strong>
+            <small>${escape(material.license)}｜${escape(accuracy)}${material.imageUrlVerified === false ? '｜画像URL未検証' : ''}</small>
+            <p>${escape(material.note)}</p>
+            <div class="material-source-links">${sourceLink}${manifestLink}${licenseLink}</div>
           </div>
         </article>
-      `).join('')}
+        `;
+      }).join('')}
     `;
   }
 

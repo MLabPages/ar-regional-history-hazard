@@ -126,6 +126,19 @@
           <span><i data-lucide="box"></i> 3Dビュー</span>
           <button id="btn-close-three" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
         </div>
+        <div class="three-focus-card">
+          <span class="three-focus-eyebrow">この場所を立体でたどる</span>
+          <strong id="three-focus-name">スポット名称</strong>
+          <p id="three-focus-summary">現在の建物と周辺スポットの位置関係を見ています。</p>
+          <div class="three-focus-stats">
+            <span><b id="three-building-count">0</b>棟</span>
+            <span><b id="three-material-count">0</b>件の資料</span>
+          </div>
+          <div class="three-focus-actions">
+            <button id="btn-three-materials" type="button"><i data-lucide="book-open"></i> 資料を見る</button>
+            <button id="btn-three-next" type="button"><i data-lucide="route"></i> 次の一か所</button>
+          </div>
+        </div>
         <p class="aerial-hint">ドラッグで回転、ピンチ／ホイールで拡大縮小できます。</p>
       </div>
     </div>
@@ -187,6 +200,33 @@
         <div id="ar-direction-cue" class="ar-direction-cue">スポットを探しています…</div>
         <div id="ar-nearby-count" class="ar-nearby-count">表示できるスポットを確認中</div>
         <div class="ar-reticle" aria-hidden="true"></div>
+        <aside id="ar-discovery-card" class="ar-discovery-card hidden" aria-label="AR発見カード" aria-live="polite">
+          <div class="ar-discovery-card-head">
+            <span class="ar-discovery-kicker"><i data-lucide="sparkles"></i> 発見カード</span>
+            <button id="btn-close-ar-discovery" class="ar-discovery-close" type="button" aria-label="発見カードを閉じる"><i data-lucide="x"></i></button>
+          </div>
+          <div class="ar-discovery-main">
+            <div id="ar-discovery-thumb" class="ar-discovery-thumb" aria-hidden="true">城</div>
+            <div class="ar-discovery-copy">
+              <span id="ar-discovery-meta" class="ar-discovery-meta">正面・約0m</span>
+              <h2 id="ar-discovery-title">スポット名称</h2>
+              <p id="ar-discovery-summary">この場所の物語を見つけました。</p>
+            </div>
+          </div>
+          <div class="ar-discovery-route" aria-label="AR体験の進み方">
+            <span class="is-active"><b>01</b>見つける</span>
+            <i data-lucide="chevron-right"></i>
+            <span><b>02</b>資料で知る</span>
+            <i data-lucide="chevron-right"></i>
+            <span><b>03</b>立体で見る</span>
+          </div>
+          <div class="ar-discovery-actions">
+            <button id="btn-ar-card-materials" class="ar-card-action ar-card-action-primary" type="button"><i data-lucide="book-open"></i><span>資料を見る</span></button>
+            <button id="btn-ar-card-three" class="ar-card-action" type="button"><i data-lucide="box"></i><span>3Dで見る</span></button>
+            <button id="btn-ar-card-next" class="ar-card-action" type="button"><i data-lucide="route"></i><span>次の一か所</span></button>
+          </div>
+          <button id="btn-ar-card-visit" class="ar-card-visit" type="button"><i data-lucide="book-marked"></i><span>この場所を巡り帳に記録</span></button>
+        </aside>
       </section>
 
       <div id="drag-guide-hint" class="drag-hint-badge hidden">
