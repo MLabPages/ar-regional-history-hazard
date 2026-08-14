@@ -1827,7 +1827,7 @@ class ARRegionalApp {
     this.arDiscoverySpotId = spot.id;
     this.arDiscoveryDismissed = false;
     const categoryLabel = spot.category === 'castle' ? '城' : spot.category === 'religious' ? '寺社' : spot.category === 'community' ? '地域' : '歴史';
-    const mediaCount = (spot.historicalMaterials?.length || 0) + (spot.mediaAssets?.length || 0);
+    const mediaCount = this.getHistoricalMaterialCount(spot);
     const materialButton = document.getElementById('btn-ar-card-materials');
     const threeButton = document.getElementById('btn-ar-card-three');
     const visitButton = document.getElementById('btn-ar-card-visit');
@@ -2210,7 +2210,22 @@ class ARRegionalApp {
     if (focusNameEl) focusNameEl.textContent = center.name || '現在地';
     if (focusSummaryEl) focusSummaryEl.textContent = center.summary || '現在の建物と周辺スポットの位置関係を見ています。';
     if (buildingCountEl) buildingCountEl.textContent = String(builtCount);
-    if (materialCountEl) materialCountEl.textContent = String((center.historicalMaterials?.length || 0) + (center.mediaAssets?.length || 0));
+    if (materialCountEl) materialCountEl.textContent = String(this.getHistoricalMaterialCount(center));
+
+    const evidenceMedia = this.getPrimaryMedia(center);
+    const coordinateLabel = center.verification?.coordinate === 'verified' ? '確認済み座標' : '概略座標';
+    const evidenceLocationEl = document.getElementById('three-evidence-location');
+    const evidenceShapeEl = document.getElementById('three-evidence-shape');
+    const evidenceRestorationEl = document.getElementById('three-evidence-restoration');
+    if (evidenceLocationEl) evidenceLocationEl.textContent = `位置：${coordinateLabel}`;
+    if (evidenceShapeEl) evidenceShapeEl.textContent = builtCount > 0
+      ? `形状：現存OSM建物${builtCount}棟`
+      : '形状：収録建物なし';
+    if (evidenceRestorationEl) {
+      evidenceRestorationEl.textContent = evidenceMedia?.isHistorical || (center.historicalMaterials?.length || 0) > 0
+        ? '過去の姿：資料は参考・復元なし'
+        : '過去の姿：イメージ（復元なし）';
+    }
 
     const colorFor = (cat) => cat === 'community' ? 0x10b981 : cat === 'disaster' ? 0xef4444 : 0xf59e0b;
     const labels = [];
@@ -2299,12 +2314,14 @@ class ARRegionalApp {
 
     const srcEl = document.getElementById('three-credit-source');
     if (srcEl) {
-      srcEl.innerHTML = `中心: ${center.name}｜建物${builtCount}棟（うち高さ実測${measuredCount}棟）｜`
+      srcEl.innerHTML = `中心: ${center.name}｜建物${builtCount}棟（高さ実測${measuredCount}棟・推定${Math.max(0, builtCount - measuredCount)}棟）｜取得日: ${OSM_BUILDINGS_META.fetchedAt}｜`
         + `建物形状・高さ: <a href="${OSM_BUILDINGS_META.licenseUrl}" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors（${OSM_BUILDINGS_META.license}）</a>`;
     }
     const caveatEl = document.querySelector('#three-credit .overlay-credit-caveat');
     if (caveatEl) {
-      caveatEl.textContent = '建物の輪郭と高さは、現存する建物の実測データ（OpenStreetMap）です。'
+      caveatEl.textContent = (builtCount > 0
+        ? '建物の輪郭と高さは、現存する建物の実測データ（OpenStreetMap）です。'
+        : 'この地点の周辺に収録済み建物形状がないため、スポット位置を中心にしたイメージ図です。')
         + '半透明の建物は高さが実測ではなく、階数などからの推定値です。'
         + 'いずれも「現在の姿」であり、江戸期など過去の建物を復元したものではありません。';
     }
@@ -2736,6 +2753,7 @@ class ARRegionalApp {
     this.renderVisitRecordControls(spot);
     // 直感的な信頼度バッジ（✓公式資料確認済み / ◐一部確認済み / △未確認情報を含む など）
     this.renderTrustBadge(spot, media);
+    this.renderReconstructionDisclosure(spot, media);
     document.getElementById('modal-summary').textContent = spot.summary || '';
     document.getElementById('modal-desc').textContent = `${spot.description || ''}${spot.verificationNote ? `\n\n注意: ${spot.verificationNote}` : ''}`;
     const modalImg = document.getElementById('modal-img');
@@ -3216,6 +3234,39 @@ class ARRegionalApp {
 
   // スポットの信頼度を1つの直感的バッジで示す。資料種別も併記して
   // 「正確な地図」と「歴史的な名所絵」を混同させない。
+  getHistoricalMaterialCount(spot) {
+    const historicalMediaCount = (spot?.mediaAssets || []).filter(media => media?.isHistorical).length;
+    return (spot?.historicalMaterials?.length || 0) + historicalMediaCount;
+  }
+
+  renderReconstructionDisclosure(spot, media) {
+    const note = document.getElementById('modal-reconstruction-note');
+    const title = document.getElementById('modal-reconstruction-title');
+    const text = document.getElementById('modal-reconstruction-text');
+    if (!note || !title || !text) return;
+
+    const materials = spot?.historicalMaterials || [];
+    const referenceOnly = media?.positionAccuracy === 'reference_only'
+      || materials.some(item => item.positionAccuracy === 'reference_only');
+    const hasHistoricalSource = Boolean(media?.isHistorical || materials.length);
+
+    note.classList.remove('is-reference', 'is-sourced', 'is-image');
+    if (referenceOnly) {
+      note.classList.add('is-reference');
+      title.textContent = '参考資料｜建物復元の根拠ではありません';
+      text.textContent = 'この絵図・資料は年代や場所の手がかりです。現代地図との一致や、建物の形状を復元できる精度は保証されません。';
+    } else if (hasHistoricalSource) {
+      note.classList.add('is-sourced');
+      title.textContent = '資料あり｜復元範囲を限定しています';
+      text.textContent = '確認済み資料を年代・出典の確認に使っていますが、資料のない部分を補って過去の姿を復元してはいません。3Dの形状・高さは現存建物データです。';
+    } else {
+      note.classList.add('is-image');
+      title.textContent = 'イメージ表示｜過去の姿は復元していません';
+      text.textContent = '公式説明・座標・現存建物データをもとにした案内です。資料がないため、過去の建物や景観は再現していません。';
+    }
+    note.classList.remove('hidden');
+  }
+
   renderTrustBadge(spot, media) {
     const el = document.getElementById('modal-trust-badge');
     if (!el) return;
@@ -3278,6 +3329,7 @@ class ARRegionalApp {
       <h3 class="material-gallery-title"><span>関連する歴史資料</span><small>${materials.length}件</small></h3>
       ${materials.map((material, index) => {
         const accuracy = material.positionAccuracy === 'reference_only' ? '位置は参考資料' : (material.positionAccuracy || '位置精度未記載');
+        const restorationNote = material.positionAccuracy === 'reference_only' ? '｜建物復元の根拠ではありません' : '';
         const image = material.imageUrl && material.imageUrlVerified !== false
           ? `<img src="${escape(material.imageUrl)}" alt="${escape(material.title)}" loading="lazy"
                onerror="this.style.display='none'; this.nextElementSibling.querySelector('.img-fallback').classList.remove('hidden');">`
@@ -3298,7 +3350,7 @@ class ARRegionalApp {
             <p class="img-fallback${material.imageUrl && material.imageUrlVerified !== false ? ' hidden' : ''}">個別画像URLは未検証です。リンク先の原資料で確認してください。</p>
             <div class="material-card-topline"><span>${escape(material.date)}</span><small>${escape(material.displayType || MATERIAL_TYPE_LABELS[material.materialType] || material.materialType)}</small></div>
             <strong>${escape(material.title)}</strong>
-            <small>${escape(material.license)}｜${escape(accuracy)}${material.imageUrlVerified === false ? '｜画像URL未検証' : ''}</small>
+            <small>${escape(material.license)}｜${escape(accuracy)}${material.imageUrlVerified === false ? '｜画像URL未検証' : ''}${restorationNote}</small>
             <p>${escape(material.note)}</p>
             <div class="material-source-links">${sourceLink}${manifestLink}${licenseLink}</div>
           </div>

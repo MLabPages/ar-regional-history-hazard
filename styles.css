@@ -5301,3 +5301,62 @@ a:focus-visible {
     font-size: 0.58rem;
   }
 }
+
+/* 資料の根拠と復元範囲を、図の近くで小さく明示する */
+.three-evidence-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 7px;
+  color: #cbd5e1;
+  font-size: 0.61rem;
+  line-height: 1.35;
+}
+
+.three-evidence-tags span {
+  padding: 3px 6px;
+  background: rgba(2, 6, 23, 0.48);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 5px;
+}
+
+#three-evidence-location { color: #bfdbfe; }
+#three-evidence-shape { color: #bbf7d0; }
+#three-evidence-restoration { color: #fde68a; }
+
+.reconstruction-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 8px 9px;
+  color: #5f4a1c;
+  background: #fff8df;
+  border: 1px solid #e2c96c;
+  border-radius: 8px;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.reconstruction-note-heading {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+}
+
+.reconstruction-note-heading svg { width: 14px; height: 14px; }
+.reconstruction-note p { margin: 0; }
+.reconstruction-note.is-reference { color: #704b12; background: #fff3cd; border-color: #d7b84b; }
+.reconstruction-note.is-sourced { color: #275c59; background: #eaf7f4; border-color: #9bcfc7; }
+.reconstruction-note.is-image { color: #75401e; background: #fff0e7; border-color: #e2ad8a; }
+
+.modal-card .reconstruction-note { color: #5f4a1c; }
+.modal-card .reconstruction-note.is-reference { color: #704b12; }
+.modal-card .reconstruction-note.is-sourced { color: #275c59; }
+.modal-card .reconstruction-note.is-image { color: #75401e; }
+
+@media (max-width: 600px) {
+  .three-evidence-tags { gap: 3px 4px; font-size: 0.56rem; }
+  .three-evidence-tags span { padding: 3px 5px; }
+  .reconstruction-note { padding: 7px 8px; font-size: 0.65rem; }
+}

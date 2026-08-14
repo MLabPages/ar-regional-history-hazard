@@ -120,6 +120,11 @@
         <div class="overlay-credit-title">3Dで周辺の位置関係を見る</div>
         <div class="overlay-credit-source" id="three-credit-source"></div>
         <div class="overlay-credit-caveat">建物の形は再現していません。実測された緯度・経度・標高をもとに、スポットの位置関係だけを立体で示す模式図です。建物の高さ・形状は史実の復元ではありません。</div>
+        <div class="three-evidence-tags" aria-label="3Dの根拠と復元範囲">
+          <span id="three-evidence-location">位置：座標データ</span>
+          <span id="three-evidence-shape">形状：現存建物データ</span>
+          <span id="three-evidence-restoration">過去の姿：復元なし</span>
+        </div>
       </div>
       <div class="overlay-control-panel">
         <div class="panel-header">
@@ -513,6 +518,10 @@
             <small id="modal-material-type">資料種別: --</small>
             <small id="modal-position-accuracy">位置精度: --</small>
           </div>
+          <aside id="modal-reconstruction-note" class="reconstruction-note hidden" aria-label="資料と復元の扱い">
+            <div class="reconstruction-note-heading"><i data-lucide="info"></i><strong id="modal-reconstruction-title">資料と復元の扱い</strong></div>
+            <p id="modal-reconstruction-text"></p>
+          </aside>
           <div id="material-gallery" class="material-gallery"></div>
           <div class="modal-actions">
             <button id="btn-compare-ar" class="btn-primary" type="button">
