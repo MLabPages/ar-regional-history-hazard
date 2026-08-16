@@ -16,6 +16,8 @@
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
+  /* safe-area insets for iOS notch/home indicator */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * {
@@ -5359,4 +5361,184 @@ a:focus-visible {
   .three-evidence-tags { gap: 3px 4px; font-size: 0.56rem; }
   .three-evidence-tags span { padding: 3px 5px; }
   .reconstruction-note { padding: 7px 8px; font-size: 0.65rem; }
+}
+
+
+
+
+
+/* ===== スマホ最終レイアウト: 6タブ潰れと下端重なりを解消 ===== */
+@media (max-width: 600px) {
+  .top-bar {
+    top: max(8px, env(safe-area-inset-top, 0px));
+    left: 8px;
+    right: 8px;
+    z-index: 960;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    padding: 7px;
+  }
+
+  .top-bar .brand {
+    min-width: 0;
+  }
+
+  .top-bar .brand-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.92rem;
+  }
+
+  .top-bar .status-subtitle {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: none;
+    font-size: 0.62rem;
+  }
+
+  .top-bar .view-mode-toggle {
+    grid-column: 1 / -1;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .top-bar .header-actions {
+    grid-column: 2;
+    grid-row: 1;
+    flex-shrink: 0;
+  }
+
+  .map-navigation-tools {
+    top: calc(118px + env(safe-area-inset-top, 0px));
+    left: 8px;
+    width: calc(100vw - 16px);
+  }
+
+  .bottom-nav.layer-tabs-compact,
+  .map-mode .layer-tabs-compact,
+  .map-mode .bottom-nav.layer-tabs-compact {
+    left: 8px;
+    right: 8px;
+    bottom: max(8px, var(--safe-bottom));
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 4px;
+    width: auto;
+    max-width: none;
+    padding: 5px 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    transform: none;
+  }
+
+  .bottom-nav.layer-tabs-compact::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bottom-nav .tab-btn {
+    flex: 0 0 auto;
+    min-width: 58px;
+    min-height: 46px;
+    padding: 5px 8px;
+    font-size: 0.68rem;
+  }
+
+  .explore-quick-actions,
+  #app-container:not(.map-mode) .explore-quick-actions,
+  #app-container.ar-running .explore-quick-actions {
+    right: 8px;
+    bottom: calc(68px + var(--safe-bottom));
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .has-spot-selection .explore-quick-actions {
+    bottom: calc(196px + var(--safe-bottom));
+  }
+
+  .explore-quick-actions > button {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 7px;
+  }
+
+  .explore-quick-actions > button > span:not(.sr-only) {
+    display: none;
+  }
+
+  .bottom-sheet,
+  .map-mode .bottom-sheet,
+  .discovery-panel,
+  .walk-picks-panel,
+  .visit-log-panel,
+  .time-travel-panel,
+  .map-mode .map-spots-panel,
+  .map-spot-preview {
+    bottom: calc(68px + var(--safe-bottom));
+  }
+
+  .map-first-hint,
+  .bottom-left-stack {
+    bottom: calc(118px + var(--safe-bottom));
+  }
+
+  .has-spot-selection .bottom-left-stack {
+    bottom: calc(236px + var(--safe-bottom));
+  }
+
+  .map-tools-sheet:not(.hidden) ~ .bottom-left-stack,
+  .hazard-sheet:not(.hidden) ~ .bottom-left-stack {
+    bottom: calc(68px + var(--safe-bottom));
+  }
+
+  .fab-tool.hazard-fab {
+    right: 8px;
+    bottom: calc(68px + var(--safe-bottom));
+  }
+
+  #camera-placeholder.start-card,
+  .ar-idle .start-card {
+    left: 10px;
+    right: 10px;
+    bottom: calc(78px + var(--safe-bottom));
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+
+  .ar-nearby-count {
+    bottom: calc(72px + var(--safe-bottom));
+  }
+
+  .drag-hint-badge {
+    top: auto;
+    left: 10px;
+    bottom: calc(126px + var(--safe-bottom));
+    transform: none;
+  }
+}
+
+@media (max-width: 370px) {
+  .bottom-nav .tab-btn {
+    min-width: 54px;
+    min-height: 44px;
+    padding: 4px 6px;
+    font-size: 0.62rem;
+  }
+
+  .explore-quick-actions > button {
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
 }
