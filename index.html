@@ -247,7 +247,7 @@
         </div>
         <div class="sim-guide-box">
           <div class="sim-guide-step"><span class="step-num">1</span><span>上で「地図」か「現地AR」を選ぶ</span></div>
-          <div class="sim-guide-step"><span class="step-num">2</span><span>下のタブで歴史 / 地域 / 防災を切り替える</span></div>
+          <div class="sim-guide-step"><span class="step-num">2</span><span>下のタブでまち / 寺社 / 城 / 防災を切り替える</span></div>
           <div class="sim-guide-step"><span class="step-num">3</span><span>地図上のピンや一覧から詳細・出典を見る</span></div>
         </div>
         <div class="sim-controls">
@@ -377,7 +377,7 @@
         <button id="btn-close-spot-preview" class="preview-close" type="button" aria-label="選択を解除"><i data-lucide="x"></i></button>
         <div class="preview-copy">
           <div class="preview-meta-row">
-            <span id="spot-preview-meta">歴史スポット</span>
+            <span id="spot-preview-meta">まちスポット</span>
             <span id="spot-preview-discovery">未発見</span>
           </div>
           <h2 id="spot-preview-title">スポット名称</h2>
@@ -438,13 +438,9 @@
 
       <!-- 下部ナビ: 3分類と一覧 -->
       <nav class="bottom-nav layer-tabs-compact" aria-label="情報レイヤー">
-        <button class="tab-btn active" type="button" data-layer="history">
-          <i data-lucide="landmark"></i>
-          <span>歴史</span>
-        </button>
-        <button class="tab-btn" type="button" data-layer="community">
+        <button class="tab-btn active" type="button" data-layer="town">
           <i data-lucide="map-pin"></i>
-          <span>地域</span>
+          <span>まち</span>
         </button>
         <button class="tab-btn" type="button" data-layer="religious">
           <i data-lucide="landmark"></i>
@@ -552,8 +548,8 @@
           <ul>
             <li><strong>地図</strong>: 自宅や教室から年代比較・スポット確認</li>
             <li><strong>現地AR</strong>: その場所でカメラ映像に情報を重ねる</li>
-            <li><strong>下のタブ</strong>: 歴史 / 地域 / 防災 を切替</li>
-            <li><strong>発見ノート</strong>: 読んだ歴史・地域スポットを端末内に記録</li>
+            <li><strong>下のタブ</strong>: まち / 寺社 / 城 / 防災 を切替</li>
+            <li><strong>発見ノート</strong>: 読んだまちスポットを端末内に記録</li>
             <li><strong>巡り帳</strong>: 城・寺・神社の訪問日とひとことを端末内に記録</li>
             <li><strong>左下の出典</strong>: 今見ている地図・資料の出典を常時表示</li>
           </ul>

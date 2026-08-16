@@ -2232,12 +2232,32 @@ const NATIONAL_CULTURAL_SPOTS = [
   ,makeNationalSpot({ id: 'religious-948', name: '産田神社', category: 'religious', region: '近畿', coordinate: { latitude: 33.888000, longitude: 136.100000 }, era: 'ancient', eraLabel: '日本書紀神話・火神誕生伝承・古代祭式・熊野の聖地', religiousType: '神社・古代祭祀・産育信仰・熊野信仰', summary: '火神誕生の神話と古代祭式を伝える、熊野の重要な聖地です。', description: '産田神社は、伊弉冉尊が火神を生んだ場所と伝わり、熊野の神話と古代祭祀を今に伝えます。境内に残る古い祭式の形や、花の窟神社と対になる信仰から、熊野の成り立ちと産育の祈りを紹介します。', sourceName: '熊野市観光公社・熊野市資料', sourceUrl: 'https://kumano-kankou.com/?p=424' })
   ,makeNationalSpot({ id: 'castle-534', name: '高天神城', category: 'castle', region: '東海', coordinate: { latitude: 34.688000, longitude: 138.036000 }, era: 'late_medieval', eraLabel: '国指定史跡・武田氏と徳川氏の攻防・続日本100名城', castleType: '山城・武田氏・徳川氏・遠江の要衝', summary: '武田・徳川の攻防が繰り広げられた、遠江を代表する山城です。', description: '高天神城は鶴翁山の地形を生かした山城で、「高天神を制するものは遠州を制す」といわれた要衝です。1574年の武田勝頼による攻撃と1581年の徳川家康による落城から、戦国大名の国境戦略を紹介します。', sourceName: '静岡県公式ウェブサイト', sourceUrl: 'https://www.pref.shizuoka.jp/kankosports/bunkageijutsu/bunkazai/1002825/1041003/1041885/1004960/1020817.html' })
   ,makeNationalSpot({ id: 'castle-535', name: '赤木城', category: 'castle', region: '近畿', coordinate: { latitude: 33.946000, longitude: 135.974000 }, era: 'late_medieval', eraLabel: '天正17年（1589年）築城伝承・藤堂高虎・国指定史跡・続日本100名城', castleType: '山城・藤堂高虎・野面乱層積み・熊野の街道防衛', summary: '藤堂高虎の初期築城と伝わる、石垣が良好に残る山城です。', description: '赤木城は天正17年頃、北山街道沿いの反対勢力を抑えるため藤堂高虎が築いたと伝わる山城です。主郭・東西北の郭、野面乱層積みの石垣と枡形虎口から、中世山城と近世城郭の過渡期を紹介します。', sourceName: '熊野市公式ウェブサイト', sourceUrl: 'https://www.city.kumano.lg.jp/tourism/?content=198' })
+
+  ,makeNationalSpot({ id: 'town-1', name: '三内丸山遺跡', category: 'history', region: '東北', coordinate: { latitude: 40.8111, longitude: 140.6964 }, era: 'jomon', eraLabel: '縄文時代中期・特別史跡・世界遺産構成資産', historyType: '縄文集落・大型掘立柱建物・特別史跡', summary: '大規模な縄文集落と祭祀の場が残る、青森のむらと祈りの遺跡です。', description: '三内丸山遺跡は約5500年前から1500年ほど続いた大規模集落で、大型掘立柱建物や盛土遺構から、定住と祭祀が結びついた縄文のまちをたどれます。復元建物は参考展示であり、現地の遺構表示と公式解説を案内します。', sourceName: '三内丸山遺跡 公式サイト', sourceUrl: 'https://sannaimaruyama.pref.aomori.jp/' })
+  ,makeNationalSpot({ id: 'town-2', name: '多賀城跡', category: 'history', region: '東北', coordinate: { latitude: 38.3065, longitude: 140.9883 }, era: 'nara', eraLabel: '神亀元年（724年）設置・陸奥国府・特別史跡', historyType: '古代城柵・国府・特別史跡', summary: '奈良・平安時代の陸奥国府として、東北統治の中心になったまちです。', description: '多賀城は奈良時代に陸奥国府と鎮守府が置かれた古代都市です。政庁跡や城前官衙から、都から離れた地で政治・軍事・祭祀が一体になった地方都市の姿を紹介します。', sourceName: '宮城県多賀城跡調査研究所（多賀城跡）', sourceUrl: 'https://www.pref.miyagi.jp/site/tagajou/' })
+  ,makeNationalSpot({ id: 'town-3', name: '平城宮跡', category: 'history', region: '近畿', coordinate: { latitude: 34.6914, longitude: 135.7950 }, era: 'nara', eraLabel: '和銅3年（710年）遷都・特別史跡・世界遺産', historyType: '古代都城・宮殿・特別史跡', summary: '奈良時代の都の中心で、第一次大極殿や朱雀門から古代都市の骨格をたどれます。', description: '平城宮跡は710年に開かれた平城京の宮殿中枢です。大極殿や朱雀門の復元は参考展示であり、発掘で確認された宮都の配置と公式解説を案内します。', sourceName: '奈良文化財研究所 平城宮跡', sourceUrl: 'https://www.nabunken.go.jp/heijo/' })
+  ,makeNationalSpot({ id: 'town-4', name: '今井町', category: 'history', region: '近畿', coordinate: { latitude: 34.5048, longitude: 135.7872 }, era: 'edo', eraLabel: '自治都市・重要伝統的建造物群保存地区', historyType: '寺内町・自治都市・町並み保存', summary: '環濠に守られた自治都市の町並みが残る、橿原のまちです。', description: '今井町は称念寺を中心に発展した寺内町で、環濠と格子戸の町家が残ります。自治と商業が結びついた近世都市の骨格を、路地と町家から紹介します。', sourceName: '橿原市公式サイト（今井町並）', sourceUrl: 'https://www.city.kashihara.nara.jp/kankou/spot/imaitown.html' })
+  ,makeNationalSpot({ id: 'town-5', name: '奈良井宿', category: 'history', region: '中部', coordinate: { latitude: 35.9676, longitude: 137.8120 }, era: 'edo', eraLabel: '中山道の宿場町・重要伝統的建造物群', historyType: '宿場町・中山道・町並み保存', summary: '中山道有数の宿場として、深い軒の町並みが残るまちです。', description: '奈良井宿は中山道の難所・鳥居峠の入口に位置する宿場町です。連続する深い軒と木曽の町家から、街道と旅籠が育てたまちの形を紹介します。', sourceName: '塩尻市公式サイト（奈良井宿）', sourceUrl: 'https://www.city.shiojiri.lg.jp/kanko/narai/' })
+  ,makeNationalSpot({ id: 'town-6', name: '富岡製糸場', category: 'history', region: '関東', coordinate: { latitude: 36.2552, longitude: 138.8878 }, era: 'meiji', eraLabel: '明治5年（1872年）操業開始・世界遺産', historyType: '近代産業遺産・官営工場・世界遺産', summary: '官営模範工場として近代製糸業を広げた、群馬の産業のまちです。', description: '富岡製糸場は1872年に操業した官営模範工場で、フランスの技術と日本の建築が結びついた産業施設です。繰糸所や繭倉庫から、近代日本の工業都市のはじまりを紹介します。', sourceName: '富岡製糸場 公式サイト', sourceUrl: 'https://www.tomioka-silk.jp/tomioka-silk-mill/' })
+  ,makeNationalSpot({ id: 'town-7', name: '白川郷 合掌造り集落', category: 'history', region: '中部', coordinate: { latitude: 36.2565, longitude: 136.9063 }, era: 'edo', eraLabel: '合掌造り集落・世界遺産', historyType: '山村集落・合掌造り・世界遺産', summary: '急勾配の茅葺屋根が並ぶ、雪深い山あいの暮らしを伝える集落です。', description: '白川郷の合掌造り集落は、大家族制と養蚕に適した住居が残る山村です。荻町の集落景観から、自然条件に合わせて形づくられたまちの仕組みを紹介します。', sourceName: '白川村公式サイト（白川郷）', sourceUrl: 'https://shirakawa-go.gr.jp/' })
+  ,makeNationalSpot({ id: 'town-8', name: '倉敷美観地区', category: 'history', region: '中国', coordinate: { latitude: 34.5961, longitude: 133.7718 }, era: 'edo', eraLabel: '江戸時代の天領・白壁の商家町', historyType: '商家町・運河・町並み保存', summary: '倉敷川沿いの白壁と蔵屋敷が残る、近世の商家町です。', description: '倉敷美観地区は、江戸幕府の天領として栄えた商人のまちです。倉敷川、白壁、なまこ壁から、水運と商業が育てた町並みを紹介します。', sourceName: '倉敷市公式観光サイト（美観地区）', sourceUrl: 'https://www.kurashiki-tabi.jp/guide/bikan/' })
+  ,makeNationalSpot({ id: 'town-9', name: '原爆ドーム', category: 'history', region: '中国', coordinate: { latitude: 34.3955, longitude: 132.4536 }, era: 'showa', eraLabel: '1915年竣工・1945年被爆・世界遺産', historyType: '被爆建造物・世界遺産・近代建築', summary: '広島の被爆を今に伝える世界遺産で、平和を考えるまちの起点です。', description: '原爆ドームは、元は広島県物産陳列館として1915年に完成した建物です。1945年の被爆後も残された姿から、近代都市広島の記憶と平和学習の場を紹介します。', sourceName: '広島市公式サイト（原爆ドーム）', sourceUrl: 'https://www.city.hiroshima.lg.jp/site/atomicbomb-dome/' })
+  ,makeNationalSpot({ id: 'town-10', name: '小樽運河', category: 'history', region: '北海道', coordinate: { latitude: 43.1991, longitude: 141.0047 }, era: 'taisho', eraLabel: '大正12年（1923年）通水・港湾都市の水路', historyType: '港湾都市・運河・倉庫街', summary: '港と倉庫を結ぶ水路が残る、近代北海道の商港のまちです。', description: '小樽運河は、港に着いた貨物を倉庫へ運ぶために開かれた水路です。石造倉庫と護岸から、鉄道と海運が交差した近代港湾都市の暮らしを紹介します。', sourceName: '小樽市公式サイト（小樽運河）', sourceUrl: 'https://www.city.otaru.lg.jp/docs/2020101500068/' })
+  ,makeNationalSpot({ id: 'town-11', name: '金沢 ひがし茶屋街', category: 'history', region: '中部', coordinate: { latitude: 36.5724, longitude: 136.6668 }, era: 'edo', eraLabel: '文政3年（1820年）頃成立・茶屋街', historyType: '茶屋街・町並み保存・加賀藩城下町', summary: '加賀藩の城下町に残る、茶屋建築の町並みです。', description: 'ひがし茶屋街は、金沢の城下町で整った茶屋街です。格子戸の町家と石畳から、武家都市の周辺で育った芸能と町人文化を紹介します。', sourceName: '金沢市公式観光サイト（ひがし茶屋街）', sourceUrl: 'https://www.kanazawa-tourism.com/spot/higashichaya/' })
+  ,makeNationalSpot({ id: 'town-12', name: '高山 三町', category: 'history', region: '中部', coordinate: { latitude: 36.1424, longitude: 137.2596 }, era: 'edo', eraLabel: '江戸時代の商家町・重要伝統的建造物群', historyType: '商家町・町家・重要伝統的建造物群', summary: '飛騨高山の商家町で、三町通りに古い町並みが残ります。', description: '高山三町は、飛騨高山の中心に残る商家町です。格子戸の町家と路地から、山地の城下町が商人のまちへ移った過程を紹介します。', sourceName: '高山市公式サイト（古い町並）', sourceUrl: 'https://www.hida.jp/spot/00000027/' })
+  ,makeNationalSpot({ id: 'town-13', name: '出島和蘭商館跡', category: 'history', region: '九州・沖縄', coordinate: { latitude: 32.7436, longitude: 129.8733 }, era: 'edo', eraLabel: '寛永13年（1636年）完成・国指定史跡', historyType: '人工島・対外交易・国指定史跡', summary: '鎖国期の日本とヨーロッパをつないだ、長崎の人工島です。', description: '出島は、江戸幕府が対オランダ貿易のために築いた扇形の人工島です。復元建物は参考展示であり、史跡としての配置と公式解説を案内します。', sourceName: '長崎市公式サイト（出島和蘭商館跡）', sourceUrl: 'https://nagasakidejima.jp/' })
+  ,makeNationalSpot({ id: 'town-14', name: '首里城公園（城下のまち）', category: 'history', region: '九州・沖縄', coordinate: { latitude: 26.2183, longitude: 127.7193 }, era: 'medieval', eraLabel: '琉球王国の都・世界遺産関連', historyType: '王都・城下・世界遺産関連', summary: '首里城を中心に、政治・祭祀・暮らしが重なった琉球の都です。', description: '首里は琉球王国の都として、城・御殿・門前のまちが一体になっていました。正殿周辺だけでなく、守礼門や園比屋武御嶽石門から、王都としてのまちの広がりを紹介します。', sourceName: '首里城公園 公式サイト', sourceUrl: 'https://oki-park.jp/shurijo/' })
+  ,makeNationalSpot({ id: 'town-15', name: '明治村', category: 'history', region: '中部', coordinate: { latitude: 35.3406, longitude: 136.9887 }, era: 'meiji', eraLabel: '明治の建造物を移築保存・野外博物館', historyType: '野外博物館・近代建築・移築保存', summary: '明治の建物を移築保存し、近代のまちなみを歩いて学べる野外博物館です。', description: '博物館明治村は、各地から移された明治期の建造物を公開する野外博物館です。建物は移築保存であり、元の場所の復元ではありません。近代建築と都市生活の変化を紹介します。', sourceName: '博物館明治村 公式サイト', sourceUrl: 'https://www.meijimura.com/' })
+  ,makeNationalSpot({ id: 'town-16', name: '川越 一番街', category: 'history', region: '関東', coordinate: { latitude: 35.9234, longitude: 139.4830 }, era: 'meiji', eraLabel: '蔵造りの商家町・重要伝統的建造物群', historyType: '商家町・蔵造り・町並み保存', summary: '蔵造りの町並みが残る、小江戸・川越の商家町です。', description: '川越一番街は、火事のあとに広がった蔵造りの商家が残る通りです。時の鐘と蔵の町家から、城下町が商業都市へ移った姿を紹介します。', sourceName: '川越市公式サイト（一番街）', sourceUrl: 'https://www.koedo.or.jp/ichibangai/' })
+  ,makeNationalSpot({ id: 'town-17', name: '内子 八日市護国', category: 'history', region: '四国', coordinate: { latitude: 33.5530, longitude: 132.6504 }, era: 'edo', eraLabel: '木蝋で栄えた商家町・重要伝統的建造物群', historyType: '商家町・木蝋・町並み保存', summary: '木蝋交易で栄えた、内子の商家町です。', description: '八日市護国は、木蝋の産地として栄えた商家町です。白い漆喰壁と格子の町家から、山間の産物がまちを形づくった歴史を紹介します。', sourceName: '内子町公式観光サイト（八日市護国）', sourceUrl: 'https://www.we-love-uchiko.jp/spot/yokaichi/' })
+
+
 ]);
 
 export const SPOT_DATA = [
   ...NATIONAL_CULTURAL_SPOTS,
   {
-    id: 'hist-1', name: '大阪城 天守閣（昭和6年復元）', category: 'history',
+    id: 'hist-1', name: '大阪城 天守閣（昭和6年復元）', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6873, longitude: 135.5260, elevationMeter: 24 }, era: 'showa', eraLabel: '昭和6年（1931年）',
     verificationStatus: 'unverified',
     verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
@@ -2249,7 +2269,7 @@ export const SPOT_DATA = [
     verificationNote: '本文は要一次資料確認。表示画像は史料ではありません。'
   },
   {
-    id: 'hist-2', name: '旧陸軍第四師団司令部庁舎（ミライザ大阪城）', category: 'history',
+    id: 'hist-2', name: '旧陸軍第四師団司令部庁舎（ミライザ大阪城）', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6865, longitude: 135.5252, elevationMeter: 22 }, era: 'showa', eraLabel: '昭和初期',
     verificationStatus: 'unverified',
     verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
@@ -2261,7 +2281,7 @@ export const SPOT_DATA = [
     verificationNote: '歴史記述・画像とも未確認です。'
   },
   {
-    id: 'hist-3', name: '極楽橋・隠し曲輪跡', category: 'history',
+    id: 'hist-3', name: '極楽橋・隠し曲輪跡', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6888, longitude: 135.5255, elevationMeter: 18 }, era: 'edo', eraLabel: '江戸期〜現在',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'verified' },
@@ -2273,7 +2293,7 @@ export const SPOT_DATA = [
     verificationNote: '江戸期の絵図は参考資料であり、現代地図との位置一致は保証されません。'
   },
   {
-    id: 'hist-4', name: '大阪城 大手門', category: 'history',
+    id: 'hist-4', name: '大阪城 大手門', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6850797, longitude: 135.5230501, elevationMeter: 16 }, era: 'edo', eraLabel: '江戸期〜現在',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2289,7 +2309,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンはOpenStreetMapの地物中心を用いた概略位置です。門の通行を妨げない場所から確認してください。'
   },
   {
-    id: 'hist-5', name: '大阪城 千貫櫓', category: 'history',
+    id: 'hist-5', name: '大阪城 千貫櫓', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6856576, longitude: 135.5228967, elevationMeter: 17 }, era: 'edo', eraLabel: '元和6年（1620年）',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2305,7 +2325,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。内部公開は開催時期が限られます。'
   },
   {
-    id: 'hist-6', name: '大阪城 桜門', category: 'history',
+    id: 'hist-6', name: '大阪城 桜門', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6852235, longitude: 135.5256995, elevationMeter: 20 }, era: 'meiji', eraLabel: '明治20年（1887年）再建',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2321,7 +2341,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。混雑時は立ち止まらず安全な場所から確認してください。'
   },
   {
-    id: 'hist-7', name: '大阪城 乾櫓', category: 'history',
+    id: 'hist-7', name: '大阪城 乾櫓', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6879488, longitude: 135.5215032, elevationMeter: 14 }, era: 'edo', eraLabel: '元和6年（1620年）',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2337,7 +2357,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。西外堀側など安全な見学場所から確認してください。'
   },
   {
-    id: 'hist-8', name: '大阪城 一番櫓', category: 'history',
+    id: 'hist-8', name: '大阪城 一番櫓', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6843389, longitude: 135.5279989, elevationMeter: 15 }, era: 'edo', eraLabel: '寛永5年（1628年）',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2353,7 +2373,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。堀越しに安全な場所から観察してください。'
   },
   {
-    id: 'hist-9', name: '大阪城 六番櫓', category: 'history',
+    id: 'hist-9', name: '大阪城 六番櫓', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6841327, longitude: 135.5241608, elevationMeter: 15 }, era: 'edo', eraLabel: '寛永5年（1628年）',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2369,7 +2389,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。南外堀沿いの歩道から確認してください。'
   },
   {
-    id: 'hist-10', name: '大阪城 金蔵', category: 'history',
+    id: 'hist-10', name: '大阪城 金蔵', category: 'history', region: '近畿',
     coordinate: { latitude: 34.6865438, longitude: 135.5264761, elevationMeter: 23 }, era: 'edo', eraLabel: '江戸期',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2385,7 +2405,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンはOpenStreetMapの建物中心を用いた概略位置です。建物内部へは入らず、公開範囲から観察してください。'
   },
   {
-    id: 'comm-1', name: '旧京街道起点・八軒家浜', category: 'community',
+    id: 'comm-1', name: '旧京街道起点・八軒家浜', category: 'community', region: '近畿',
     coordinate: { latitude: 34.6895, longitude: 135.5212, elevationMeter: 5.5 }, era: 'edo', eraLabel: '江戸後期',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'reference_only', license: 'verified', source: 'verified' },
@@ -2400,7 +2420,7 @@ export const SPOT_DATA = [
     verificationNote: ndl八軒家.note
   },
   {
-    id: 'comm-2', name: '旧大阪砲兵工廠跡地', category: 'community',
+    id: 'comm-2', name: '旧大阪砲兵工廠跡地', category: 'community', region: '近畿',
     coordinate: { latitude: 34.6880, longitude: 135.5310, elevationMeter: 11.5 }, era: 'meiji', eraLabel: '明治〜昭和期',
     verificationStatus: 'unverified',
     verification: { content: 'unverified', coordinate: 'approximate', media: 'unverified', license: 'unverified', source: 'unverified' },
@@ -2412,7 +2432,7 @@ export const SPOT_DATA = [
     verificationNote: '表示画像は史料ではありません。'
   },
   {
-    id: 'comm-3', name: '難波宮跡（飛鳥・奈良時代）', category: 'community',
+    id: 'comm-3', name: '難波宮跡（飛鳥・奈良時代）', category: 'community', region: '近畿',
     coordinate: { latitude: 34.6808, longitude: 135.5198, elevationMeter: 12 }, era: 'asuka', eraLabel: '飛鳥〜奈良時代',
     verificationStatus: 'partially_verified',
     verification: { content: 'verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2424,7 +2444,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは公式所在地を基にした公園内の概略位置です。復元表示ではなく、現地の遺構表示を案内します。'
   },
   {
-    id: 'comm-4', name: '大阪歴史博物館', category: 'community',
+    id: 'comm-4', name: '大阪歴史博物館', category: 'community', region: '近畿',
     coordinate: { latitude: 34.6826183, longitude: 135.5208131, elevationMeter: 16 }, era: 'present', eraLabel: '古代〜現代',
     verificationStatus: 'verified',
     verification: { content: 'verified', coordinate: 'verified', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2514,7 +2534,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは社殿周辺の概略位置です。参拝時間・祭事は公式サイトで確認してください。'
   },
   {
-    id: 'comm-5', name: '適塾（緒方洪庵旧宅及び塾）', category: 'community',
+    id: 'comm-5', name: '適塾（緒方洪庵旧宅及び塾）', category: 'community', region: '近畿',
     coordinate: { latitude: 34.69138, longitude: 135.503159, elevationMeter: 4 }, era: 'edo', eraLabel: '天保9年（1838年）開塾',
     verificationStatus: 'partially_verified',
     verification: { content: 'partially_verified', coordinate: 'approximate', media: 'not_applicable', license: 'verified', source: 'verified' },
@@ -2529,7 +2549,7 @@ export const SPOT_DATA = [
     verificationNote: 'ARピンは所在地（北浜3-3-8）からの概略位置です。開館日・料金は公式サイトで確認してください。'
   },
   {
-    id: 'comm-6', name: '大阪市中央公会堂', category: 'community',
+    id: 'comm-6', name: '大阪市中央公会堂', category: 'community', region: '近畿',
     coordinate: { latitude: 34.6935404, longitude: 135.5040087, elevationMeter: 3 }, era: 'taisho', eraLabel: '大正7年（1918年）竣工',
     verificationStatus: 'verified',
     verification: { content: 'verified', coordinate: 'verified', media: 'not_applicable', license: 'verified', source: 'verified' },

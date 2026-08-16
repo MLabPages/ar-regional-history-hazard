@@ -16,7 +16,7 @@ class ARRegionalApp {
   constructor() {
     // モードステート: 'ar' | 'map'
     this.viewMode = 'map';
-    this.currentLayer = 'history'; // history | community | religious | castle | disaster
+    this.currentLayer = 'town'; // town | religious | castle | disaster
     this.culturalRegionFilter = 'all';
     this.currentEra = 'present';   // 確認済みの現代・昭和期タイルのみ
     this.currentHazardType = 'flood'; // flood | tsunami | sediment
@@ -540,23 +540,21 @@ class ARRegionalApp {
     this.mapMarkers = [];
 
     // フィルタリングしたスポットの表示
-    const isCulturalLayer = this.currentLayer === 'religious' || this.currentLayer === 'castle';
-    const allLayerSpots = this.getPointSpots().filter(s => s.category === this.currentLayer);
+    const isCulturalLayer = this.currentLayer === 'town' || this.currentLayer === 'religious' || this.currentLayer === 'castle';
+    const allLayerSpots = this.getPointSpots().filter(s => this.spotMatchesLayer(s, this.currentLayer));
     const filteredSpots = allLayerSpots.filter(spot => !isCulturalLayer
       || this.culturalRegionFilter === 'all'
       || this.getSpotRegion(spot) === this.culturalRegionFilter);
 
     const spotsPanel = this.getMapSpotsPanel();
     if (spotsPanel) {
-      const layerLabel = this.currentLayer === 'history'
-        ? '歴史・観光'
-        : this.currentLayer === 'community'
-          ? '地域理解'
-          : this.currentLayer === 'religious'
-            ? '寺社'
-            : this.currentLayer === 'castle'
-              ? '城'
-              : '防災';
+      const layerLabel = this.currentLayer === 'town'
+        ? 'まち'
+        : this.currentLayer === 'religious'
+          ? '寺社'
+          : this.currentLayer === 'castle'
+            ? '城'
+            : '防災';
       const regionFilters = isCulturalLayer
         ? `<div class="cultural-region-filters" role="group" aria-label="地域で絞り込む">
             ${CULTURAL_REGIONS.map(region => {
@@ -568,7 +566,7 @@ class ARRegionalApp {
         : '';
       spotsPanel.innerHTML = `
         <div class="map-spots-title">${layerLabel}スポット</div>
-        ${isCulturalLayer ? `<p class="${this.currentLayer}-layer-note">${this.currentLayer === 'castle' ? '城域の概略位置と公式案内を地域別に表示' : '由緒・創建年は各公式情報の記載範囲で表示'}</p>${regionFilters}` : ''}
+        ${isCulturalLayer ? `<p class="${this.currentLayer}-layer-note">${this.currentLayer === 'castle' ? '城域の概略位置と公式案内を地域別に表示' : this.currentLayer === 'town' ? '史跡・街並み・博物館など、まちを歩く手がかりを地域別に表示' : '由緒・創建年は各公式情報の記載範囲で表示'}</p>${regionFilters}` : ''}
         ${filteredSpots.length === 0 ? this.getSpotsEmptyMessage() : filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
           <strong>${spot.name}</strong><small>${this.getSpotRegion(spot)}・${spot.eraLabel || spot.hazardInfo?.typeName || '情報'}</small>
         </button>`).join('')}
@@ -666,10 +664,10 @@ class ARRegionalApp {
       const spot = this.spots.find(item => item.id === button.dataset.discoverySpotId);
       if (!spot) return;
       this.discoveryPanel?.classList.add('hidden');
-      this.currentLayer = spot.category;
+      this.currentLayer = this.getLayerForSpot(spot);
       this.culturalRegionFilter = 'all';
       document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach(item => {
-        item.classList.toggle('active', item.dataset.layer === spot.category);
+        item.classList.toggle('active', item.dataset.layer === this.getLayerForSpot(spot));
       });
       this.switchViewMode('map');
       this.updateLayerUI();
@@ -1702,7 +1700,7 @@ class ARRegionalApp {
     const banner = this.disasterBanner;
     document.getElementById('app-container')?.classList.toggle('religious-layer', this.currentLayer === 'religious');
     document.getElementById('app-container')?.classList.toggle('castle-layer', this.currentLayer === 'castle');
-    if (this.selectedSpot && this.selectedSpot.category !== this.currentLayer) {
+    if (this.selectedSpot && this.getLayerForSpot(this.selectedSpot) !== this.currentLayer) {
       this.clearMapSpotSelection();
     }
     if (this.currentLayer === 'disaster') {
@@ -1759,7 +1757,7 @@ class ARRegionalApp {
       }
 
       const filteredSpots = this.getPointSpots()
-        .filter(s => s.category === this.currentLayer)
+        .filter(s => this.spotMatchesLayer(s, this.currentLayer))
         .sort((a, b) => this.calculateDistance(this.userPos.latitude, this.userPos.longitude, a.coordinate.latitude, a.coordinate.longitude)
           - this.calculateDistance(this.userPos.latitude, this.userPos.longitude, b.coordinate.latitude, b.coordinate.longitude));
       // 近い順に配置し、近いスポットが優先的に見やすい位置を取れるようにする
@@ -1826,7 +1824,7 @@ class ARRegionalApp {
     this.selectedSpot = spot;
     this.arDiscoverySpotId = spot.id;
     this.arDiscoveryDismissed = false;
-    const categoryLabel = spot.category === 'castle' ? '城' : spot.category === 'religious' ? '寺社' : spot.category === 'community' ? '地域' : '歴史';
+    const categoryLabel = this.getLayerLabel(spot);
     const mediaCount = this.getHistoricalMaterialCount(spot);
     const materialButton = document.getElementById('btn-ar-card-materials');
     const threeButton = document.getElementById('btn-ar-card-three');
@@ -1837,7 +1835,7 @@ class ARRegionalApp {
       this.arDiscoveryThumb.dataset.category = spot.category || 'history';
     }
     if (this.arDiscoveryMeta) this.arDiscoveryMeta.textContent = `${inView ? '正面' : '方向を探す'}・約${this.formatDistance(distance)}`;
-    if (this.arDiscoveryTitle) this.arDiscoveryTitle.textContent = spot.name || '歴史スポット';
+    if (this.arDiscoveryTitle) this.arDiscoveryTitle.textContent = spot.name || 'まちスポット';
     if (this.arDiscoverySummary) this.arDiscoverySummary.textContent = spot.summary || spot.description || 'この場所の物語を見つけました。';
 
     this.arDiscoveryCard.dataset.category = spot.category || 'history';
@@ -2883,7 +2881,7 @@ class ARRegionalApp {
       const label = `${spot.religiousType || ''}${spot.name || ''}`;
       return /寺|院/.test(label) && !/神社|神宮|大社|宮/.test(label) ? 'お寺' : '神社';
     }
-    return spot?.category === 'community' ? '地域' : '歴史';
+    return this.getLayerLabel(spot);
   }
 
   getVisitedSpots() {
@@ -3077,7 +3075,7 @@ class ARRegionalApp {
     this.discoveryList.innerHTML = discovered.length
       ? discovered.map(spot => `<button type="button" class="discovery-list-item" data-discovery-spot-id="${spot.id}">
           <span class="discovery-stamp"><i data-lucide="check"></i></span>
-          <span><strong>${spot.name}</strong><small>${spot.eraLabel || (spot.category === 'community' ? '地域' : spot.category === 'religious' ? '寺社' : '歴史')}</small></span>
+          <span><strong>${spot.name}</strong><small>${spot.eraLabel || this.getLayerLabel(spot)}</small></span>
           <i data-lucide="chevron-right"></i>
         </button>`).join('')
       : '<div class="discovery-empty"><i data-lucide="map-pin-plus"></i><strong>最初の発見を探しましょう</strong><span>地図のピンを選び、物語を開いてみてください。</span></div>';
@@ -3123,7 +3121,7 @@ class ARRegionalApp {
     this.walkPicksList.innerHTML = picks.length
       ? picks.map((spot, index) => {
         const discovered = this.discoveredSpotIds.has(spot.id);
-        const meta = spot.religiousType || spot.eraLabel || (spot.category === 'community' ? '地域スポット' : spot.category === 'religious' ? '寺社' : '歴史スポット');
+        const meta = spot.religiousType || spot.eraLabel || this.getLayerLabel(spot);
         return `<button type="button" class="walk-pick-item${discovered ? ' is-discovered' : ''}" data-walk-pick-id="${spot.id}">
           <span class="walk-pick-index">${index + 1}</span>
           <span class="walk-pick-copy"><strong>${spot.name}</strong><small>${meta}・約${this.formatDistance(spot.distanceFromMapCenter)}</small></span>
@@ -3142,10 +3140,10 @@ class ARRegionalApp {
 
   selectWalkPick(spot) {
     this.walkPicksPanel?.classList.add('hidden');
-    this.currentLayer = spot.category;
+    this.currentLayer = this.getLayerForSpot(spot);
     this.culturalRegionFilter = 'all';
     document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach(item => {
-      item.classList.toggle('active', item.dataset.layer === spot.category);
+      item.classList.toggle('active', item.dataset.layer === this.getLayerForSpot(spot));
     });
     this.switchViewMode('map');
     this.updateLayerUI();
@@ -3190,7 +3188,7 @@ class ARRegionalApp {
 
   updateMapSpotPreview(spot) {
     if (!spot || !this.mapSpotPreview) return;
-    const meta = spot.religiousType || spot.castleType || spot.eraLabel || (spot.category === 'community' ? '地域スポット' : spot.category === 'religious' ? '寺社' : spot.category === 'castle' ? '城郭' : '歴史スポット');
+    const meta = spot.religiousType || spot.castleType || spot.eraLabel || this.getLayerLabel(spot);
     const distance = this.calculateDistance(this.userPos.latitude, this.userPos.longitude, spot.coordinate.latitude, spot.coordinate.longitude);
     document.getElementById('spot-preview-meta').textContent = `${meta}・約${this.formatDistance(distance)}`;
     document.getElementById('spot-preview-title').textContent = spot.name;
@@ -3203,6 +3201,27 @@ class ARRegionalApp {
     }
   }
 
+
+  getLayerForSpot(spot) {
+    if (!spot) return this.currentLayer;
+    if (spot.category === 'history' || spot.category === 'community' || spot.category === 'town') return 'town';
+    return spot.category;
+  }
+
+  spotMatchesLayer(spot, layer) {
+    if (!spot) return false;
+    if (layer === 'town') return spot.category === 'history' || spot.category === 'community' || spot.category === 'town';
+    return spot.category === layer;
+  }
+
+  getLayerLabel(spot) {
+    const layer = this.getLayerForSpot(spot);
+    if (layer === 'castle') return '城';
+    if (layer === 'religious') return '寺社';
+    if (layer === 'disaster') return '防災';
+    return 'まち';
+  }
+
   getMapSpotsPanel() {
     return this.mapSpotsPanel || document.getElementById('map-spots-panel');
   }
@@ -3210,7 +3229,7 @@ class ARRegionalApp {
   getSpotRegion(spot) {
     if (!spot) return '国内';
     if (spot.region) return spot.region;
-    if (spot.category === 'religious' || spot.category === 'castle') return '近畿';
+    if (spot.category === 'religious' || spot.category === 'castle' || spot.category === 'history' || spot.category === 'community' || spot.category === 'town') return '近畿';
     return '国内';
   }
 

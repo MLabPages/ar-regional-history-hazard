@@ -900,7 +900,7 @@ body.comparing #ar-direction-cue {
   color: #fff;
 }
 
-.layer-tabs-compact .tab-btn[data-layer="history"].active {
+.layer-tabs-compact .tab-btn[data-layer="town"].active {
   background: linear-gradient(135deg, #d97706, #b45309);
 }
 
@@ -2552,7 +2552,7 @@ a:focus-visible {
   border-radius: 11px;
 }
 
-.bottom-nav .tab-btn[data-layer="history"].active {
+.bottom-nav .tab-btn[data-layer="town"].active {
   color: #fff;
   background: var(--accent-history);
 }
