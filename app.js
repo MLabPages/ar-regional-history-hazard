@@ -11,13 +11,19 @@ import {
 import { OSM_BUILDINGS, OSM_BUILDINGS_META } from './buildings.js?v=__BUILD_ID__';
 
 const CULTURAL_REGIONS = ['全国', '北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'];
+const SPOT_LIST_PAGE_SIZE = 24;
 
 class ARRegionalApp {
   constructor() {
     // モードステート: 'ar' | 'map'
     this.viewMode = 'map';
     this.currentLayer = 'town'; // town | religious | castle | disaster
+    this.previousLayer = 'town';
     this.culturalRegionFilter = 'all';
+    this.spotListQuery = '';
+    this.spotListLimit = SPOT_LIST_PAGE_SIZE;
+    this.lastSearchFocus = null;
+    this.hazardSheetDismissed = false;
     this.currentEra = 'present';   // 確認済みの現代・昭和期タイルのみ
     this.currentHazardType = 'flood'; // flood | tsunami | sediment
 
@@ -101,6 +107,9 @@ class ARRegionalApp {
     this.attributionBar = document.getElementById('attribution-bar');
     this.attributionText = document.getElementById('attribution-text');
     this.reopenHazardSheetButton = document.getElementById('btn-reopen-hazard-sheet');
+    this.hazardActiveChip = document.getElementById('hazard-active-chip');
+    this.hazardActiveChipText = document.getElementById('hazard-active-chip-text');
+    this.hazardCoverageNote = document.getElementById('hazard-coverage-note');
     this.openSpotsButton = document.getElementById('btn-open-spots');
     this.hazardLegendBox = document.getElementById('hazard-legend-box');
     this.mapDataStatus = document.getElementById('map-data-status');
@@ -272,6 +281,12 @@ class ARRegionalApp {
       this.userMapMarker = L.marker([this.userPos.latitude, this.userPos.longitude], { icon: userIcon })
         .addTo(this.map)
         .bindPopup('現在地 (シミュレート位置)');
+
+      this.map.on('zoomend moveend', () => {
+        if (this.currentLayer !== 'disaster') return;
+        const hazardDef = OFFICIAL_HAZARD_LAYERS[this.currentHazardType];
+        if (hazardDef) this.showHazardTileStatus(hazardDef);
+      });
 
       this.renderMapMarkers();
       return true;
@@ -477,15 +492,61 @@ class ARRegionalApp {
   }
 
   showHazardTileStatus(hazardDef) {
+    if (!hazardDef) return;
     const loaded = this.hazardTileLoaded || 0;
     const errored = this.hazardTileErrors || 0;
-    if (loaded > 0 && errored === 0) {
-      this.showMapDataStatus(`${hazardDef.name}｜公式タイルを表示中`, 'success', hazardDef.sourceUrl);
+    const zoom = this.map?.getZoom?.();
+    const zoomLabel = Number.isFinite(zoom) ? `（ズーム${Math.round(zoom)}）` : '';
+    let message = '';
+    let tone = 'info';
+    let coverage = '着色がない場所を「安全」とは判断しません。';
+
+    if (Number.isFinite(zoom) && zoom < (hazardDef.minZoom ?? 0)) {
+      message = `ズームが足りません${zoomLabel}。「${hazardDef.name}」はズーム${hazardDef.minZoom}以上で確認できます。着色なし＝安全ではありません。`;
+      tone = 'warning';
+      coverage = 'ズーム不足です。地図を拡大すると公式ハザードを読めます。着色なしを安全とは判断しません。';
+    } else if (Number.isFinite(zoom) && hazardDef.maxNativeZoom && zoom > hazardDef.maxNativeZoom + 1) {
+      message = `このズームでは「${hazardDef.name}」の詳細タイルが粗くなります${zoomLabel}。少し縮小するか、着色の有無だけで安全判断しないでください。`;
+      tone = 'info';
+      coverage = 'ズームが高すぎて詳細タイルが不足する場合があります。着色なし＝安全ではありません。';
+    } else if (loaded > 0 && errored === 0) {
+      message = `${hazardDef.name}｜公式タイルを表示中${zoomLabel}。着色がない場所は、このレイヤーで想定区域が示されていない範囲です（安全宣言ではありません）。`;
+      tone = 'success';
+      coverage = '公式タイルを表示中です。着色区域＝想定あり。着色なし＝このレイヤーで想定が示されていない範囲であり、安全と断定するものではありません。';
     } else if (loaded > 0 && errored > 0) {
-      this.showMapDataStatus(`${hazardDef.name}：この範囲の一部にデータがありません（着色区域のみ表示）。`, 'info', hazardDef.sourceUrl);
+      message = `${hazardDef.name}：範囲の一部にデータがありません${zoomLabel}。着色は取得できた区域のみ。着色なし＝安全ではありません。`;
+      tone = 'info';
+      coverage = 'この範囲の一部は公式タイルを取得できません。取得できた着色区域だけを表示しています。空白は「安全」ではなく「データなし／想定外」の可能性があります。';
     } else if (loaded === 0 && errored > 0) {
-      this.showMapDataStatus(`この地域・ズームの「${hazardDef.name}」データはありません。`, 'warning', hazardDef.sourceUrl);
+      message = `この地域・ズームの「${hazardDef.name}」データはありません${zoomLabel}。地図が無着色でも安全ではありません。別のズーム・災害種別か公式サイトで確認してください。`;
+      tone = 'warning';
+      coverage = 'この地域・ズームでは公式タイルを取得できません（データなし）。無着色の地図を安全とは判断しないでください。';
+    } else {
+      message = `${hazardDef.name}を読み込み中${zoomLabel}…`;
+      tone = 'info';
+      coverage = '公式タイルを読み込んでいます。結果が出るまで、着色の有無で安全判断しないでください。';
     }
+
+    this.showMapDataStatus(message, tone, hazardDef.sourceUrl);
+    this.updateHazardCoverageNote(coverage);
+    this.updateHazardActiveChip();
+  }
+
+  updateHazardCoverageNote(text) {
+    if (!this.hazardCoverageNote) return;
+    this.hazardCoverageNote.textContent = text;
+  }
+
+  updateHazardActiveChip() {
+    if (!this.hazardActiveChipText) return;
+    const hazardDef = OFFICIAL_HAZARD_LAYERS[this.currentHazardType];
+    const loaded = this.hazardTileLoaded || 0;
+    const errored = this.hazardTileErrors || 0;
+    const name = hazardDef?.name || 'ハザード';
+    let state = '表示中';
+    if (loaded === 0 && errored > 0) state = 'データなし';
+    else if (loaded > 0 && errored > 0) state = '一部データなし';
+    this.hazardActiveChipText.textContent = `${name}｜${state}`;
   }
 
   showMapDataStatus(message, tone = 'info', sourceUrl = null) {
@@ -548,32 +609,10 @@ class ARRegionalApp {
 
     const spotsPanel = this.getMapSpotsPanel();
     if (spotsPanel) {
-      const layerLabel = this.currentLayer === 'town'
-        ? 'まち'
-        : this.currentLayer === 'religious'
-          ? '寺社'
-          : this.currentLayer === 'castle'
-            ? '城'
-            : '防災';
-      const regionFilters = isCulturalLayer
-        ? `<div class="cultural-region-filters" role="group" aria-label="地域で絞り込む">
-            ${CULTURAL_REGIONS.map(region => {
-              const value = region === '全国' ? 'all' : region;
-              const count = region === '全国' ? allLayerSpots.length : allLayerSpots.filter(spot => this.getSpotRegion(spot) === region).length;
-              return `<button type="button" class="cultural-region-filter${this.culturalRegionFilter === value ? ' active' : ''}" data-region-filter="${value}"${count === 0 ? ' disabled' : ''}>${region}<span>${count}</span></button>`;
-            }).join('')}
-          </div>`
-        : '';
-      spotsPanel.innerHTML = `
-        <div class="map-spots-title">${layerLabel}スポット</div>
-        ${isCulturalLayer ? `<p class="${this.currentLayer}-layer-note">${this.currentLayer === 'castle' ? '城域の概略位置と公式案内を地域別に表示' : this.currentLayer === 'town' ? '史跡・街並み・博物館など、まちを歩く手がかりを地域別に表示' : '由緒・創建年は各公式情報の記載範囲で表示'}</p>${regionFilters}` : ''}
-        ${filteredSpots.length === 0 ? this.getSpotsEmptyMessage() : filteredSpots.map(spot => `<button type="button" class="map-spot-list-item" data-spot-id="${spot.id}">
-          <strong>${spot.name}</strong><small>${this.getSpotRegion(spot)}・${spot.eraLabel || spot.hazardInfo?.typeName || '情報'}</small>
-        </button>`).join('')}
-      `;
+      this.renderSpotsPanel(spotsPanel, allLayerSpots, filteredSpots, isCulturalLayer);
     }
 
-    filteredSpots.forEach(spot => {
+    this.dedupeSpots(filteredSpots).forEach(spot => {
       let color = '#d95d20';
       if (spot.category === 'community') color = '#277c78';
       if (spot.category === 'religious') color = '#b45309';
@@ -603,12 +642,15 @@ class ARRegionalApp {
       if (!this.officialHazardTileLayer || this.officialHazardLayerKey !== this.currentHazardType) {
         this.updateOfficialHazardTile(this.currentHazardType);
       }
-    } else {
-      if (this.officialHazardTileLayer) {
-        this.map.removeLayer(this.officialHazardTileLayer);
-        this.officialHazardTileLayer = null;
-      }
+    } else if (this.officialHazardTileLayer) {
+      this.map.removeLayer(this.officialHazardTileLayer);
+      this.officialHazardTileLayer = null;
       this.officialHazardLayerKey = null;
+      const statusText = this.mapDataStatus?.textContent || '';
+      if (/ハザード|想定区域|データはありません|着色がない|公式タイル/.test(statusText)) {
+        this.hideMapDataStatus();
+        this.reopenMapDataStatusButton?.classList.add('hidden');
+      }
     }
   }
 
@@ -654,6 +696,7 @@ class ARRegionalApp {
     document.getElementById('btn-open-spot-preview')?.addEventListener('click', () => {
       if (this.selectedSpot) this.openSpotModal(this.selectedSpot);
     });
+    document.getElementById('btn-preview-era')?.addEventListener('click', () => this.openEraCompareSheet());
     this.discoveryProgress?.addEventListener('click', () => this.openDiscoveryPanel());
     document.getElementById('btn-close-discovery-panel')?.addEventListener('click', () => {
       this.discoveryPanel?.classList.add('hidden');
@@ -735,20 +778,44 @@ class ARRegionalApp {
     document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const targetBtn = e.currentTarget;
+        const nextLayer = targetBtn.dataset.layer;
+        if (nextLayer === 'disaster' && this.currentLayer === 'disaster') {
+          this.hazardSheetDismissed = false;
+          this.updateHazardChrome();
+          return;
+        }
+        if (this.currentLayer !== 'disaster') this.previousLayer = this.currentLayer;
         document.querySelectorAll('.layer-tabs-compact .tab-btn').forEach(b => b.classList.remove('active'));
         targetBtn.classList.add('active');
-        this.currentLayer = targetBtn.dataset.layer;
+        this.currentLayer = nextLayer;
         this.culturalRegionFilter = 'all';
+        this.spotListQuery = '';
+        this.spotListLimit = SPOT_LIST_PAGE_SIZE;
+        this.hazardSheetDismissed = false;
         this.updateLayerUI();
       });
     });
 
     const spotsPanel = this.getMapSpotsPanel();
     if (spotsPanel) {
+      spotsPanel.addEventListener('input', (event) => {
+        const input = event.target.closest('#spot-list-search');
+        if (!input) return;
+        this.spotListQuery = input.value;
+        this.spotListLimit = SPOT_LIST_PAGE_SIZE;
+        this.renderMapMarkers();
+      });
       spotsPanel.addEventListener('click', (event) => {
+        const more = event.target.closest('[data-spot-list-more]');
+        if (more) {
+          this.spotListLimit += SPOT_LIST_PAGE_SIZE;
+          this.renderMapMarkers();
+          return;
+        }
         const filter = event.target.closest('[data-region-filter]');
         if (filter) {
           this.culturalRegionFilter = filter.dataset.regionFilter || 'all';
+          this.spotListLimit = SPOT_LIST_PAGE_SIZE;
           this.renderMapMarkers();
           return;
         }
@@ -760,6 +827,7 @@ class ARRegionalApp {
             this.map.setView([spot.coordinate.latitude, spot.coordinate.longitude], 15);
           }
           this.selectMapSpot(spot);
+          this.renderMapMarkers();
           this.openSpotModal(spot);
         }
       });
@@ -842,23 +910,28 @@ class ARRegionalApp {
     document.getElementById('btn-close-era-panel')?.addEventListener('click', () => {
       this.eraTimelineBar?.classList.add('hidden');
       this.reopenEraPanelButton?.classList.remove('hidden');
+      this.setBottomSheetOpen(false);
       try { window.localStorage?.setItem('ar-era-panel-dismissed', '1'); } catch (_) {}
     });
-    this.reopenEraPanelButton?.addEventListener('click', () => {
-      this.eraTimelineBar?.classList.remove('hidden');
-      this.reopenEraPanelButton.classList.add('hidden');
-      try { window.localStorage?.removeItem('ar-era-panel-dismissed'); } catch (_) {}
-    });
+    this.reopenEraPanelButton?.addEventListener('click', () => this.openEraCompareSheet());
     document.getElementById('btn-close-hazard-sheet')?.addEventListener('click', () => {
-      this.disasterBanner?.classList.add('hidden');
-      this.reopenHazardSheetButton?.classList.remove('hidden');
+      this.hazardSheetDismissed = true;
+      this.updateHazardChrome();
     });
     this.reopenHazardSheetButton?.addEventListener('click', () => {
       if (this.currentLayer === 'disaster') {
-        this.disasterBanner?.classList.remove('hidden');
-        this.reopenHazardSheetButton.classList.add('hidden');
+        this.hazardSheetDismissed = false;
+        this.updateHazardChrome();
       }
     });
+    document.getElementById('btn-hazard-settings')?.addEventListener('click', () => {
+      if (this.currentLayer === 'disaster') {
+        this.hazardSheetDismissed = false;
+        this.updateHazardChrome();
+      }
+    });
+    document.getElementById('btn-exit-hazard')?.addEventListener('click', () => this.exitHazardMode());
+    document.getElementById('btn-exit-hazard-chip')?.addEventListener('click', () => this.exitHazardMode());
     this.openSpotsButton?.addEventListener('click', () => {
       const panel = this.getMapSpotsPanel();
       if (!panel) return;
@@ -1382,7 +1455,16 @@ class ARRegionalApp {
     const localResults = this.getLocalMapSearchResults(query);
     if (localResults.length) {
       this.renderMapSearchResults(localResults);
-      this.setMapNavigationStatus(`登録済みスポット${localResults.length}件を表示しています。`, 'info');
+      const exact = localResults.find((item) => String(item.spotName || '').toLocaleLowerCase('ja-JP') === query.toLocaleLowerCase('ja-JP'));
+      const auto = exact || (localResults.length === 1 ? localResults[0] : null);
+      if (auto?.spotId) {
+        const spot = this.spots.find((item) => item.id === auto.spotId);
+        if (spot) this.focusSearchedSpot(spot);
+        this.mapSearchResults?.classList.add('hidden');
+        this.setMapNavigationStatus(`${auto.name}を一覧の先頭に表示しました。`, 'success');
+      } else {
+        this.setMapNavigationStatus(`登録済みスポット${localResults.length}件を表示しています。候補を選ぶと一覧の先頭に出ます。`, 'info');
+      }
       return;
     }
 
@@ -1522,21 +1604,29 @@ class ARRegionalApp {
 
   getLocalMapSearchResults(query) {
     const keyword = String(query || '').toLocaleLowerCase('ja-JP');
-    return this.spots
-      .filter((spot) => {
-        const text = [spot.name, spot.summary, spot.description, spot.eraLabel]
-          .filter(Boolean)
-          .join(' ')
-          .toLocaleLowerCase('ja-JP');
-        return text.includes(keyword);
-      })
+    const matches = this.dedupeSpots(this.getPointSpots())
+      .filter((spot) => this.getSpotListSearchText(spot).includes(keyword)
+        || String(spot.description || '').toLocaleLowerCase('ja-JP').includes(keyword))
+      .sort((a, b) => {
+        const score = (spot) => {
+          const name = String(spot.name || '').toLocaleLowerCase('ja-JP');
+          if (name === keyword) return 0;
+          if (name.startsWith(keyword)) return 1;
+          if (name.includes(keyword)) return 2;
+          return 3;
+        };
+        return score(a) - score(b);
+      });
+    return matches
       .map((spot) => ({
         name: `${spot.name}（登録スポット）`,
+        spotName: spot.name,
+        spotId: spot.id,
         latitude: Number(spot.coordinate?.latitude),
         longitude: Number(spot.coordinate?.longitude)
       }))
       .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
-      .slice(0, 5);
+      .slice(0, 8);
   }
 
   renderMapSearchResults(results, label = '検索候補') {
@@ -1558,10 +1648,26 @@ class ARRegionalApp {
         this.locationMode = 'explore';
         this.userPos.latitude = result.latitude;
         this.userPos.longitude = result.longitude;
+        this.lastSearchFocus = {
+          latitude: result.latitude,
+          longitude: result.longitude,
+          query: result.spotName || String(result.name || '').replace(/（登録スポット）$/, '')
+        };
         this.updateLocationModeUI();
         this.updateLocationStatus();
-        if (this.map) this.map.setView([result.latitude, result.longitude], 16);
         this.mapSearchResults.classList.add('hidden');
+        if (result.spotId) {
+          const spot = this.spots.find((item) => item.id === result.spotId);
+          if (spot) {
+            this.focusSearchedSpot(spot);
+            this.setMapNavigationStatus(`${result.name}へ移動し、一覧の先頭に表示しました（地図探索）`, 'success');
+            return;
+          }
+        }
+        if (this.map) this.map.setView([result.latitude, result.longitude], 16);
+        this.spotListQuery = this.lastSearchFocus.query || '';
+        this.spotListLimit = SPOT_LIST_PAGE_SIZE;
+        this.renderMapMarkers();
         this.setMapNavigationStatus(`${result.name}へ移動しました（地図探索）`, 'success');
       });
       this.mapSearchResults.appendChild(button);
@@ -1679,6 +1785,56 @@ class ARRegionalApp {
     }
   }
 
+  updateHazardChrome() {
+    const active = this.currentLayer === 'disaster';
+    const sheetOpen = active && !this.hazardSheetDismissed;
+    this.disasterBanner?.classList.toggle('hidden', !sheetOpen);
+    this.reopenHazardSheetButton?.classList.toggle('hidden', !(active && this.hazardSheetDismissed));
+    this.hazardActiveChip?.classList.toggle('hidden', !(active && this.hazardSheetDismissed));
+    this.reopenHazardSheetButton?.setAttribute('aria-pressed', active ? 'true' : 'false');
+    this.updateHazardActiveChip();
+    this.setBottomSheetOpen(sheetOpen);
+    if (window.lucide) lucide.createIcons();
+  }
+
+  exitHazardMode() {
+    const nextLayer = this.previousLayer && this.previousLayer !== 'disaster' ? this.previousLayer : 'town';
+    this.currentLayer = nextLayer;
+    this.hazardSheetDismissed = false;
+    document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach((item) => {
+      item.classList.toggle('active', item.dataset.layer === nextLayer);
+    });
+    if (this.officialHazardTileLayer && this.map) {
+      this.map.removeLayer(this.officialHazardTileLayer);
+      this.officialHazardTileLayer = null;
+    }
+    this.officialHazardLayerKey = null;
+    this.hideMapDataStatus();
+    this.reopenMapDataStatusButton?.classList.add('hidden');
+    this.updateHazardCoverageNote('着色がない場所を「安全」とは判断しません。データなし・ズーム不足・想定区域外を区別して表示します。');
+    this.updateLayerUI();
+  }
+
+  openEraCompareSheet() {
+    if (this.currentLayer === 'disaster') return;
+    this.eraTimelineBar?.classList.remove('hidden');
+    this.reopenEraPanelButton?.classList.add('hidden');
+    this.setBottomSheetOpen(true);
+    try { window.localStorage?.removeItem('ar-era-panel-dismissed'); } catch (_) {}
+  }
+
+  setBottomSheetOpen(open) {
+    document.getElementById('app-container')?.classList.toggle('sheet-open', Boolean(open));
+    if (open) {
+      this.mapSpotPreview?.classList.add('hidden');
+      this.mapSpotsPanel?.classList.add('hidden');
+      this.openSpotsButton?.classList.remove('active');
+      this.openSpotsButton?.setAttribute('aria-pressed', 'false');
+    } else if (this.selectedSpot && this.viewMode === 'map') {
+      this.mapSpotPreview?.classList.remove('hidden');
+    }
+  }
+
   updateLocationStatus() {
     const latStr = this.userPos.latitude.toFixed(4);
     const lngStr = this.userPos.longitude.toFixed(4);
@@ -1707,8 +1863,6 @@ class ARRegionalApp {
       this.mapSpotsPanel?.classList.add('hidden');
       this.openSpotsButton?.classList.remove('active');
       this.openSpotsButton?.setAttribute('aria-pressed', 'false');
-      banner?.classList.remove('hidden');
-      this.reopenHazardSheetButton?.classList.add('hidden');
       document.getElementById('explore-quick-actions')?.classList.add('hidden');
       this.updateFloodConceptToggleVisibility();
 
@@ -1718,9 +1872,12 @@ class ARRegionalApp {
         this.shelterGuideText.innerHTML = `<i data-lucide="info"></i> 避難所情報は現在確認中です。災害時は<a href="https://www.city.osaka.lg.jp/kikikanrishitsu/page/0000349214.html" target="_blank" rel="noreferrer" style="color:#93c5fd;">大阪市の最新避難所情報</a>を確認してください。`;
       }
       this.updateAttribution('防災ハザード（公式出典: 国交省・国土地理院）', 'https://disaportal.gsi.go.jp/hazardmapportal/hazardmap/copyright/opendata.html');
+      this.updateHazardChrome();
     } else {
+      this.hazardSheetDismissed = false;
       banner?.classList.add('hidden');
       this.reopenHazardSheetButton?.classList.add('hidden');
+      this.hazardActiveChip?.classList.add('hidden');
       document.getElementById('explore-quick-actions')?.classList.remove('hidden');
     }
 
@@ -2843,10 +3000,14 @@ class ARRegionalApp {
       this.updateMapBaseTile(this.currentEra);
     }));
     if (window.lucide) lucide.createIcons();
+    this.mapSpotPreview?.classList.add('hidden');
   }
 
   closeTimeTravel() {
     this.timeTravelPanel?.classList.add('hidden');
+    if (this.selectedSpot && !document.getElementById('app-container')?.classList.contains('sheet-open')) {
+      this.mapSpotPreview?.classList.remove('hidden');
+    }
   }
 
   loadDiscoveredSpotIds() {
@@ -3174,9 +3335,15 @@ class ARRegionalApp {
     });
     if (marker?.getElement) marker.getElement()?.classList.add('is-selected');
     this.updateMapSpotPreview(spot);
-    this.mapSpotPreview?.classList.remove('hidden');
+    if (!document.getElementById('app-container')?.classList.contains('sheet-open')) {
+      this.mapSpotPreview?.classList.remove('hidden');
+    }
     this.mapFirstHint?.classList.add('hidden');
     try { window.localStorage?.setItem('map-first-hint-dismissed', '1'); } catch (_) {}
+    const panel = this.getMapSpotsPanel();
+    if (panel && !panel.classList.contains('hidden')) {
+      this.renderMapMarkers();
+    }
   }
 
   clearMapSpotSelection() {
@@ -3224,6 +3391,163 @@ class ARRegionalApp {
 
   getMapSpotsPanel() {
     return this.mapSpotsPanel || document.getElementById('map-spots-panel');
+  }
+
+  dedupeSpots(spots) {
+    const seen = new Set();
+    return (spots || []).filter((spot) => {
+      const key = `${spot.name}|${this.getSpotRegion(spot)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  getSpotListSearchText(spot) {
+    return [spot.name, spot.summary, spot.eraLabel, spot.religiousType, spot.castleType, this.getSpotRegion(spot)]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase('ja-JP');
+  }
+
+  rankSpotsForList(spots) {
+    const keyword = String(this.spotListQuery || this.lastSearchFocus?.query || '').trim().toLocaleLowerCase('ja-JP');
+    const focusLat = this.selectedSpot?.coordinate?.latitude ?? this.lastSearchFocus?.latitude ?? this.userPos.latitude;
+    const focusLng = this.selectedSpot?.coordinate?.longitude ?? this.lastSearchFocus?.longitude ?? this.userPos.longitude;
+    return [...spots].sort((a, b) => {
+      const aSelected = this.selectedSpot?.id === a.id ? 0 : 1;
+      const bSelected = this.selectedSpot?.id === b.id ? 0 : 1;
+      if (aSelected !== bSelected) return aSelected - bSelected;
+      if (keyword) {
+        const aName = String(a.name || '').toLocaleLowerCase('ja-JP');
+        const bName = String(b.name || '').toLocaleLowerCase('ja-JP');
+        const score = (name, text) => {
+          if (name === keyword) return 0;
+          if (name.startsWith(keyword)) return 1;
+          if (name.includes(keyword)) return 2;
+          if (text.includes(keyword)) return 3;
+          return 4;
+        };
+        const aScore = score(aName, this.getSpotListSearchText(a));
+        const bScore = score(bName, this.getSpotListSearchText(b));
+        if (aScore !== bScore) return aScore - bScore;
+      }
+      const aDist = this.calculateDistance(focusLat, focusLng, a.coordinate.latitude, a.coordinate.longitude);
+      const bDist = this.calculateDistance(focusLat, focusLng, b.coordinate.latitude, b.coordinate.longitude);
+      return aDist - bDist;
+    });
+  }
+
+  renderSpotsPanel(spotsPanel, allLayerSpots, filteredSpots, isCulturalLayer) {
+    const preserveFocus = spotsPanel.querySelector('#spot-list-search') === document.activeElement;
+    const caret = preserveFocus ? spotsPanel.querySelector('#spot-list-search').selectionStart : null;
+    const layerLabel = this.currentLayer === 'town'
+      ? 'まち'
+      : this.currentLayer === 'religious'
+        ? '寺社'
+        : this.currentLayer === 'castle'
+          ? '城'
+          : '防災';
+    const uniqueAll = this.dedupeSpots(allLayerSpots);
+    const uniqueFiltered = this.dedupeSpots(filteredSpots);
+    const hiddenDupes = Math.max(0, filteredSpots.length - uniqueFiltered.length);
+    const query = String(this.spotListQuery || '').trim().toLocaleLowerCase('ja-JP');
+    const searched = query
+      ? uniqueFiltered.filter((spot) => this.getSpotListSearchText(spot).includes(query))
+      : uniqueFiltered;
+    const ranked = this.rankSpotsForList(searched);
+    const visible = ranked.slice(0, this.spotListLimit);
+    const remaining = Math.max(0, ranked.length - visible.length);
+    const escape = (value) => this.escapeHtml(value || '');
+    const regionFilters = isCulturalLayer
+      ? `<div class="cultural-region-filters-wrap">
+          <p class="cultural-region-filters-label">地域（折り返してすべて選べます）</p>
+          <div class="cultural-region-filters" role="group" aria-label="地域で絞り込む">
+            ${CULTURAL_REGIONS.map(region => {
+              const value = region === '全国' ? 'all' : region;
+              const count = region === '全国' ? uniqueAll.length : this.dedupeSpots(allLayerSpots.filter(spot => this.getSpotRegion(spot) === region)).length;
+              return `<button type="button" class="cultural-region-filter${this.culturalRegionFilter === value ? ' active' : ''}" data-region-filter="${value}"${count === 0 ? ' disabled' : ''}>${region}<span>${count}</span></button>`;
+            }).join('')}
+          </div>
+        </div>`
+      : '';
+    const listSearch = isCulturalLayer
+      ? `<label class="spot-list-search">
+          <span class="sr-only">一覧内を検索</span>
+          <input id="spot-list-search" type="search" placeholder="一覧内の寺社名・地名で絞り込み" value="${escape(this.spotListQuery)}" autocomplete="off">
+        </label>`
+      : '';
+    const statusBits = [];
+    if (this.selectedSpot && ranked.some((spot) => spot.id === this.selectedSpot.id)) {
+      statusBits.push(`選択中: ${this.selectedSpot.name}`);
+    }
+    if (query) statusBits.push(`「${this.spotListQuery}」に${ranked.length}件`);
+    else statusBits.push(`${ranked.length}件`);
+    if (hiddenDupes > 0) statusBits.push(`同名の重複${hiddenDupes}件は1件にまとめています`);
+    const listHtml = ranked.length === 0
+      ? (query
+        ? `<p class="material-empty">「${escape(this.spotListQuery)}」に一致するスポットはありません。地域フィルターか検索語を変えると、全国データから探せます。</p>`
+        : this.getSpotsEmptyMessage())
+      : `${visible.map((spot) => {
+        const selected = this.selectedSpot?.id === spot.id;
+        const meta = [this.getSpotRegion(spot), spot.eraLabel || spot.hazardInfo?.typeName || '情報'].filter(Boolean).join('・');
+        return `<button type="button" class="map-spot-list-item${selected ? ' is-selected' : ''}" data-spot-id="${spot.id}">
+          ${selected ? '<span class="spot-list-pin">選択中</span>' : ''}
+          <strong>${escape(spot.name)}</strong><small>${escape(meta)}</small>
+        </button>`;
+      }).join('')}
+      ${remaining > 0 ? `<button type="button" class="spot-list-more" data-spot-list-more="1">さらに表示（残り${remaining}件）</button>` : ''}`;
+
+    spotsPanel.innerHTML = `
+      <div class="map-spots-title">${layerLabel}スポット</div>
+      ${isCulturalLayer ? `<p class="${this.currentLayer}-layer-note">${this.currentLayer === 'castle' ? '城域の概略位置と公式案内を地域別に表示' : this.currentLayer === 'town' ? '史跡・街並み・博物館など、まちを歩く手がかりを地域別に表示' : '由緒・創建年は各公式情報の記載範囲で表示。検索・選択した地点を一覧の先頭に出します。'}</p>${listSearch}${regionFilters}<p class="spot-list-status">${statusBits.map(escape).join('｜')}</p>` : ''}
+      ${listHtml}
+    `;
+
+    if (preserveFocus) {
+      const input = spotsPanel.querySelector('#spot-list-search');
+      if (input) {
+        input.focus();
+        if (Number.isFinite(caret)) input.setSelectionRange(caret, caret);
+      }
+    }
+  }
+
+  focusSearchedSpot(spot) {
+    if (!spot) return;
+    const layer = this.getLayerForSpot(spot);
+    if (this.currentLayer !== 'disaster') this.previousLayer = this.currentLayer;
+    this.currentLayer = layer;
+    this.culturalRegionFilter = this.getSpotRegion(spot) || 'all';
+    this.spotListQuery = spot.name;
+    this.spotListLimit = SPOT_LIST_PAGE_SIZE;
+    this.lastSearchFocus = {
+      latitude: spot.coordinate.latitude,
+      longitude: spot.coordinate.longitude,
+      query: spot.name
+    };
+    this.locationMode = 'explore';
+    this.userPos.latitude = spot.coordinate.latitude;
+    this.userPos.longitude = spot.coordinate.longitude;
+    this.updateLocationModeUI();
+    if (this.locationText) {
+      this.locationText.textContent = `地図探索｜${spot.coordinate.latitude.toFixed(4)}, ${spot.coordinate.longitude.toFixed(4)}`;
+    }
+    this.userMapMarker?.setLatLng([spot.coordinate.latitude, spot.coordinate.longitude]);
+    this.mapSearchResults?.classList.add('hidden');
+    document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach((item) => {
+      item.classList.toggle('active', item.dataset.layer === layer);
+    });
+    if (this.viewMode !== 'map') this.switchViewMode('map');
+    const panel = this.getMapSpotsPanel();
+    if (panel && layer !== 'disaster') {
+      panel.classList.remove('hidden');
+      this.openSpotsButton?.classList.add('active');
+      this.openSpotsButton?.setAttribute('aria-pressed', 'true');
+    }
+    this.updateLayerUI();
+    if (this.map) this.map.setView([spot.coordinate.latitude, spot.coordinate.longitude], 16);
+    this.selectMapSpot(spot);
   }
 
   getSpotRegion(spot) {

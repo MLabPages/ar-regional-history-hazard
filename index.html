@@ -338,8 +338,12 @@
             <i data-lucide="shield-alert"></i>
             <span id="hazard-depth-text">公式ハザードを表示中</span>
           </div>
-          <button id="btn-close-hazard-sheet" class="btn-icon-small" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
+          <div class="hazard-header-actions">
+            <button id="btn-exit-hazard" class="hazard-exit-btn" type="button">防災を終了</button>
+            <button id="btn-close-hazard-sheet" class="btn-icon-small" type="button" aria-label="パネルを閉じる（防災は表示したまま）" title="パネルだけ閉じる"><i data-lucide="x"></i></button>
+          </div>
         </div>
+        <p id="hazard-panel-hint" class="hazard-panel-hint">閉じてもハザードは表示されたままです。オフにするには「防災を終了」か、まち／寺社／城タブを選んでください。</p>
         <div class="hazard-sub-toggle">
           <button class="hazard-type-btn active" type="button" data-hazard="flood">洪水</button>
           <button class="hazard-type-btn" type="button" data-hazard="tsunami">津波</button>
@@ -353,10 +357,17 @@
           <i data-lucide="info"></i>
           <span>避難所情報を確認中…</span>
         </div>
+        <p id="hazard-coverage-note" class="hazard-coverage-note">着色がない場所を「安全」とは判断しません。データなし・ズーム不足・想定区域外を区別して表示します。</p>
         <div id="hazard-legend-box" class="hazard-legend"></div>
         <a id="hazard-source-link" class="hazard-source-link" href="https://disaportal.gsi.go.jp/hazardmapportal/hazardmap/copyright/opendata.html" target="_blank" rel="noreferrer">出典: 国交省・国土地理院</a>
       </section>
-      <button id="btn-reopen-hazard-sheet" class="fab-tool hazard-fab hidden" type="button"><i data-lucide="shield-alert"></i><span>防災</span></button>
+      <div id="hazard-active-chip" class="hazard-active-chip hidden" role="status">
+        <i data-lucide="shield-alert"></i>
+        <span id="hazard-active-chip-text">防災表示中</span>
+        <button id="btn-hazard-settings" type="button">設定</button>
+        <button id="btn-exit-hazard-chip" class="hazard-exit-btn" type="button">終了</button>
+      </div>
+      <button id="btn-reopen-hazard-sheet" class="fab-tool hazard-fab hidden" type="button" aria-pressed="false"><i data-lucide="shield-alert"></i><span>防災 ON</span></button>
 
       <!-- 出典・状態: 邪魔にならない左下固定 -->
       <div class="bottom-left-stack">
@@ -368,8 +379,11 @@
       </div>
 
       <div id="map-first-hint" class="map-first-hint" role="status">
-        <i data-lucide="mouse-pointer-click"></i>
-        <span>ピンを選ぶと、その場所の物語が読めます</span>
+        <i data-lucide="compass"></i>
+        <div class="map-first-hint-copy">
+          <strong>寺社巡りと、地域の防災確認ができます</strong>
+          <span>ピンで物語を読む／下の「防災」で公式ハザードを重ねます</span>
+        </div>
         <button id="btn-close-map-first-hint" class="guide-close" type="button" aria-label="案内を閉じる"><i data-lucide="x"></i></button>
       </div>
 
@@ -383,9 +397,14 @@
           <h2 id="spot-preview-title">スポット名称</h2>
           <p id="spot-preview-summary">この場所の概要</p>
         </div>
-        <button id="btn-open-spot-preview" class="preview-open" type="button">
-          <i data-lucide="book-open"></i><span>詳しく見る</span><i data-lucide="chevron-right"></i>
-        </button>
+        <div class="preview-actions">
+          <button id="btn-preview-era" class="preview-era" type="button">
+            <i data-lucide="clock-3"></i><span>年代を比べる</span>
+          </button>
+          <button id="btn-open-spot-preview" class="preview-open" type="button">
+            <i data-lucide="book-open"></i><span>詳しく見る</span><i data-lucide="chevron-right"></i>
+          </button>
+        </div>
       </section>
 
       <aside id="discovery-panel" class="discovery-panel hidden" aria-label="発見ノート">
@@ -542,7 +561,7 @@
         <button id="btn-close-info" class="modal-close" type="button" aria-label="閉じる"><i data-lucide="x"></i></button>
         <div class="modal-body">
           <h2>使い方と出典</h2>
-          <p class="subtitle">場所の過去・現在・リスクを、地図とARで確かめます。</p>
+          <p class="subtitle">寺社・城を巡り、公式ハザードで地域の安全も確かめます。</p>
           <hr>
           <h3>かんたん使い方</h3>
           <ul>
