@@ -696,6 +696,7 @@ class ARRegionalApp {
     document.getElementById('btn-open-spot-preview')?.addEventListener('click', () => {
       if (this.selectedSpot) this.openSpotModal(this.selectedSpot);
     });
+    document.getElementById('btn-preview-era')?.addEventListener('click', () => this.openEraCompareSheet());
     this.discoveryProgress?.addEventListener('click', () => this.openDiscoveryPanel());
     document.getElementById('btn-close-discovery-panel')?.addEventListener('click', () => {
       this.discoveryPanel?.classList.add('hidden');
@@ -912,12 +913,7 @@ class ARRegionalApp {
       this.setBottomSheetOpen(false);
       try { window.localStorage?.setItem('ar-era-panel-dismissed', '1'); } catch (_) {}
     });
-    this.reopenEraPanelButton?.addEventListener('click', () => {
-      this.eraTimelineBar?.classList.remove('hidden');
-      this.reopenEraPanelButton.classList.add('hidden');
-      this.setBottomSheetOpen(true);
-      try { window.localStorage?.removeItem('ar-era-panel-dismissed'); } catch (_) {}
-    });
+    this.reopenEraPanelButton?.addEventListener('click', () => this.openEraCompareSheet());
     document.getElementById('btn-close-hazard-sheet')?.addEventListener('click', () => {
       this.hazardSheetDismissed = true;
       this.updateHazardChrome();
@@ -1464,6 +1460,7 @@ class ARRegionalApp {
       if (auto?.spotId) {
         const spot = this.spots.find((item) => item.id === auto.spotId);
         if (spot) this.focusSearchedSpot(spot);
+        this.mapSearchResults?.classList.add('hidden');
         this.setMapNavigationStatus(`${auto.name}を一覧の先頭に表示しました。`, 'success');
       } else {
         this.setMapNavigationStatus(`登録済みスポット${localResults.length}件を表示しています。候補を選ぶと一覧の先頭に出ます。`, 'info');
@@ -1818,10 +1815,21 @@ class ARRegionalApp {
     this.updateLayerUI();
   }
 
+  openEraCompareSheet() {
+    if (this.currentLayer === 'disaster') return;
+    this.eraTimelineBar?.classList.remove('hidden');
+    this.reopenEraPanelButton?.classList.add('hidden');
+    this.setBottomSheetOpen(true);
+    try { window.localStorage?.removeItem('ar-era-panel-dismissed'); } catch (_) {}
+  }
+
   setBottomSheetOpen(open) {
     document.getElementById('app-container')?.classList.toggle('sheet-open', Boolean(open));
     if (open) {
       this.mapSpotPreview?.classList.add('hidden');
+      this.mapSpotsPanel?.classList.add('hidden');
+      this.openSpotsButton?.classList.remove('active');
+      this.openSpotsButton?.setAttribute('aria-pressed', 'false');
     } else if (this.selectedSpot && this.viewMode === 'map') {
       this.mapSpotPreview?.classList.remove('hidden');
     }
@@ -3518,10 +3526,19 @@ class ARRegionalApp {
       longitude: spot.coordinate.longitude,
       query: spot.name
     };
+    this.locationMode = 'explore';
+    this.userPos.latitude = spot.coordinate.latitude;
+    this.userPos.longitude = spot.coordinate.longitude;
+    this.updateLocationModeUI();
+    if (this.locationText) {
+      this.locationText.textContent = `地図探索｜${spot.coordinate.latitude.toFixed(4)}, ${spot.coordinate.longitude.toFixed(4)}`;
+    }
+    this.userMapMarker?.setLatLng([spot.coordinate.latitude, spot.coordinate.longitude]);
+    this.mapSearchResults?.classList.add('hidden');
     document.querySelectorAll('.layer-tabs-compact .tab-btn[data-layer]').forEach((item) => {
       item.classList.toggle('active', item.dataset.layer === layer);
     });
-    this.switchViewMode('map');
+    if (this.viewMode !== 'map') this.switchViewMode('map');
     const panel = this.getMapSpotsPanel();
     if (panel && layer !== 'disaster') {
       panel.classList.remove('hidden');

@@ -2320,18 +2320,35 @@ a:focus-visible {
   -webkit-line-clamp: 2;
 }
 
+.preview-actions {
+  display: grid;
+  gap: 6px;
+  align-self: stretch;
+}
+
+.preview-era,
 .preview-open {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  min-height: 46px;
-  padding: 10px 12px;
-  color: #fff;
-  background: var(--ink-800);
+  min-height: 40px;
+  padding: 8px 12px;
   border: 0;
   border-radius: 10px;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 800;
+}
+
+.preview-era {
+  color: var(--ink-800);
+  background: #eee8dc;
+  border: 1px solid #d0c5b3;
+}
+
+.preview-open {
+  color: #fff;
+  background: var(--ink-800);
   box-shadow: 0 6px 14px rgba(21, 59, 102, 0.24);
 }
 
@@ -5574,6 +5591,10 @@ a:focus-visible {
 /* ===== 監査対応: 一覧検索・防災ON/OFF・シート重なり・3D折り返し ===== */
 #app-container.sheet-open .map-spot-preview {
   display: none !important;
+}
+
+.explore-quick-actions {
+  z-index: 905;
 }
 
 .bottom-sheet,
